@@ -989,7 +989,8 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             if(!(m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
                 m_spellInfo->SpellFamilyFlags & 0x800LL))
             {
-                unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+				if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375) 
+					unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
                 if( !(m_spellInfo->AttributesEx3 & SPELL_ATTR_EX3_NO_INITIAL_AGGRO) )
                 {
@@ -3047,6 +3048,9 @@ void Spell::SendPlaySpellVisual(uint32 SpellID)
 {
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
         return;
+
+	if(SpellID == 1725 && m_caster->GetTypeId() == TYPEID_PLAYER)
+		return;
 
     WorldPacket data(SMSG_PLAY_SPELL_VISUAL, 12);
     data << uint64(m_caster->GetGUID());
