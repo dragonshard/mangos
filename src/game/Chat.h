@@ -370,6 +370,7 @@ class ChatHandler
         bool HandleBankCommand(const char* args);
         bool HandleChangeWeather(const char* args);
         bool HandleKickPlayerCommand(const char * args);
+        bool HandleKnockbackCommand(const char *args);
         bool HandleTeleCommand(const char * args);
         bool HandleAddTeleCommand(const char * args);
         bool HandleDelTeleCommand(const char * args);

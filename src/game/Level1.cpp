@@ -2387,3 +2387,30 @@ bool ChatHandler::HandleDrunkCommand(const char* args)
 
     return true;
 }
+
+bool ChatHandler::HandleKnockbackCommand(const char* args)
+{
+	if(!*args) return false;
+	int32 yards = (uint32)atoi(args);
+	
+	if (yards <= 0)
+	{
+		SendSysMessage(LANG_BAD_VALUE);
+		SetSentErrorMessage(true);
+		return false;
+	}
+
+	Player *m_target = getSelectedPlayer();
+	if (m_target == NULL)
+	{
+		SendSysMessage(LANG_NO_CHAR_SELECTED);
+		SetSentErrorMessage(true);
+		return false;
+	}
+	Player *m_caster = m_session->GetPlayer();
+	
+	if(!m_caster) return false;
+	m_caster->CastCustomSpell(m_target, 10689, &yards, NULL, NULL, true);
+	
+	return true;
+}
