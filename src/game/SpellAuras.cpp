@@ -3316,6 +3316,23 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         data.append(m_target->GetPackGUID());
         data << uint32(0);
         m_target->SendMessageToSet(&data,true);
+
+        /* FIXMEPLZ - THIS IS AN HACK*/
+        if(m_target->getClass() == CLASS_WARRIOR)
+        {
+           /*Second wind rank 1: 29841*/
+           /*Second wind rank 2: 29842*/
+           if(m_target->HasSpell(29838))
+           {
+              SpellEntry const* spellInfo = sSpellStore.LookupEntry(29842);
+              m_target->CastSpell(m_target,spellInfo,true,NULL,this);
+           }
+           else if(m_target->HasSpell(29834))
+                {
+                   SpellEntry const* spellInfo = sSpellStore.LookupEntry(29841);
+                   m_target->CastSpell(m_target,spellInfo,true,NULL,this);
+                }
+        }
     }
     else
     {
@@ -3541,6 +3558,23 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
         }
         else
             ((Creature *)m_target)->StopMoving();
+		
+        /* FIXMEPLZ - THIS IS AN HACK*/
+        if(m_target->getClass() == CLASS_WARRIOR)
+        {
+           /*Second wind rank 1: 29841*/
+           /*Second wind rank 2: 29842*/
+           if(m_target->HasSpell(29838))
+           {
+              SpellEntry const* spellInfo = sSpellStore.LookupEntry(29842);
+              m_target->CastSpell(m_target,spellInfo,true,NULL,this);
+           }
+           else if(m_target->HasSpell(29834))
+                {
+                   SpellEntry const* spellInfo = sSpellStore.LookupEntry(29841);
+                   m_target->CastSpell(m_target,spellInfo,true,NULL,this);
+                }
+        }
     }
     else
     {
