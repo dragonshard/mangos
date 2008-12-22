@@ -9058,6 +9058,13 @@ void Unit::setDeathState(DeathState s)
 
     if (s == JUST_DIED)
     {
+        /* FIXMEPLZ - THIS IS AN HACK*/
+        if (HasAura(27243,1))
+        {
+           Aura* SoC = GetAura(27243,1);
+           CastSpell(this, 27285, true, 0, GetAura(27243,1), SoC->GetCasterGUID());
+        }
+
         RemoveAllAurasOnDeath();
         UnsummonAllTotems();
 
