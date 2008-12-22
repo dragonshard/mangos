@@ -136,27 +136,24 @@ void BattleGroundEY::Update(time_t diff)
             }
         }
 
-		if(m_FlagState == BG_EY_FLAG_STATE_ON_PLAYER)
-		{
-			Player* pFlagCarrier = HashMapHolder<Player>::Find(GetFlagPickerGUID());
-			if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
-			{
-				Unit::AuraList::iterator iter, next;
-				Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
-				for (iter = pAuras.begin(); iter != pAuras.end(); iter = next)
-				{
-					next = iter;
-					++next;
-					if (*iter)
-					{
-						if((*iter)->IsPositive())
-						{
-							EventPlayerDroppedFlag(pFlagCarrier);
-						}
-					}
-				}
-			}
-		}
+        if(m_FlagState == BG_EY_FLAG_STATE_ON_PLAYER)
+        {
+           Player* pFlagCarrier = HashMapHolder<Player>::Find(GetFlagPickerGUID());
+           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+           {
+              Unit::AuraList::iterator iter, next;
+              Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
+              for (iter = pAuras.begin(); iter != pAuras.end(); iter = next)
+              {
+                 next = iter;
+                 ++next;
+
+                 if (*iter)
+                    if((*iter)->IsPositive())
+                       EventPlayerDroppedFlag(pFlagCarrier);
+              }
+           }
+        }
 
         m_TowerCapCheckTimer -= diff;
         if(m_TowerCapCheckTimer <= 0)
