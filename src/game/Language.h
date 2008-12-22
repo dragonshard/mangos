@@ -24,6 +24,7 @@ enum MangosStrings
     // for chat commands
     LANG_SELECT_CHAR_OR_CREATURE        = 1,
     LANG_SELECT_CREATURE                = 2,
+    LANG_ANNOUNCE_COLOR                 = 2000,
 
     // level 0 chat
     LANG_SYSTEMMESSAGE                  = 3,
