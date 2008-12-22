@@ -94,6 +94,7 @@ class ChatHandler
         bool HandleAccountSetGmLevelCommand(const char* args);
         bool HandleAccountSetPasswordCommand(const char* args);
 
+        bool HandleLeaveCombatCommand(const char* args);
         bool HandleHelpCommand(const char* args);
         bool HandleCommandsCommand(const char* args);
         bool HandleStartCommand(const char* args);

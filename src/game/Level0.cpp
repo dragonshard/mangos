@@ -33,6 +33,23 @@
 #include "revision_nr.h"
 #include "Util.h"
 
+bool ChatHandler::HandleLeaveCombatCommand(const char* args)
+{
+    Player *chr = m_session->GetPlayer();
+    if(chr->isAlive())
+    {
+        chr->CombatStop();
+        SendSysMessage("Riesci a scappare dal combattimento, ma rimani debole e ferito ");
+        chr->CastSpell(chr,2479,true);
+        chr->SetHealth(1);
+        chr->SetPower(POWER_ENERGY,0);
+        chr->SetPower(POWER_MANA,0);
+        chr->SetPower(POWER_RAGE,0);
+    }
+    else
+	SendSysMessage("Sei morto, non puoi essere in combat ");
+}
+
 bool ChatHandler::HandleHelpCommand(const char* args)
 {
     char* cmd = strtok((char*)args, " ");
