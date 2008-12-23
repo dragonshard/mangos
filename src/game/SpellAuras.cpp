@@ -2116,6 +2116,24 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             m_target->CastSpell(m_target,47287,true,NULL,this);
             return;
         }
+
+        // Living Bomb
+        if(GetId()==44457 || GetId()==55359 || GetId()==55360)
+        {
+            if (m_removeMode!=AURA_REMOVE_BY_DEATH)
+            {
+                uint32 finalSpelId = 0;
+                switch(GetId())
+                {
+                   case 44457: finalSpelId = 44461; break;
+                   case 55359: finalSpelId = 55361; break;
+                   case 55360: finalSpelId = 55362; break;
+                }
+                if(finalSpelId)
+                   caster->CastSpell(m_target,finalSpelId,true,NULL,this);
+            }
+            return;
+        }
     }
 
     // AT APPLY & REMOVE
