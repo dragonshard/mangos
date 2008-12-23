@@ -2120,7 +2120,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         // Seed of Corruption
         if(GetId()==27243 || GetId()==47835 || GetId()==47836)
         {
-            if (m_removeMode!=AURA_REMOVE_BY_DEATH)
+            if (m_removeMode==AURA_REMOVE_BY_DEATH)
             {
                 uint32 finalSpelId = 0;
                 switch(GetId())
