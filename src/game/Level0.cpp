@@ -36,18 +36,28 @@
 bool ChatHandler::HandleLeaveCombatCommand(const char* args)
 {
     Player *chr = m_session->GetPlayer();
+
+    if(!chr)
+       return false;
+
     if(chr->isAlive())
     {
         chr->CombatStop();
-        SendSysMessage("Riesci a scappare dal combattimento, ma rimani debole e ferito ");
+
         chr->CastSpell(chr,2479,true);
         chr->SetHealth(1);
         chr->SetPower(POWER_ENERGY,0);
         chr->SetPower(POWER_MANA,0);
         chr->SetPower(POWER_RAGE,0);
+        SendSysMessage("Riesci a scappare dal combattimento, ma rimani debole e ferito ");
+
+        return true;
     }
     else
-	SendSysMessage("Sei morto, non puoi essere in combat ");
+    {
+        SendSysMessage("Sei morto, non puoi essere in combat ");
+        return true;
+    }
 }
 
 bool ChatHandler::HandleHelpCommand(const char* args)
