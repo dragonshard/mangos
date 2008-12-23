@@ -2117,6 +2117,24 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             return;
         }
 
+        // Seed of Corruption
+        if(GetId()==27243 || GetId()==47835 || GetId()==47836)
+        {
+            if (m_removeMode!=AURA_REMOVE_BY_DEATH)
+            {
+                uint32 finalSpelId = 0;
+                switch(GetId())
+                {
+                   case 27243: finalSpelId = 27285; break;
+                   case 47835: finalSpelId = 47833; break;
+                   case 47836: finalSpelId = 47834; break;
+                }
+                if(finalSpelId)
+                   caster->CastSpell(m_target,finalSpelId,true,NULL,this);
+            }
+            return;
+        }
+
         // Living Bomb
         if(GetId()==44457 || GetId()==55359 || GetId()==55360)
         {
