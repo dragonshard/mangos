@@ -7921,6 +7921,9 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
 
         SpellModSpellDamage /= 100.0f;
 
+        if(spellProto->Id == 33110)
+            LvlPenalty = 1;
+
         ActualBenefit = (float)AdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * (SpellModSpellDamage * 1.88) * LvlPenalty;
     }
 
