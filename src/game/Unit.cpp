@@ -7921,7 +7921,7 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
 
         SpellModSpellDamage /= 100.0f;
 
-        ActualBenefit = (float)AdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * SpellModSpellDamage * LvlPenalty;
+        ActualBenefit = (float)AdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * (SpellModSpellDamage * 1.88) * LvlPenalty;
     }
 
     // use float as more appropriate for negative values and percent applying
