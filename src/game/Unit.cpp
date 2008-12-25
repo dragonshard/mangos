@@ -7921,6 +7921,7 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
 
         SpellModSpellDamage /= 100.0f;
 
+        /* FIXMEPLZ - THIS IS AN HACK */
         if(spellProto->Id == 33110)
             LvlPenalty = 1;
 

@@ -989,7 +989,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             if(!(m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
                 m_spellInfo->SpellFamilyFlags & 0x800LL))
             {
-                /* FIXMEPLZ - THIS IS AN HACK*/
+                /* FIXMEPLZ - THIS IS AN HACK */
                 if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375) 
                    unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
@@ -3050,7 +3050,7 @@ void Spell::SendPlaySpellVisual(uint32 SpellID)
     if (m_caster->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    /* FIXMEPLZ - THIS IS AN HACK*/
+    /* FIXMEPLZ - THIS IS AN HACK */
     if(SpellID == 1725 && m_caster->GetTypeId() == TYPEID_PLAYER)
         return;
 

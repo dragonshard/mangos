@@ -3356,7 +3356,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         data << uint32(0);
         m_target->SendMessageToSet(&data,true);
 
-        /* FIXMEPLZ - THIS IS AN HACK*/
+        /* FIXMEPLZ - THIS IS AN HACK */
         if(m_target->getClass() == CLASS_WARRIOR)
         {
            /*Second wind rank 1: 29841*/
@@ -3598,7 +3598,7 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
         else
             ((Creature *)m_target)->StopMoving();
 		
-        /* FIXMEPLZ - THIS IS AN HACK*/
+        /* FIXMEPLZ - THIS IS AN HACK */
         if(m_target->getClass() == CLASS_WARRIOR)
         {
            /*Second wind rank 1: 29841*/

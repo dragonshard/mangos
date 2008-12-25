@@ -147,7 +147,7 @@ void BattleGroundWS::Update(time_t diff)
                     if((*iter)->IsPositive())
                        EventPlayerDroppedFlag(pFlagCarrier);
               }
-            }
+           }
         }
 
         if(m_FlagState[BG_TEAM_ALLIANCE] == BG_WS_FLAG_STATE_WAIT_RESPAWN)
