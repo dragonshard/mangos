@@ -28,7 +28,6 @@
 #include "Unit.h"
 #include "Language.h"
 #include "Database/DBCStores.h"
-#include "AuctionHouseBot.h"
 
 void MailItem::deleteItem( bool inDB )
 {
@@ -347,14 +346,7 @@ void WorldSession::HandleReturnToSender(WorldPacket & recv_data )
         }
     }
 
-    if (m->sender == AHBplayerGUID)
-	{
-		SendReturnToSender(MAIL_CREATURE, GetAccountId(), m->receiver, m->sender, m->subject, m->itemTextId, &mi, m->money, m->mailTemplateId);
-	}
-	else
-	{
-		SendReturnToSender(MAIL_NORMAL, GetAccountId(), m->receiver, m->sender, m->subject, m->itemTextId, &mi, m->money, m->mailTemplateId);
-	}
+    SendReturnToSender(MAIL_NORMAL, GetAccountId(), m->receiver, m->sender, m->subject, m->itemTextId, &mi, m->money, m->mailTemplateId);
 
     delete m;                                               //we can deallocate old mail
     pl->SendMailResult(mailId, MAIL_RETURNED_TO_SENDER, 0);
