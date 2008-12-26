@@ -1953,8 +1953,9 @@ void Spell::prepare(SpellCastTargets * targets, Aura* triggeredByAura)
     m_caster->m_Events.AddEvent(Event, m_caster->m_Events.CalculateTime(1));
 
     //Prevent casting at cast another spell (ServerSide check)
-    if(m_caster->IsNonMeleeSpellCasted(false, true) && m_cast_count)
-    {
+    /* FIXMEPLZ - THIS IS AN HACK */
+    if(!m_caster->m_currentSpells[CURRENT_AUTOREPEAT_SPELL])
+    {        
         SendCastResult(SPELL_FAILED_SPELL_IN_PROGRESS);
         finish(false);
         return;
