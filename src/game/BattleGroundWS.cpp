@@ -419,6 +419,7 @@ void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target
 {
     if(GetStatus() != STATUS_IN_PROGRESS)
         return;
+
 	if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
 		return;
 

@@ -433,6 +433,9 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player *source, GameObject* /*targ
     if( GetStatus() != STATUS_IN_PROGRESS )
         return;
 
+    if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+       return;
+
     uint8 node = BG_AB_NODE_STABLES;
     GameObject* obj=HashMapHolder<GameObject>::Find(m_BgObjects[node*8+7]);
     while ( (node < BG_AB_DYNAMIC_NODES_COUNT) && ((!obj) || (!source->IsWithinDistInMap(obj,10))))

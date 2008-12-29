@@ -397,6 +397,9 @@ void BattleGroundEY::HandleAreaTrigger(Player *Source, uint32 Trigger)
     if(!Source->isAlive())                                  //hack code, must be removed later
         return;
 
+    if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+       return;
+
     switch(Trigger)
     {
         case TR_BLOOD_ELF_POINT:
