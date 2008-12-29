@@ -433,7 +433,7 @@ void BattleGroundAB::EventPlayerClickedOnFlag(Player *source, GameObject* /*targ
     if( GetStatus() != STATUS_IN_PROGRESS )
         return;
 
-    if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+    if(source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
        return;
 
     uint8 node = BG_AB_NODE_STABLES;
