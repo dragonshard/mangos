@@ -6314,6 +6314,11 @@ void Player::UpdateZone(uint32 newZone)
         SetGroupUpdateFlag(GROUP_UPDATE_FLAG_ZONE);
 
     UpdateZoneDependentAuras(newZone);
+
+    if(this->GetMap()->IsDungeon())
+        this->setFaction(this->getFactionForRace(RACE_NIGHTELF));
+    else
+        this->setFaction(this->getFactionForRace(this->getRace()));
 }
 
 //If players are too far way of duel flag... then player loose the duel
