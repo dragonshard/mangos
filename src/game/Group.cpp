@@ -1525,16 +1525,16 @@ void Group::_homebindIfInstance(Player *player)
 
 void Group::BroadcastGroupUpdate(void)
 {
-     // FG: HACK: force flags update on group leave - for values update hack
-     // -- not very efficient but safe
-     for(member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
-     {
-         Player *pp = objmgr.GetPlayer(citr->guid);
-         if(pp && pp->IsInWorld())
-		 {
-            pp->ForceValuesUpdateAtIndex(UNIT_FIELD_BYTES_2);
-            pp->ForceValuesUpdateAtIndex(UNIT_FIELD_FACTIONTEMPLATE);
-            DEBUG_LOG("-- Forced group value update for '%s'", pp->GetName());
-		 }
-	 }
+    // FG: HACK: force flags update on group leave - for values update hack
+    // -- not very efficient but safe
+    for(member_citerator citr = m_memberSlots.begin(); citr != m_memberSlots.end(); ++citr)
+    {
+        Player *pp = objmgr.GetPlayer(citr->guid);
+        if(pp && pp->IsInWorld())
+        {
+           pp->ForceValuesUpdateAtIndex(UNIT_FIELD_BYTES_2);
+           pp->ForceValuesUpdateAtIndex(UNIT_FIELD_FACTIONTEMPLATE);
+           DEBUG_LOG("-- Forced group value update for '%s'", pp->GetName());
+        }
+    }
 }
