@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2008 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2232,12 +2232,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         }
         case SPELLFAMILY_MAGE:
         {
-            // Hypothermia
-            if( GetId()==41425 )
-            {
-                m_target->ModifyAuraState(AURA_STATE_HYPOTHERMIA,apply);
-                return;
-            }
             break;
         }
         case SPELLFAMILY_DRUID:
@@ -3913,17 +3907,6 @@ void Aura::HandleModMechanicImmunity(bool apply, bool Real)
 
     m_target->ApplySpellImmune(GetId(),IMMUNITY_MECHANIC,m_modifier.m_miscvalue,apply);
 
-    // special cases
-    switch(m_modifier.m_miscvalue)
-    {
-        case MECHANIC_INVULNERABILITY:
-            m_target->ModifyAuraState(AURA_STATE_FORBEARANCE,apply);
-            break;
-        case MECHANIC_SHIELD:
-            m_target->ModifyAuraState(AURA_STATE_WEAKENED_SOUL,apply);
-            break;
-    }
-
     // Bestial Wrath
     if ( GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellIconID == 1680)
     {
@@ -4207,7 +4190,7 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
         case SPELLFAMILY_GENERIC:
         {
             // Pounce Bleed
-            if ( m_spellProto->SpellIconID == 147 && m_spellProto->SpellVisual == 0 )
+            if ( m_spellProto->SpellIconID == 147 && m_spellProto->SpellVisual[0] == 0 )
             {
                 // $AP*0.18/6 bonus per tick
                 if (apply && !loading && caster)
@@ -4752,7 +4735,7 @@ void Aura::HandleModPowerRegen(bool apply, bool Real)       // drinking
         else if( GetId() == 20577 )
         {
             // cannibalize anim
-            m_target->HandleEmoteCommand(398);
+            m_target->HandleEmoteCommand(EMOTE_STATE_CANNIBALIZE);
         }
 
         // Warrior talent, gain 1 rage every 3 seconds while in combat
@@ -6116,7 +6099,7 @@ void Aura::PeriodicTick()
             sLog.outDetail("PeriodicTick: %u (TypeId: %u) power leech of %u (TypeId: %u) for %u dmg inflicted by %u",
                 GUID_LOPART(GetCasterGUID()), GuidHigh2TypeId(GUID_HIPART(GetCasterGUID())), m_target->GetGUIDLow(), m_target->GetTypeId(), pdamage, GetId());
 
-            if(m_modifier.m_miscvalue < 0 || m_modifier.m_miscvalue > 4)
+            if(m_modifier.m_miscvalue < 0 || m_modifier.m_miscvalue >= MAX_POWERS)
                 break;
 
             Powers power = Powers(m_modifier.m_miscvalue);
@@ -6171,7 +6154,7 @@ void Aura::PeriodicTick()
             sLog.outDetail("PeriodicTick: %u (TypeId: %u) energize %u (TypeId: %u) for %u dmg inflicted by %u",
                 GUID_LOPART(GetCasterGUID()), GuidHigh2TypeId(GUID_HIPART(GetCasterGUID())), m_target->GetGUIDLow(), m_target->GetTypeId(), pdamage, GetId());
 
-            if(m_modifier.m_miscvalue < 0 || m_modifier.m_miscvalue > 4)
+            if(m_modifier.m_miscvalue < 0 || m_modifier.m_miscvalue >= MAX_POWERS)
                 break;
 
             Powers power = Powers(m_modifier.m_miscvalue);

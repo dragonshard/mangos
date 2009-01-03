@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2008 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1459,32 +1459,6 @@ void Spell::EffectDummy(uint32 i)
                     m_damage+= damage;
                 return;
             }
-            // Kill command
-            if(m_spellInfo->SpellFamilyFlags & 0x00080000000000LL)
-            {
-                if(m_caster->getClass()!=CLASS_HUNTER)
-                    return;
-
-                // clear hunter crit aura state
-                m_caster->ModifyAuraState(AURA_STATE_HUNTER_CRIT_STRIKE,false);
-
-                // additional damage from pet to pet target
-                Pet* pet = m_caster->GetPet();
-                if(!pet || !pet->getVictim())
-                    return;
-
-                uint32 spell_id = 0;
-                switch (m_spellInfo->Id)
-                {
-                case 34026: spell_id = 34027; break;        // rank 1
-                default:
-                    sLog.outError("Spell::EffectDummy: Spell %u not handled in KC",m_spellInfo->Id);
-                    return;
-                }
-
-                pet->CastSpell(pet->getVictim(), spell_id, true);
-                return;
-            }
 
             switch(m_spellInfo->Id)
             {
@@ -2225,13 +2199,7 @@ void Spell::EffectApplyAura(uint32 i)
     if(unitTarget->GetTypeId()==TYPEID_PLAYER)              // Negative buff should only be applied on players
     {
         uint32 spellId = 0;
-        if(m_spellInfo->CasterAuraStateNot==AURA_STATE_WEAKENED_SOUL || m_spellInfo->TargetAuraStateNot==AURA_STATE_WEAKENED_SOUL)
-            spellId = 6788;                                 // Weakened Soul
-        else if(m_spellInfo->CasterAuraStateNot==AURA_STATE_FORBEARANCE || m_spellInfo->TargetAuraStateNot==AURA_STATE_FORBEARANCE)
-            spellId = 25771;                                // Forbearance
-        else if(m_spellInfo->CasterAuraStateNot==AURA_STATE_HYPOTHERMIA)
-            spellId = 41425;                                // Hypothermia
-        else if (m_spellInfo->Mechanic == MECHANIC_BANDAGE) // Bandages
+        if (m_spellInfo->Mechanic == MECHANIC_BANDAGE)      // Bandages
             spellId = 11196;                                // Recently Bandaged
         else if( (m_spellInfo->AttributesEx & 0x20) && (m_spellInfo->AttributesEx2 & 0x20000) )
             spellId = 23230;                                // Blood Fury - Healing Reduction
@@ -2596,8 +2564,8 @@ void Spell::DoCreateItem(uint32 i, uint32 itemtype)
 
     if (num_to_add < 1)
         num_to_add = 1;
-    if (num_to_add > pProto->Stackable)
-        num_to_add = pProto->Stackable;
+    if (num_to_add > pProto->GetMaxStackSize())
+        num_to_add = pProto->GetMaxStackSize();
 
     // init items_count to 1, since 1 item will be created regardless of specialization
     int items_count=1;
@@ -2720,6 +2688,8 @@ void Spell::EffectEnergize(uint32 i)
     if(m_spellInfo->EffectMiscValue[i] < 0 || m_spellInfo->EffectMiscValue[i] >= MAX_POWERS)
         return;
 
+    Powers power = Powers(m_spellInfo->EffectMiscValue[i]);
+
     // Some level depends spells
     int multiplier = 0;
     int level_diff = 0;
@@ -2749,8 +2719,6 @@ void Spell::EffectEnergize(uint32 i)
 
     if(damage < 0)
         return;
-
-    Powers power = Powers(m_spellInfo->EffectMiscValue[i]);
 
     if(unitTarget->GetMaxPower(power) == 0)
         return;
@@ -5434,7 +5402,8 @@ void Spell::EffectFeedPet(uint32 i)
 
     Player *_player = (Player*)m_caster;
 
-    if(!itemTarget)
+    Item* foodItem = m_targets.getItemTarget();
+    if(!foodItem)
         return;
 
     Pet *pet = _player->GetPet();
@@ -5444,15 +5413,15 @@ void Spell::EffectFeedPet(uint32 i)
     if(!pet->isAlive())
         return;
 
-    int32 benefit = pet->GetCurrentFoodBenefitLevel(itemTarget->GetProto()->ItemLevel);
+    int32 benefit = pet->GetCurrentFoodBenefitLevel(foodItem->GetProto()->ItemLevel);
     if(benefit <= 0)
         return;
 
     uint32 count = 1;
-    _player->DestroyItemCount(itemTarget,count,true);
+    _player->DestroyItemCount(foodItem,count,true);
     // TODO: fix crash when a spell has two effects, both pointed at the same item target
 
-    m_caster->CastCustomSpell(m_caster,m_spellInfo->EffectTriggerSpell[i],&benefit,NULL,NULL,true);
+    m_caster->CastCustomSpell(pet,m_spellInfo->EffectTriggerSpell[i],&benefit,NULL,NULL,true);
 }
 
 void Spell::EffectDismissPet(uint32 /*i*/)

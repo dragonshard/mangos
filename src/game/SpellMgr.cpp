@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2005-2008 MaNGOS <http://getmangos.com/>
+ * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1137,7 +1137,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 case SPELLFAMILY_ROGUE:
                 {
                     // Garrote-Silence -> Garrote (multi-family check)
-                    if( spellInfo_1->SpellIconID == 498 && spellInfo_1->SpellVisual == 0 && spellInfo_2->SpellIconID == 498  )
+                    if( spellInfo_1->SpellIconID == 498 && spellInfo_1->SpellVisual[0] == 0 && spellInfo_2->SpellIconID == 498  )
                         return false;
 
                     break;
@@ -1200,7 +1200,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 //Corruption & Seed of corruption
                 if( spellInfo_1->SpellIconID == 313 && spellInfo_2->SpellIconID == 1932 ||
                     spellInfo_2->SpellIconID == 313 && spellInfo_1->SpellIconID == 1932 )
-                    if(spellInfo_1->SpellVisual != 0 && spellInfo_2->SpellVisual != 0)
+                    if(spellInfo_1->SpellVisual[0] != 0 && spellInfo_2->SpellVisual[0] != 0)
                         return true;                        // can't be stacked
 
                 // Corruption and Unstable Affliction
@@ -2333,6 +2333,9 @@ uint8 GetSpellAllowedInLocationError(SpellEntry const *spellInfo,uint32 map_id,u
         case 40216:                                         // Dragonmaw Illusion
         case 42016:                                         // Dragonmaw Illusion
             return area_id == 3759 || area_id == 3966 || area_id == 3939 ? 0 : SPELL_FAILED_INCORRECT_AREA;
+        case 51721:                                         // Dominion Over Acherus
+        case 54055:                                         // Dominion Over Acherus
+            return area_id == 4281 || area_id == 4342 ? 0 : SPELL_FAILED_INCORRECT_AREA;
     }
 
     return 0;
