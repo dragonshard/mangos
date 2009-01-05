@@ -430,11 +430,8 @@ void BattleGroundAB::_NodeDeOccupied(uint8 node)
 /* Invoked if a player used a banner as a gameobject */
 void BattleGroundAB::EventPlayerClickedOnFlag(Player *source, GameObject* /*target_obj*/)
 {
-    if( GetStatus() != STATUS_IN_PROGRESS )
+    if( (GetStatus() != STATUS_IN_PROGRESS) || (source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL)) )
         return;
-
-    if(source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
-       return;
 
     uint8 node = BG_AB_NODE_STABLES;
     GameObject* obj=HashMapHolder<GameObject>::Find(m_BgObjects[node*8+7]);
