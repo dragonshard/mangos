@@ -159,7 +159,7 @@ void Totem::SetTypeBySummonSpell(SpellEntry const * spellProto)
         m_type = TOTEM_STATUE;                              //Jewelery statue
 }
 
-bool Totem::IsImmunedToSpell(SpellEntry const* spellInfo, bool useCharges)
+bool Totem::IsImmunedToSpell(SpellEntry const* spellInfo)
 {
     bool check = false;
 
@@ -183,5 +183,5 @@ bool Totem::IsImmunedToSpell(SpellEntry const* spellInfo, bool useCharges)
             }
         }
 
-    return Creature::IsImmunedToSpell(spellInfo, useCharges);
+    return Creature::IsImmunedToSpell(spellInfo);
 }
