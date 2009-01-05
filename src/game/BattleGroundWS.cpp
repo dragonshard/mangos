@@ -115,7 +115,7 @@ void BattleGroundWS::Update(time_t diff)
         if(m_FlagState[BG_TEAM_ALLIANCE] == BG_WS_FLAG_STATE_ON_PLAYER)
         {
            Player* pFlagCarrier = HashMapHolder<Player>::Find(GetAllianceFlagPickerGUID());
-           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
            {
               Unit::AuraList::iterator iter, next;
               Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
@@ -134,7 +134,7 @@ void BattleGroundWS::Update(time_t diff)
         if(m_FlagState[BG_TEAM_HORDE] == BG_WS_FLAG_STATE_ON_PLAYER)
         {
            Player* pFlagCarrier = HashMapHolder<Player>::Find(GetHordeFlagPickerGUID());
-           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
            {
               Unit::AuraList::iterator iter, next;
               Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
@@ -417,11 +417,8 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
 
 void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target_obj)
 {
-    if(GetStatus() != STATUS_IN_PROGRESS)
+    if((GetStatus() != STATUS_IN_PROGRESS) || Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
         return;
-
-	if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
-		return;
 
     const char *message = NULL;
     uint8 type = 0;

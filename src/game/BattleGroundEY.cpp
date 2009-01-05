@@ -139,7 +139,7 @@ void BattleGroundEY::Update(time_t diff)
         if(m_FlagState == BG_EY_FLAG_STATE_ON_PLAYER)
         {
            Player* pFlagCarrier = HashMapHolder<Player>::Find(GetFlagPickerGUID());
-           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
+           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
            {
               Unit::AuraList::iterator iter, next;
               Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
@@ -391,14 +391,11 @@ void BattleGroundEY::RemovePlayer(Player *plr, uint64 guid)
 
 void BattleGroundEY::HandleAreaTrigger(Player *Source, uint32 Trigger)
 {
-    if(GetStatus() != STATUS_IN_PROGRESS)
+    if((GetStatus() != STATUS_IN_PROGRESS) || Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
         return;
 
     if(!Source->isAlive())                                  //hack code, must be removed later
         return;
-
-    if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
-       return;
 
     switch(Trigger)
     {
@@ -652,10 +649,8 @@ void BattleGroundEY::EventPlayerDroppedFlag(Player *Source)
 
 void BattleGroundEY::EventPlayerClickedOnFlag(Player *Source, GameObject* target_obj)
 {
-    if(GetStatus() != STATUS_IN_PROGRESS || IsFlagPickedup() || !Source->IsWithinDistInMap(target_obj, 10))
+    if(GetStatus() != STATUS_IN_PROGRESS || IsFlagPickedup() || Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL) || !Source->IsWithinDistInMap(target_obj, 10))
         return;
-	if(Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL,false))
-		return;
 
     const char *message;
     uint8 type = 0;
