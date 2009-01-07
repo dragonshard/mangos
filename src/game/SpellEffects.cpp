@@ -98,8 +98,8 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectDispel,                                   // 38 SPELL_EFFECT_DISPEL
     &Spell::EffectUnused,                                   // 39 SPELL_EFFECT_LANGUAGE
     &Spell::EffectDualWield,                                // 40 SPELL_EFFECT_DUAL_WIELD
-    &Spell::EffectSummonWild,                               // 41 SPELL_EFFECT_SUMMON_WILD
-    &Spell::EffectSummonGuardian,                           // 42 SPELL_EFFECT_SUMMON_GUARDIAN
+    &Spell::EffectUnused,                                   // 41 SPELL_EFFECT_JUMP
+    &Spell::EffectUnused,                                   // 42 SPELL_EFFECT_JUMP2
     &Spell::EffectTeleUnitsFaceCaster,                      // 43 SPELL_EFFECT_TELEPORT_UNITS_FACE_CASTER
     &Spell::EffectLearnSkill,                               // 44 SPELL_EFFECT_SKILL_STEP
     &Spell::EffectAddHonor,                                 // 45 SPELL_EFFECT_ADD_HONOR                honor/pvp related
@@ -154,7 +154,7 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectSelfResurrect,                            // 94 SPELL_EFFECT_SELF_RESURRECT
     &Spell::EffectSkinning,                                 // 95 SPELL_EFFECT_SKINNING
     &Spell::EffectCharge,                                   // 96 SPELL_EFFECT_CHARGE
-    &Spell::EffectSummonCritter,                            // 97 SPELL_EFFECT_SUMMON_CRITTER
+    &Spell::EffectUnused,                                   // 97 SPELL_EFFECT_97
     &Spell::EffectKnockBack,                                // 98 SPELL_EFFECT_KNOCK_BACK
     &Spell::EffectDisEnchant,                               // 99 SPELL_EFFECT_DISENCHANT
     &Spell::EffectInebriate,                                //100 SPELL_EFFECT_INEBRIATE
@@ -169,7 +169,7 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectSummonDeadPet,                            //109 SPELL_EFFECT_SUMMON_DEAD_PET
     &Spell::EffectDestroyAllTotems,                         //110 SPELL_EFFECT_DESTROY_ALL_TOTEMS
     &Spell::EffectDurabilityDamage,                         //111 SPELL_EFFECT_DURABILITY_DAMAGE
-    &Spell::EffectSummonDemon,                              //112 SPELL_EFFECT_SUMMON_DEMON
+    &Spell::EffectUnused,                                   //112 SPELL_EFFECT_112
     &Spell::EffectResurrectNew,                             //113 SPELL_EFFECT_RESURRECT_NEW
     &Spell::EffectTaunt,                                    //114 SPELL_EFFECT_ATTACK_ME
     &Spell::EffectDurabilityDamagePCT,                      //115 SPELL_EFFECT_DURABILITY_DAMAGE_PCT
@@ -4615,13 +4615,15 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                 }
             }
 
-            static uint32 const itypes[6][3] = {
+            static uint32 const itypes[8][3] = {
                 { 5512,19004,19005},                        // Minor Healthstone
                 { 5511,19006,19007},                        // Lesser Healthstone
                 { 5509,19008,19009},                        // Healthstone
                 { 5510,19010,19011},                        // Greater Healthstone
                 { 9421,19012,19013},                        // Major Healthstone
-                {22103,22104,22105}                         // Master Healthstone
+                {22103,22104,22105},                        // Master Healthstone
+                {36889,36890,36891},                        // Demonic Healthstone
+                {36892,36893,36894}                         // Fel Healthstone
             };
 
             switch(m_spellInfo->Id)
@@ -4632,6 +4634,8 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                 case 11729: itemtype=itypes[3][rank];break; // Greater Healthstone
                 case 11730: itemtype=itypes[4][rank];break; // Major Healthstone
                 case 27230: itemtype=itypes[5][rank];break; // Master Healthstone
+                case 47871: itemtype=itypes[6][rank];break; // Demonic Healthstone
+                case 47878: itemtype=itypes[7][rank];break; // Fel Healthstone
                 default:
                     return;
             }

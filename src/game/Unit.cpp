@@ -216,6 +216,7 @@ void Unit::Update( uint32 p_time )
 
     ModifyAuraState(AURA_STATE_HEALTHLESS_20_PERCENT, GetHealth() < GetMaxHealth()*0.20f);
     ModifyAuraState(AURA_STATE_HEALTHLESS_35_PERCENT, GetHealth() < GetMaxHealth()*0.35f);
+    ModifyAuraState(AURA_STATE_HEALTH_ABOVE_75_PERCENT, GetHealth() > GetMaxHealth()*0.75f);
 
     i_motionMaster.UpdateMotion(p_time);
 }
@@ -5361,6 +5362,17 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     target = this;
                     break;
                 }
+                // Glyph of Healing Wave
+                case 55440:
+                {
+                    // Not proc from self heals
+                    if (this==pVictim)
+                        return false;
+                    basepoints0 = triggeredByAura->GetModifier()->m_amount * damage / 100;
+                    target = this;
+                    triggered_spell_id = 55533;
+                    break;
+                }
             }
 
             // Earth Shield
@@ -5439,17 +5451,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     ((Player*)this)->AddSpellCooldown(dummySpell->Id,0,time(NULL) + cooldown);
 
                 return true;
-            }
-            // Glyph of Healing Wave
-            case 55440:
-            {
-                // Not proc from self heals
-                if (this==pVictim)
-                    return false;
-                basepoints0 = triggeredByAura->GetModifier()->m_amount * damage / 100;
-                target = this;
-                triggered_spell_id = 55533;
-                break;
             }
             break;
         }
@@ -7389,6 +7390,16 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                             case 911: crit_chance+= 50.0f; break; //Shatter Rank 3
                         }
                     }
+                }
+                // Glyph of Shadowburn
+                if (spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK &&
+                    spellProto->SpellFamilyFlags & 0x0000000000000080 && 
+                    pVictim->HasAuraState(AURA_STATE_HEALTHLESS_35_PERCENT))
+                {
+                    AuraList const& mOverrideClassScript = GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+                    for(AuraList::const_iterator i = mOverrideClassScript.begin(); i != mOverrideClassScript.end(); ++i)
+                        if((*i)->GetModifier()->m_miscvalue == 7917)
+                            crit_chance+=(*i)->GetModifier()->m_amount;
                 }
             }
             break;

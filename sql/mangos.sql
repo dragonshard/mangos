@@ -22,7 +22,7 @@
 DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
-  `required_7034_01_mangos_spell_proc_event` bit(1) default NULL
+  `required_7047_03_mangos_playercreateinfo_spell` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 
 --
@@ -34,6 +34,31 @@ LOCK TABLES `db_version` WRITE;
 INSERT INTO `db_version` VALUES
 ('Mangos default database.',NULL);
 /*!40000 ALTER TABLE `db_version` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `achievement_reward`
+--
+
+DROP TABLE IF EXISTS `achievement_reward`;
+CREATE TABLE `achievement_reward` (
+  `entry` mediumint(8) unsigned NOT NULL default '0',
+  `title_A` mediumint(8) unsigned NOT NULL default '0',
+  `title_H` mediumint(8) unsigned NOT NULL default '0',
+  `item` mediumint(8) unsigned NOT NULL default '0',
+  `sender` mediumint(8) unsigned NOT NULL default '0',
+  `subject` varchar(255) default NULL,
+  `text` text,
+  PRIMARY KEY  (`entry`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Loot System';
+
+--
+-- Dumping data for table `achievement_reward`
+--
+
+LOCK TABLES `achievement_reward` WRITE;
+/*!40000 ALTER TABLE `achievement_reward` DISABLE KEYS */;
+/*!40000 ALTER TABLE `achievement_reward` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -1762,6 +1787,41 @@ INSERT INTO `item_template` VALUES
 (38147,4,0,-1,'Corrupted Band',963,2,32768,1,534,133,11,-1,-1,60,55,0,0,0,0,0,0,0,0,1,0,3,4,11,3,6,32,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,1,'',0,0,0,0,0,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,'',0,0,0,0),
 (41751,0,5,-1,'Black Mushroom',36728,1,0,1,100,5,0,-1,-1,65,55,0,0,0,0,0,0,0,0,20,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,27094,0,-1,0,0,11,1000,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,0,0,0,-1,0,-1,0,'',0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,-1,0,0,0,'',0,0,0,0);
 /*!40000 ALTER TABLE `item_template` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `locales_achievement_reward`
+--
+
+DROP TABLE IF EXISTS `locales_achievement_reward`;
+CREATE TABLE `locales_achievement_reward` (
+  `entry` mediumint(8) unsigned NOT NULL default '0',
+  `subject_loc1` varchar(100) NOT NULL default '',
+  `subject_loc2` varchar(100) NOT NULL default '',
+  `subject_loc3` varchar(100) NOT NULL default '',
+  `subject_loc4` varchar(100) NOT NULL default '',
+  `subject_loc5` varchar(100) NOT NULL default '',
+  `subject_loc6` varchar(100) NOT NULL default '',
+  `subject_loc7` varchar(100) NOT NULL default '',
+  `subject_loc8` varchar(100) NOT NULL default '',
+  `text_loc1` text default NULL,
+  `text_loc2` text default NULL,
+  `text_loc3` text default NULL,
+  `text_loc4` text default NULL,
+  `text_loc5` text default NULL,
+  `text_loc6` text default NULL,
+  `text_loc7` text default NULL,
+  `text_loc8` text default NULL,
+  PRIMARY KEY  (`entry`)
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Dumping data for table `locales_achievement_reward`
+--
+
+LOCK TABLES `locales_achievement_reward` WRITE;
+/*!40000 ALTER TABLE `locales_achievement_reward` DISABLE KEYS */;
+/*!40000 ALTER TABLE `locales_achievement_reward` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -9653,14 +9713,14 @@ INSERT INTO `playercreateinfo_action` VALUES
 (11,2,0,6603,0,0),
 (11,2,1,21084,0,0),
 (11,2,2,635,0,0),
-(11,2,3,28880,0,0),
+(11,2,3,59542,0,0),
 (11,2,10,159,128,0),
 (11,2,11,4540,128,0),
 (11,2,83,4540,128,0),
 (11,3,0,6603,0,0),
 (11,3,1,2973,0,0),
 (11,3,2,75,0,0),
-(11,3,3,28880,0,0),
+(11,3,3,59543,0,0),
 (11,3,10,159,128,0),
 (11,3,11,4540,128,0),
 (11,3,72,6603,0,0),
@@ -9671,7 +9731,7 @@ INSERT INTO `playercreateinfo_action` VALUES
 (11,5,0,6603,0,0),
 (11,5,1,585,0,0),
 (11,5,2,2050,0,0),
-(11,5,3,28880,0,0),
+(11,5,3,59544,0,0),
 (11,5,10,159,128,0),
 (11,5,11,4540,128,0),
 (11,5,83,4540,128,0),
@@ -9681,16 +9741,17 @@ INSERT INTO `playercreateinfo_action` VALUES
 (11,6,3,45462,0,0),
 (11,6,4,45902,0,0),
 (11,6,5,47541,0,0),
+(11,6,6,59545,0,0),
 (11,7,0,6603,0,0),
 (11,7,1,403,0,0),
 (11,7,2,331,0,0),
-(11,7,3,28880,0,0),
+(11,7,3,59547,0,0),
 (11,7,10,159,128,0),
 (11,7,11,4540,128,0),
 (11,8,0,6603,0,0),
 (11,8,1,133,0,0),
 (11,8,2,168,0,0),
-(11,8,3,28880,0,0),
+(11,8,3,59548,0,0),
 (11,8,10,159,128,0),
 (11,8,11,4540,128,0),
 (11,8,83,4540,128,0);
@@ -12211,7 +12272,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (11,2,22810,'Opening - No Text',1),
 (11,2,27762,'Libram',1),
 (11,2,28875,'Gemcutting',1),
-(11,2,28880,'Gift of the Naaru',1),
+(11,2,59542,'Gift of the Naaru',1),
 (11,2,29932,'Language Draenei',1),
 (11,3,75,'Auto Shot',1),
 (11,3,81,'Dodge',1),
@@ -12248,7 +12309,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (11,3,22810,'Opening - No Text',1),
 (11,3,24949,'Defensive State 2(DND)',1),
 (11,3,28875,'Gemcutting',1),
-(11,3,28880,'Gift of the Naaru',1),
+(11,3,59543,'Gift of the Naaru',1),
 (11,3,29932,'Language Draenei',1),
 (11,3,34082,'Advantaged State(DND)',1),
 (11,5,81,'Dodge',1),
@@ -12284,7 +12345,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (11,5,22810,'Opening - No Text',1),
 (11,5,28875,'Gemcutting',1),
 (11,5,28878,'Inspiring Presence',1),
-(11,5,28880,'Gift of the Naaru',1),
+(11,5,59544,'Gift of the Naaru',1),
 (11,5,29932,'Language Draenei',1),
 (11,6,81,'Dodge',1),
 (11,6,196,'One-Handed Axes',1),
@@ -12390,7 +12451,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (11,7,27763,'Totem',1),
 (11,7,28875,'Gemcutting',1),
 (11,7,28878,'Inspiring Presence',1),
-(11,7,28880,'Gift of the Naaru',1),
+(11,7,59547,'Gift of the Naaru',1),
 (11,7,29932,'Language Draenei',1),
 (11,8,81,'Dodge',1),
 (11,8,133,'Fireball',1),
@@ -12425,7 +12486,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (11,8,22810,'Opening - No Text',1),
 (11,8,28875,'Gemcutting',1),
 (11,8,28878,'Inspiring Presence',1),
-(11,8,28880,'Gift of the Naaru',1),
+(11,8,59548,'Gift of the Naaru',1),
 (11,8,29932,'Language Draenei',1);
 /*!40000 ALTER TABLE `playercreateinfo_spell` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -16595,6 +16656,10 @@ INSERT INTO `spell_proc_event` VALUES
 (47580, 0x00000000,  6, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (47581, 0x00000000,  6, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (47582, 0x00000000,  6, 0x00000000, 0x00000000, 0x00000040, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
+(48110, 0x00000000,  0, 0x00000000, 0x00000000, 0x00000000, 0x000A02A8, 0x00000000, 0.000000, 0.000000,  0),
+(48111, 0x00000000,  0, 0x00000000, 0x00000000, 0x00000000, 0x000A02A8, 0x00000000, 0.000000, 0.000000,  0),
+(48112, 0x00000000,  0, 0x00000000, 0x00000000, 0x00000000, 0x000A02A8, 0x00000000, 0.000000, 0.000000,  0),
+(48113, 0x00000000,  0, 0x00000000, 0x00000000, 0x00000000, 0x000A02A8, 0x00000000, 0.000000, 0.000000,  0),
 (48159, 0x00000000,  6, 0x00002000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (48160, 0x00000000,  6, 0x00002000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (48483, 0x00000000,  7, 0x00008800, 0x00000440, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
