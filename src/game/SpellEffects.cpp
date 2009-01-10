@@ -1352,6 +1352,30 @@ void Spell::EffectDummy(uint32 i)
             }
             break;
         case SPELLFAMILY_PRIEST:
+            // Penance
+            if (m_spellInfo->SpellFamilyFlags & 0x0080000000000000LL)
+            {
+                if (!unitTarget)
+                    return;
+
+                int hurt = 0;
+                int heal = 0;
+                switch(m_spellInfo->Id)
+                {
+                    case 47540: hurt = 47758; heal = 47757; break;
+                    case 53005: hurt = 53001; heal = 52986; break;
+                    case 53006: hurt = 53002; heal = 52987; break;
+                    case 53007: hurt = 53003; heal = 52988; break;
+                    default:
+                        sLog.outError("Spell::EffectDummy: Spell %u Penance need set correct heal/damage spell", m_spellInfo->Id);
+                        return;
+                }
+                if (m_caster->IsFriendlyTo(unitTarget))
+                    m_caster->CastSpell(unitTarget, heal, true, 0);
+                else
+                    m_caster->CastSpell(unitTarget, hurt, true, 0);
+                return;
+            }
             switch(m_spellInfo->Id )
             {
                 case 28598:                                 // Touch of Weakness triggered spell
@@ -1517,6 +1541,8 @@ void Spell::EffectDummy(uint32 i)
                         case 20930: hurt = 25902; heal = 25903; break;
                         case 27174: hurt = 27176; heal = 27175; break;
                         case 33072: hurt = 33073; heal = 33074; break;
+                        case 48824: hurt = 48822; heal = 48820; break;
+                        case 48825: hurt = 48823; heal = 48821; break;
                         default:
                             sLog.outError("Spell::EffectDummy: Spell %u not handled in HS",m_spellInfo->Id);
                             return;
@@ -3137,6 +3163,7 @@ void Spell::EffectSummonType(uint32 i)
         case SUMMON_TYPE_GUARDIAN:
         case SUMMON_TYPE_POSESSED:
         case SUMMON_TYPE_POSESSED2:
+        case SUMMON_TYPE_FORCE_OF_NATURE:
         case SUMMON_TYPE_GUARDIAN2:
             EffectSummonGuardian(i);
             break;
@@ -4599,6 +4626,8 @@ void Spell::EffectScriptEffect(uint32 effIndex)
         case 11729:
         case 11730:
         case 27230:
+        case 47871:
+        case 47878:
         {
             uint32 itemtype;
             uint32 rank = 0;
