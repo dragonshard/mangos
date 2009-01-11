@@ -2155,6 +2155,7 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                    caster->CastSpell(m_target,finalSpelId,true,NULL,this);
             }
             return;
+        }
 
         // Seed of Corruption
         if(GetId()==27243 || GetId()==47835 || GetId()==47836)
