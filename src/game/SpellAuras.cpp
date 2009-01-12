@@ -768,6 +768,7 @@ void AreaAura::Update(uint32 diff)
                     if(actualSpellInfo != GetSpellProto())
                         actualBasePoints = actualSpellInfo->EffectBasePoints[m_effIndex];
                     AreaAura *aur = new AreaAura(actualSpellInfo, m_effIndex, &actualBasePoints, (*tIter), caster, NULL);
+                    aur->SetAuraDuration(GetAuraDuration());
                     (*tIter)->AddAura(aur);
                 }
             }
@@ -5364,6 +5365,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
             break;
         case FORM_FLIGHT:
             spellId = 33948;
+            spellId2 = 34764;
             break;
         case FORM_FLIGHT_EPIC:
             spellId  = 40122;
