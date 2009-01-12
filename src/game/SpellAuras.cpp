@@ -3460,6 +3460,13 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
             caster->CastSpell(m_target,spellInfo,true,NULL,this);
             return;
         }
+
+        // Divine Hymn Recovery
+        if(GetId() == 47953)
+        {
+            m_target->CastSpell(m_target,60406,false);
+            return;
+        }
     }
 }
 
