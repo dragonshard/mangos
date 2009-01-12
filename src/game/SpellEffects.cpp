@@ -3366,7 +3366,16 @@ void Spell::EffectDispel(uint32 i)
             SpellEntry const* spellInfo = aur->GetSpellProto();
             // Base dispel chance
             // TODO: possible chance depend from spell level??
+            /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
+            if(unitTarget->HasAura(33206,0))
+               miss_chance += 65;
+            if(unitTarget->HasAura(14523,0))
+               miss_chance += 10;
+            if(unitTarget->HasAura(14784,0))
+               miss_chance += 10;
+            if(unitTarget->HasAura(14785,0))
+               miss_chance += 10;
             // Apply dispel mod from aura caster
             if (Unit *caster = aur->GetCaster())
             {
