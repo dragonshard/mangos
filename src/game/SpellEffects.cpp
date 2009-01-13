@@ -6368,9 +6368,23 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
         {
             // Random select buff for dispel
             Aura *aur = steal_list[urand(0, list_size-1)];
-            // Not use chance for steal
+
+            /* FIX ME - DISPEL RESISTANCE HACK */
+            int32 miss_chance = 0;
+            if(unitTarget->HasAura(33206,0))
+               miss_chance += 65;
+            if(unitTarget->HasAura(14523,0))
+               miss_chance += 10;
+            if(unitTarget->HasAura(14784,0))
+               miss_chance += 10;
+            if(unitTarget->HasAura(14785,0))
+               miss_chance += 10;
+
             // TODO possible need do it
-            success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
+            if (roll_chance_i(miss_chance))
+                fail_list.push_back(aur->GetId());
+            else
+                success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
 
             // Remove buff from list for prevent doubles
             for (std::vector<Aura *>::iterator j = steal_list.begin(); j != steal_list.end(); )
