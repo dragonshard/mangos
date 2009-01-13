@@ -6374,9 +6374,7 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
                miss_chance += 10;
 
             // TODO possible need do it
-            if (roll_chance_i(miss_chance))
-                fail_list.push_back(aur->GetId());
-            else
+            if (!roll_chance_i(miss_chance))
                 success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));
 
             // Remove buff from list for prevent doubles
