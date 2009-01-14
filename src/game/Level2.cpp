@@ -1040,8 +1040,8 @@ bool ChatHandler::HandleTurnObjectCommand(const char* args)
     map->Add(obj);
 
     obj->SaveToDB();
-    obj->Refresh();
-
+	obj->LoadFromDB( lowguid, obj->GetMap());
+    
     PSendSysMessage(LANG_COMMAND_TURNOBJMESSAGE, obj->GetGUIDLow(), o);
 
     return true;
@@ -1162,11 +1162,11 @@ bool ChatHandler::HandleMoveObjectCommand(const char* args)
         Map* map = obj->GetMap();
         map->Remove(obj,false);
 
-        obj->Relocate(chr->GetPositionX(), chr->GetPositionY(), chr->GetPositionZ(), obj->GetOrientation());
+        obj->Relocate(chr->GetPositionX(), chr->GetPositionY(), chr->GetPositionZ(), chr->GetOrientation());
         obj->SetFloatValue(GAMEOBJECT_POS_X, chr->GetPositionX());
         obj->SetFloatValue(GAMEOBJECT_POS_Y, chr->GetPositionY());
         obj->SetFloatValue(GAMEOBJECT_POS_Z, chr->GetPositionZ());
-
+		obj->SetFloatValue(GAMEOBJECT_FACING, chr->GetOrientation()); 
         map->Add(obj);
     }
     else
@@ -1192,13 +1192,12 @@ bool ChatHandler::HandleMoveObjectCommand(const char* args)
         obj->SetFloatValue(GAMEOBJECT_POS_X, x);
         obj->SetFloatValue(GAMEOBJECT_POS_Y, y);
         obj->SetFloatValue(GAMEOBJECT_POS_Z, z);
-
         map->Add(obj);
     }
 
     obj->SaveToDB();
-    obj->Refresh();
-
+	obj->LoadFromDB( lowguid, obj->GetMap());
+    
     PSendSysMessage(LANG_COMMAND_MOVEOBJMESSAGE, obj->GetGUIDLow());
 
     return true;
