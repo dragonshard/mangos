@@ -1040,7 +1040,7 @@ bool ChatHandler::HandleTurnObjectCommand(const char* args)
     map->Add(obj);
 
     obj->SaveToDB();
-	obj->LoadFromDB( lowguid, obj->GetMap());
+    obj->LoadFromDB( lowguid, obj->GetMap());
     
     PSendSysMessage(LANG_COMMAND_TURNOBJMESSAGE, obj->GetGUIDLow(), o);
 
@@ -1166,7 +1166,7 @@ bool ChatHandler::HandleMoveObjectCommand(const char* args)
         obj->SetFloatValue(GAMEOBJECT_POS_X, chr->GetPositionX());
         obj->SetFloatValue(GAMEOBJECT_POS_Y, chr->GetPositionY());
         obj->SetFloatValue(GAMEOBJECT_POS_Z, chr->GetPositionZ());
-		obj->SetFloatValue(GAMEOBJECT_FACING, chr->GetOrientation()); 
+        obj->SetFloatValue(GAMEOBJECT_FACING, chr->GetOrientation()); 
         map->Add(obj);
     }
     else
@@ -1196,7 +1196,7 @@ bool ChatHandler::HandleMoveObjectCommand(const char* args)
     }
 
     obj->SaveToDB();
-	obj->LoadFromDB( lowguid, obj->GetMap());
+    obj->LoadFromDB( lowguid, obj->GetMap());
     
     PSendSysMessage(LANG_COMMAND_MOVEOBJMESSAGE, obj->GetGUIDLow());
 
@@ -1704,7 +1704,7 @@ bool ChatHandler::HandleKickPlayerCommand(const char *args)
         }
 
         // check online security
-	Player* player = ObjectAccessor::Instance().FindPlayerByName(name.c_str());
+        Player* player = ObjectAccessor::Instance().FindPlayerByName(name.c_str());
         if (player && HasLowerSecurity(player, 0))
             return false;
 
