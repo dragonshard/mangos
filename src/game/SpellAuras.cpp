@@ -3505,10 +3505,6 @@ void Aura::HandleModStealth(bool apply, bool Real)
                 m_target->SetVisibility(VISIBILITY_GROUP_NO_DETECT);
                 m_target->SetVisibility(VISIBILITY_GROUP_STEALTH);
             }
-
-            // for RACE_NIGHTELF stealth
-            if(m_target->GetTypeId()==TYPEID_PLAYER && GetId()==20580)
-                m_target->CastSpell(m_target, 21009, true, NULL, this);
         }
     }
     else
@@ -3516,10 +3512,6 @@ void Aura::HandleModStealth(bool apply, bool Real)
         // only at real aura remove
         if(Real)
         {
-            // for RACE_NIGHTELF stealth
-            if(m_target->GetTypeId()==TYPEID_PLAYER && GetId()==20580)
-                m_target->RemoveAurasDueToSpell(21009);
-
             // if last SPELL_AURA_MOD_STEALTH and no GM invisibility
             if(!m_target->HasAuraType(SPELL_AURA_MOD_STEALTH) && m_target->GetVisibility()!=VISIBILITY_OFF)
             {
