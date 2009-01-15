@@ -46,6 +46,7 @@ class Pet;
 class PlayerMenu;
 class Transport;
 class UpdateMask;
+class SpellCastTargets;
 class PlayerSocial;
 class AchievementMgr;
 class Vehicle;
@@ -60,6 +61,17 @@ enum SpellModType
 {
     SPELLMOD_FLAT         = 107,                            // SPELL_AURA_ADD_FLAT_MODIFIER
     SPELLMOD_PCT          = 108                             // SPELL_AURA_ADD_PCT_MODIFIER
+};
+
+// 2^n values, Player::m_isunderwater is a bitmask. These are mangos internal values, they are never send to any client
+enum PlayerUnderwaterState
+{
+    UNDERWATER_NONE                     = 0x00,
+    UNDERWATER_INWATER                  = 0x01,             // terrain type is water and player is afflicted by it
+    UNDERWATER_WATER_TRIGGER            = 0x02,             // m_breathTimer has been initialized
+    UNDERWATER_WATER_BREATHB            = 0x04,             // breathbar has been send to client
+    UNDERWATER_WATER_BREATHB_RETRACTING = 0x10,             // breathbar is currently refilling - the player is above water level
+    UNDERWATER_INLAVA                   = 0x80              // terrain type is lava and player is afflicted by it
 };
 
 enum PlayerSpellState
@@ -1860,6 +1872,7 @@ class MANGOS_DLL_SPEC Player : public Unit
         void ApplyEquipSpell(SpellEntry const* spellInfo, Item* item, bool apply, bool form_change = false);
         void UpdateEquipSpellsAtFormChange();
         void CastItemCombatSpell(Item *item,Unit* Target, WeaponAttackType attType);
+        void CastItemUseSpell(Item *item,SpellCastTargets const& targets,uint8 cast_count, uint32 glyphIndex);
 
         void SendInitWorldStates();
         void SendUpdateWorldState(uint32 Field, uint32 Value);
