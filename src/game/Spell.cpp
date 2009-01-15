@@ -1091,32 +1091,26 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
                 return;
             }
 
-            // exclude Arcane Missiles Dummy Aura aura for now (attack on hit)
-            // TODO: find way to not need this?
-            if(!(m_spellInfo->SpellFamilyName == SPELLFAMILY_MAGE &&
-                m_spellInfo->SpellFamilyFlags & 0x800LL))
+            /* FIXMEPLZ - THIS IS AN HACK */
+            if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375)
+               unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+
+            if( !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) )
             {
-                /* FIXMEPLZ - THIS IS AN HACK */
-                if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375) 
-                   unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+                if(!unit->IsStandState() && !unit->hasUnitState(UNIT_STAT_STUNNED))
+                    unit->SetStandState(PLAYER_STATE_NONE);
 
-                if( !(m_spellInfo->AttributesEx3 & SPELL_ATTR_EX3_NO_INITIAL_AGGRO) )
+                if(!unit->isInCombat() && unit->GetTypeId() != TYPEID_PLAYER && ((Creature*)unit)->AI())
+                    ((Creature*)unit)->AI()->AttackStart(m_caster);
+
+                unit->SetInCombatWith(m_caster);
+                m_caster->SetInCombatWith(unit);
+
+                if(Player *attackedPlayer = unit->GetCharmerOrOwnerPlayerOrPlayerItself())
                 {
-                    if(!unit->IsStandState() && !unit->hasUnitState(UNIT_STAT_STUNNED))
-                        unit->SetStandState(PLAYER_STATE_NONE);
-
-                    if(!unit->isInCombat() && unit->GetTypeId() != TYPEID_PLAYER && ((Creature*)unit)->AI())
-                        ((Creature*)unit)->AI()->AttackStart(m_caster);
-
-                    unit->SetInCombatWith(m_caster);
-                    m_caster->SetInCombatWith(unit);
-
-                    if(Player *attackedPlayer = unit->GetCharmerOrOwnerPlayerOrPlayerItself())
-                    {
-                        m_caster->SetContestedPvP(attackedPlayer);
-                    }
-                    unit->AddThreat(m_caster, 0.0f);
+                    m_caster->SetContestedPvP(attackedPlayer);
                 }
+                unit->AddThreat(m_caster, 0.0f);
             }
         }
         else
@@ -1131,7 +1125,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             // assisting case, healing and resurrection
             if(unit->hasUnitState(UNIT_STAT_ATTACK_PLAYER))
                 m_caster->SetContestedPvP();
-            if( unit->isInCombat() && !(m_spellInfo->AttributesEx3 & SPELL_ATTR_EX3_NO_INITIAL_AGGRO) )
+            if( unit->isInCombat() && !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) )
             {
                 m_caster->SetInCombatState(unit->GetCombatTimer() > 0);
                 unit->getHostilRefManager().threatAssist(m_caster, 0.0f);
