@@ -422,6 +422,11 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this)
 
     for (int i = 0; i < MAX_COMBAT_RATING; i++)
         m_baseRatingValue[i] = 0;
+    
+    m_baseSpellDamage = 0;
+    m_baseSpellHealing = 0;
+    m_baseFeralAP = 0;
+    m_baseManaRegen = 0;
 
     // Honor System
     m_lastHonorUpdateTime = time(NULL);
@@ -5317,7 +5322,7 @@ void Player::CheckExploreSystem()
 
     if(offset >= 128)
     {
-        sLog.outError("ERROR: Wrong area flag %u in map data for (X: %f Y: %f) point to field PLAYER_EXPLORED_ZONES_1 + %u ( %u must be < 64 ).",areaFlag,GetPositionX(),GetPositionY(),offset,offset);
+        sLog.outError("ERROR: Wrong area flag %u in map data for (X: %f Y: %f) point to field PLAYER_EXPLORED_ZONES_1 + %u ( %u must be < 128 ).",areaFlag,GetPositionX(),GetPositionY(),offset,offset);
         return;
     }
 
@@ -6615,8 +6620,30 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto, uint8 slot, bool appl
             case ITEM_MOD_EXPERTISE_RATING:
                 ApplyRatingMod(CR_EXPERTISE, int32(val), apply);
                 break;
+            case ITEM_MOD_ATTACK_POWER:
+                HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, float(val), apply);
+                break;
+            case ITEM_MOD_RANGED_ATTACK_POWER:
+                HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, float(val), apply);
+                break;
+            case ITEM_MOD_FERAL_ATTACK_POWER:
+                ApplyFeralAPBonus(int32(val), apply);
+                break;
+            case ITEM_MOD_SPELL_HEALING_DONE:
+                ApplySpellHealingBonus(int32(val), apply);
+                break;
+            case ITEM_MOD_SPELL_DAMAGE_DONE:
+                ApplySpellDamageBonus(int32(val), apply);
+                break;
+            case ITEM_MOD_MANA_REGENERATION:
+                ApplyManaRegenBonus(int32(val), apply);
+                break;
             case ITEM_MOD_ARMOR_PENETRATION_RATING:
                 ApplyRatingMod(CR_ARMOR_PENETRATION, int32(val), apply);
+                break;
+            case ITEM_MOD_SPELL_POWER:
+                ApplySpellHealingBonus(int32(val), apply);
+                ApplySpellDamageBonus(int32(val), apply);
                 break;
         }
     }
@@ -11938,9 +11965,38 @@ void Player::ApplyEnchantment(Item *item,EnchantmentSlot slot,bool apply, bool a
                         ((Player*)this)->ApplyRatingMod(CR_EXPERTISE, enchant_amount, apply);
                         sLog.outDebug("+ %u EXPERTISE", enchant_amount);
                         break;
+                    case ITEM_MOD_ATTACK_POWER:
+                        HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, float(enchant_amount), apply);
+                        sLog.outDebug("+ %u ATTACK_POWER", enchant_amount);
+                        break;
+                    case ITEM_MOD_RANGED_ATTACK_POWER:
+                        HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, float(enchant_amount), apply);
+                        sLog.outDebug("+ %u RANGED_ATTACK_POWER", enchant_amount);
+                        break;
+                    case ITEM_MOD_FERAL_ATTACK_POWER:
+                        ((Player*)this)->ApplyFeralAPBonus(enchant_amount, apply);
+                        sLog.outDebug("+ %u FERAL_ATTACK_POWER", enchant_amount);
+                        break;
+                    case ITEM_MOD_SPELL_HEALING_DONE:
+                        ((Player*)this)->ApplySpellHealingBonus(enchant_amount, apply);
+                         sLog.outDebug("+ %u SPELL_HEALING_DONE", enchant_amount);
+                        break;
+                    case ITEM_MOD_SPELL_DAMAGE_DONE:
+                        ((Player*)this)->ApplySpellDamageBonus(enchant_amount, apply);
+                        sLog.outDebug("+ %u SPELL_DAMAGE_DONE", enchant_amount);
+                        break;
+                    case ITEM_MOD_MANA_REGENERATION:
+                        ((Player*)this)->ApplyManaRegenBonus(enchant_amount, apply);
+                        sLog.outDebug("+ %u MANA_REGENERATION", enchant_amount);
+                        break;
                     case ITEM_MOD_ARMOR_PENETRATION_RATING:
                         ((Player*)this)->ApplyRatingMod(CR_ARMOR_PENETRATION, enchant_amount, apply);
                         sLog.outDebug("+ %u ARMOR PENETRATION", enchant_amount);
+                        break;
+                    case ITEM_MOD_SPELL_POWER:
+                        ((Player*)this)->ApplySpellHealingBonus(enchant_amount, apply);
+                        ((Player*)this)->ApplySpellDamageBonus(enchant_amount, apply);
+                        sLog.outDebug("+ %u SPELL_POWER", enchant_amount);
                         break;
                     default:
                         break;
