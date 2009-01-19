@@ -2243,7 +2243,7 @@ uint32 Unit::CalculateDamage (WeaponAttackType attType, bool normalized)
 
 float Unit::CalculateLevelPenalty(SpellEntry const* spellProto) const
 {
-    if(spellProto->spellLevel <= 0)
+    if(spellProto->spellLevel <= 0 || spellProto->spellLevel == spellProto->maxLevel)
         return 1.0f;
 
     float LvlPenalty = 0.0f;
@@ -8058,10 +8058,6 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
             modOwner->ApplySpellMod(spellProto->Id,SPELLMOD_SPELL_BONUS_DAMAGE,SpellModSpellDamage);
 
         SpellModSpellDamage /= 100.0f;
-
-        /* FIXMEPLZ - THIS IS AN HACK */
-        if(spellProto->Id == 33110)
-            LvlPenalty = 1;
 
         ActualBenefit = (float)AdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * (SpellModSpellDamage * 1.88) * LvlPenalty;
     }
