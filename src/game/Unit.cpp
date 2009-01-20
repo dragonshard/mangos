@@ -6697,6 +6697,25 @@ bool Unit::HandleOverrideClassScriptAuraProc(Unit *pVictim, uint32 damage, Aura 
             CastCustomSpell(this, 47762, &basepoints0, 0, 0, true, 0, triggeredByAura);
             return true;
         }
+        if(procSpell->SpellFamilyName == SPELLFAMILY_PRIEST && (procSpell->SpellFamilyFlags & 0x1000000001800LL))
+        {
+            // Rapture
+            case 7556:                          // Rank 1
+            case 7555:                          // Rank 2
+            case 7554:                          // Rank 3
+            case 7553:                          // Rank 4
+            case 7552:                          // Rank 5
+            {
+                gainMana = ((getLevel() * (-0.2) + 18) / 1000000) * damage * GetMaxPower(POWER_MANA);
+                if(gainMana > (GetMaxPower(POWER_MANA) / 100) * (triggeredByAura->GetModifier()->m_amount / 10))
+                   gainMana = (GetMaxPower(POWER_MANA) / 100) * (triggeredByAura->GetModifier()->m_amount / 10);
+            }
+        }
+        if(gainMana)
+        {
+            CastCustomSpell(this, 47755, &gainMana, NULL, NULL, true, NULL, triggeredByAura, GetGUID());
+            return true;
+        }
     }
 
     // not processed
