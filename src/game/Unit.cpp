@@ -11263,11 +11263,15 @@ bool Unit::HandleMeandingAuraProc( Aura* triggeredByAura )
     // aura can be deleted at casts
     SpellEntry const* spellProto = triggeredByAura->GetSpellProto();
     uint32 effIdx = triggeredByAura->GetEffIndex();
-    int32 heal = triggeredByAura->GetModifier()->m_amount;
     uint64 caster_guid = triggeredByAura->GetCasterGUID();
 
     // jumps
     int32 jumps = triggeredByAura->GetAuraCharges()-1;
+
+    // healing bonus
+    int32 baseheal = triggeredByAura->GetModifier()->m_amount;
+    int32 basehb = triggeredByAura->GetCaster()->SpellHealingBonus(spellProto, 0, NODAMAGE, this);
+    int32 heal = basehb * (5 - jumps) + baseheal;
 
     // current aura expire
     triggeredByAura->SetAuraCharges(1);             // will removed at next charges decrease
@@ -11297,7 +11301,7 @@ bool Unit::HandleMeandingAuraProc( Aura* triggeredByAura )
                 mod->mask2 = spellProto->SpellFamilyFlags2;
 
                 caster->AddSpellMod(mod, true);
-                CastCustomSpell(target,spellProto->Id,&heal,NULL,NULL,true,NULL,triggeredByAura,caster->GetGUID());
+                CastCustomSpell(target,spellProto->Id,&baseheal,NULL,NULL,true,NULL,triggeredByAura,caster->GetGUID());
                 caster->AddSpellMod(mod, false);
             }
         }
