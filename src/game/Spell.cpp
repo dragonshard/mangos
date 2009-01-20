@@ -5396,6 +5396,9 @@ bool Spell::CheckTarget( Unit* target, uint32 eff )
         case SPELL_EFFECT_DUMMY:
             if(m_spellInfo->Id!=20577)                      // Cannibalize
                 break;
+        case SPELL_EFFECT_APPLY_AURA:
+            if(m_spellInfo->Id==43383)                      // Spirit Bolts
+                break;
             //fall through
         case SPELL_EFFECT_RESURRECT_NEW:
             // player far away, maybe his corpse near?
