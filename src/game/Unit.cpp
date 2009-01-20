@@ -2243,18 +2243,24 @@ uint32 Unit::CalculateDamage (WeaponAttackType attType, bool normalized)
 
 float Unit::CalculateLevelPenalty(SpellEntry const* spellProto) const
 {
-    if(spellProto->spellLevel <= 0 || spellProto->spellLevel == spellProto->maxLevel)
+    if(spellProto->spellLevel <= 0)
         return 1.0f;
-
+	
     float LvlPenalty = 0.0f;
 
-    if(spellProto->spellLevel < 20)
-        LvlPenalty = 20.0f - spellProto->spellLevel * 3.75f;
-    float LvlFactor = (float(spellProto->spellLevel) + 6.0f) / float(getLevel());
+    if(spellProto->baseLevel < 20)
+       LvlPenalty = 1.0f - (20.0f - spellProto->baseLevel) * 0.0375f;
+    else
+       LvlPenalty = 1.0f;
+
+    if(LvlPenalty < 0)
+       LvlPenalty = 0;
+
+    float LvlFactor = (float(spellProto->maxLevel) + 6.0f) / float(getLevel());
     if(LvlFactor > 1.0f)
         LvlFactor = 1.0f;
 
-    return (100.0f - LvlPenalty) * LvlFactor / 100.0f;
+    return LvlPenalty * LvlFactor;
 }
 
 void Unit::SendAttackStart(Unit* pVictim)
