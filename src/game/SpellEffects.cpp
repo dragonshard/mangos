@@ -4161,6 +4161,7 @@ void Spell::EffectSummonPet(uint32 i)
 
     NewSummon->InitStatsForLevel(petlevel);
     NewSummon->InitPetCreateSpells();
+    NewSummon->InitTalentForLevel();
 
     if(NewSummon->getPetType()==SUMMON_PET)
     {
