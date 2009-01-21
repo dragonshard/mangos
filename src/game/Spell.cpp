@@ -5397,7 +5397,10 @@ bool Spell::CheckTarget( Unit* target, uint32 eff )
             if(m_spellInfo->Id!=20577)                      // Cannibalize
                 break;
         case SPELL_EFFECT_APPLY_AURA:
-            if(m_spellInfo->Id==43383)                      // Spirit Bolts
+            if(m_spellInfo->Id==43383)                      // Spirit Bolts Trigger
+                break;
+        case SPELL_EFFECT_SCHOOL_DAMAGE:
+            if(m_spellInfo->Id==43382)                      // Spirit Bolts
                 break;
             //fall through
         case SPELL_EFFECT_RESURRECT_NEW:
