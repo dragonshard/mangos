@@ -1251,9 +1251,9 @@ void BattleGroundMgr::BuildPvpLogDataPacket(WorldPacket *data, BattleGround *bg)
         // it seems this must be according to BG_WINNER_A/H and _NOT_ BG_TEAM_A/H
         for(int i = 1; i >= 0; --i)
         {
-            *data << uint32(3000-bg->m_ArenaTeamRatingChanges[i]);                      // rating change: showed value - 3000
-            *data << uint32(3999);  // huge thanks for TOM_RUS for this!
-            *data << uint32(0); //at least 3 uint32 are sent, but i don't know in which order and which values they get
+            *data << uint32(bg->m_ArenaTeamRatingChanges[i]);  // rating change: showed value - 3000
+            *data << uint32(3999);                             // huge thanks for TOM_RUS for this!
+            *data << uint32(0);                                // unknown - new in 3.0.3
             sLog.outDebug("rating change: %d", bg->m_ArenaTeamRatingChanges[i]);
         }
         for(int i = 1; i >= 0; --i)

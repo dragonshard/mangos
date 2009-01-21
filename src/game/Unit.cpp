@@ -2245,7 +2245,7 @@ float Unit::CalculateLevelPenalty(SpellEntry const* spellProto) const
 {
     if(spellProto->spellLevel <= 0)
         return 1.0f;
-	
+
     float LvlPenalty = 0.0f;
 
     if(spellProto->baseLevel < 20)
