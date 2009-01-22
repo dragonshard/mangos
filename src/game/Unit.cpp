@@ -1711,40 +1711,40 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
             }
             case SPELLFAMILY_PRIEST:
             {
+                if (pVictim == this)
+                    break;
+                Unit* caster = (*i)->GetCaster();
+                if (!caster)
+                    break;
+
+                // Rapture
+                int32 gainMana = 0;
+                AuraList const& lOverRideCS = caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
+                for(AuraList::const_iterator k = lOverRideCS.begin(); k != lOverRideCS.end(); ++k)
+                {
+                    switch((*k)->GetModifier()->m_miscvalue)
+                    {
+                            case 7556:                          // Rank 1
+                            case 7555:                          // Rank 2
+                            case 7554:                          // Rank 3
+                            case 7553:                          // Rank 4
+                            case 7552:                          // Rank 5
+                            {
+                                 gainMana =  ((caster->getLevel() * (-0.2) + 18) / 1000000) * damage * caster->GetMaxPower(POWER_MANA);
+                                 if(gainMana > (caster->GetMaxPower(POWER_MANA) / 100) * ((*k)->GetModifier()->m_amount / 10))
+                                    gainMana = caster->GetMaxPower(POWER_MANA) / 100 * ((*k)->GetModifier()->m_amount / 10);
+                            } break;
+                            default: break;
+                    }
+                    if(gainMana)
+                    {
+                       caster->CastCustomSpell(caster, 47755, &gainMana, NULL, NULL, true, NULL, *k, caster->GetGUID());
+                       break;
+                    }
+                }
+
                 if (spellProto->SpellFamilyFlags == 0x1)
                 {
-                    if (pVictim == this)
-                        break;
-                    Unit* caster = (*i)->GetCaster();
-                    if (!caster)
-                        break;
-
-                    // Rapture
-                    int32 gainMana = 0;
-                    AuraList const& lOverRideCS = caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                    for(AuraList::const_iterator k = lOverRideCS.begin(); k != lOverRideCS.end(); ++k)
-                    {
-                        switch((*k)->GetModifier()->m_miscvalue)
-                        {
-                                case 7556:                          // Rank 1
-                                case 7555:                          // Rank 2
-                                case 7554:                          // Rank 3
-                                case 7553:                          // Rank 4
-                                case 7552:                          // Rank 5
-                                {
-                                     gainMana =  ((caster->getLevel() * (-0.2) + 18) / 1000000) * damage * caster->GetMaxPower(POWER_MANA);
-                                     if(gainMana > (caster->GetMaxPower(POWER_MANA) / 100) * ((*k)->GetModifier()->m_amount / 10))
-                                        gainMana = caster->GetMaxPower(POWER_MANA) / 100 * ((*k)->GetModifier()->m_amount / 10);
-                                } break;
-                                default: break;
-                        }
-                        if(gainMana)
-                        {
-                           caster->CastCustomSpell(caster, 47755, &gainMana, NULL, NULL, true, NULL, *k, caster->GetGUID());
-                           break;
-                        }
-                    }
-
                     // Reflective Shield
                     int32 reflectDamage = 0;
                     AuraList const& vOverRideCS = caster->GetAurasByType(SPELL_AURA_DUMMY);
