@@ -777,7 +777,6 @@ void Spell::AddUnitTarget(Unit* pVictim, uint32 effIndex)
         {
             if (!immuned)
                 ihit->effectMask |= 1<<effIndex;            // Add only effect mask if not immuned
-            return;
         }
     }
 
@@ -790,7 +789,17 @@ void Spell::AddUnitTarget(Unit* pVictim, uint32 effIndex)
     target.processed  = false;                              // Effects not apply on target
 
     // Calculate hit result
-    target.missCondition = m_caster->SpellHitResult(pVictim, m_spellInfo, m_canReflect);
+    if(m_spellInfo->Effect[effIndex] != SPELL_EFFECT_TRIGGER_SPELL && m_spellInfo->Effect[effIndex] != SPELL_EFFECT_DISPEL_MECHANIC) //Dispel Mechaninc and Triggers should ignore generic immunity
+       target.missCondition = m_caster->SpellHitResult(pVictim, m_spellInfo, m_canReflect);
+    else
+    {
+       if(immuned)
+          target.missCondition = SPELL_MISS_IMMUNE;
+       else
+       {
+          target.missCondition = SPELL_MISS_NONE;
+       }
+    }
 
     // Spell have speed - need calculate incoming time
     if (m_spellInfo->speed > 0.0f)
