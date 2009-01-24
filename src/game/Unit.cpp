@@ -8304,9 +8304,6 @@ bool Unit::IsImmunedToSpell(SpellEntry const* spellInfo)
 
 bool Unit::IsImmunedToSpellEffect(SpellEntry const* spellInfo, uint32 index) const
 {
-    if(spellInfo->Effect[index] == SPELL_EFFECT_TRIGGER_SPELL)
-       return false;
-
     //If m_immuneToEffect type contain this effect type, IMMUNE effect.
     uint32 effect = spellInfo->Effect[index];
     SpellImmuneList const& effectList = m_spellImmune[IMMUNITY_EFFECT];
