@@ -273,7 +273,7 @@ bool IsPositiveTarget(uint32 targetA, uint32 targetB)
         case TARGET_CURRENT_ENEMY_COORDINATES:
         case TARGET_SINGLE_ENEMY:
             return false;
-        case TARGET_ALL_AROUND_CASTER:
+        case TARGET_CASTER_COORDINATES:
             return (targetB == TARGET_ALL_PARTY || targetB == TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER);
         default:
             break;
@@ -1667,8 +1667,10 @@ void SpellMgr::LoadSpellLearnSkills()
 
     // search auto-learned skills and add its to map also for use in unlearn spells/talents
     uint32 dbc_count = 0;
+    barGoLink bar( sSpellStore.GetNumRows() );
     for(uint32 spell = 0; spell < sSpellStore.GetNumRows(); ++spell)
     {
+        bar.step();
         SpellEntry const* entry = sSpellStore.LookupEntry(spell);
 
         if(!entry)
@@ -2358,10 +2360,12 @@ void SpellMgr::LoadSkillLineAbilityMap()
 {
     mSkillLineAbilityMap.clear();
 
+    barGoLink bar( sSkillLineAbilityStore.GetNumRows() );
     uint32 count = 0;
 
     for (uint32 i = 0; i < sSkillLineAbilityStore.GetNumRows(); i++)
     {
+        bar.step();
         SkillLineAbilityEntry const *SkillInfo = sSkillLineAbilityStore.LookupEntry(i);
         if(!SkillInfo)
             continue;
@@ -2371,7 +2375,7 @@ void SpellMgr::LoadSkillLineAbilityMap()
     }
 
     sLog.outString();
-    sLog.outString(">> Loaded %u SkillLineAbility MultiMap", count);
+    sLog.outString(">> Loaded %u SkillLineAbility MultiMap Data", count);
 }
 
 DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto, bool triggered)

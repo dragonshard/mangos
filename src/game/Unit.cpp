@@ -5340,7 +5340,9 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             // Rapid Recuperation
             if ( dummySpell->SpellIconID == 3560 )
             {
-                // mane regen from Rapid Killing
+                // This effect only from Rapid Killing (mana regen)
+                if (!(procSpell->SpellFamilyFlags & 0x0100000000000000LL))
+                    return false;
                 triggered_spell_id = 56654;
                 target = this;
                 break;
@@ -5364,6 +5366,22 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             {
                 triggered_spell_id = 58597;
                 target = this;
+                break;
+            }
+            // Righteous Vengeance
+            if (dummySpell->SpellIconID == 3025)
+            {
+                // 4 damage tick
+                basepoints0 = triggeredByAura->GetModifier()->m_amount*damage/400;
+                triggered_spell_id = 61840;
+                break;
+            }
+            // Sheath of Light
+            if (dummySpell->SpellIconID == 3030)
+            {
+                // 4 healing tick
+                basepoints0 = triggeredByAura->GetModifier()->m_amount*damage/400;
+                triggered_spell_id = 54203;
                 break;
             }
             switch(dummySpell->Id)
@@ -6542,6 +6560,15 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
         {
             // reduce you below $s1% health
             if (GetHealth() - damage > GetMaxHealth() * triggerAmount / 100)
+                return false;
+            break;
+        }
+        // Rapid Recuperation
+        case 53228:
+        case 53232:
+        {
+            // This effect only from Rapid Fire (ability cast)
+            if (!(procSpell->SpellFamilyFlags & 0x0000000000000020LL))
                 return false;
             break;
         }
@@ -9396,6 +9423,8 @@ bool Unit::SelectHostilTarget()
 
     assert(GetTypeId()== TYPEID_UNIT);
 
+    if (!this->isAlive())
+        return false;
     //This function only useful once AI has been initialized
     if (!((Creature*)this)->AI())
         return false;
