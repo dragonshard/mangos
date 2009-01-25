@@ -4969,6 +4969,15 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                     }
                     return;
                 }
+                // Divine Hymn
+                case 47951:
+                {
+                    if(!unitTarget || !unitTarget->isAlive())
+                       return;
+                    unitTarget->CastSpell(unitTarget,47953,true);
+                    unitTarget->CastSpell(unitTarget,59600,true);
+                    return;
+                }
                 default:
                     break;
             }
@@ -5067,18 +5076,6 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                 if (spellId2)
                     m_caster->CastSpell(unitTarget, spellId2, true);
                 return;
-            }
-            break;
-        }
-        case SPELLFAMILY_PRIEST:
-        {
-            // Divine Hymn
-            if (m_spellInfo->Id == 47951)
-            {
-                if(!unitTarget || !unitTarget->isAlive())
-                    return;
-                unitTarget->CastSpell(unitTarget,47953,true);
-                unitTarget->CastSpell(unitTarget,59600,true);
             }
             break;
         }
