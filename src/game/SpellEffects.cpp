@@ -1288,6 +1288,12 @@ void Spell::EffectDummy(uint32 i)
                     m_caster->CastCustomSpell(m_caster, 12976, &healthModSpellBasePoints0, NULL, NULL, true, NULL);
                     return;
                 }
+                // Bloodthirst
+                case 23881:
+                {
+                    m_caster->CastCustomSpell(unitTarget, 23885, &damage, NULL, NULL, true, NULL);
+                    return;
+                }
             }
             break;
         case SPELLFAMILY_WARLOCK:
@@ -1398,15 +1404,6 @@ void Spell::EffectDummy(uint32 i)
             }
             break;
         case SPELLFAMILY_DRUID:
-            switch(m_spellInfo->Id )
-            {
-                case 5420:                                  // Tree of Life passive
-                {
-                    // Tree of Life area effect
-                    m_caster->CastSpell(m_caster,34123,true,NULL,NULL,NULL);
-                    return;
-                }
-            }
             break;
         case SPELLFAMILY_ROGUE:
             switch(m_spellInfo->Id )
@@ -3344,7 +3341,7 @@ void Spell::EffectLearnSpell(uint32 i)
     Player *player = (Player*)unitTarget;
 
     uint32 spellToLearn = ((m_spellInfo->Id==SPELL_ID_GENERIC_LEARN) || (m_spellInfo->Id==SPELL_ID_GENERIC_LEARN_PET)) ? damage : m_spellInfo->EffectTriggerSpell[i];
-    player->learnSpell(spellToLearn);
+    player->learnSpell(spellToLearn,false);
 
     sLog.outDebug( "Spell: Player %u have learned spell %u from NpcGUID=%u", player->GetGUIDLow(), spellToLearn, m_caster->GetGUIDLow() );
 }
@@ -4874,7 +4871,7 @@ void Spell::EffectScriptEffect(uint32 effIndex)
 
                     // learn random explicit discovery recipe (if any)
                     if(uint32 discoveredSpell = GetExplicitDiscoverySpell(m_spellInfo->Id, player))
-                        player->learnSpell(discoveredSpell);
+                        player->learnSpell(discoveredSpell,false);
                     return;
                 }
             }
