@@ -750,7 +750,7 @@ void Spell::prepareDataForTriggerSystem()
     }
     // Hunter traps spells (for Entrapment trigger)
     // Gives your Immolation Trap, Frost Trap, Explosive Trap, and Snake Trap ....
-    if (m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && m_spellInfo->SpellFamilyFlags & 0x0000200000000014LL)
+    if (m_spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && m_spellInfo->SpellFamilyFlags & 0x000020000000001CLL)
         m_procAttacker |= PROC_FLAG_ON_TRAP_ACTIVATION;
 }
 
@@ -1558,7 +1558,14 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,std::list<Unit*> &TagUnitMap)
         }break;
         case TARGET_CASTER_COORDINATES:
         {
-            m_targets.setDestination(m_targets.m_srcX, m_targets.m_srcY, m_targets.m_srcZ);
+            // Check original caster is GO - set its coordinates as dst cast
+            WorldObject *caster = NULL;
+            if (m_originalCasterGUID)
+                caster = ObjectAccessor::GetGameObject(*m_caster, m_originalCasterGUID);
+            if (!caster)
+                caster = m_caster;
+            // Set dest for targets
+            m_targets.setDestination(caster->GetPositionX(), caster->GetPositionY(), caster->GetPositionZ());
         }break;
         case TARGET_ALL_FRIENDLY_UNITS_AROUND_CASTER:
         {
@@ -2030,18 +2037,6 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
 
     m_spellState = SPELL_STATE_PREPARING;
 
-    if (!(m_targets.m_targetMask & TARGET_FLAG_SOURCE_LOCATION))
-    {
-        // Check original caster is GO - set its coordinates as src cast
-        WorldObject *caster = NULL;
-        if (m_originalCasterGUID)
-            caster = ObjectAccessor::GetGameObject(*m_caster, m_originalCasterGUID);
-        if (!caster)
-            caster = m_caster;
-        // Set cast source for targets
-        m_targets.setSource(caster->GetPositionX(), caster->GetPositionY(), caster->GetPositionZ());
-    }
-
     m_castPositionX = m_caster->GetPositionX();
     m_castPositionY = m_caster->GetPositionY();
     m_castPositionZ = m_caster->GetPositionZ();
@@ -2211,6 +2206,8 @@ void Spell::cast(bool skipCheck)
             if (m_spellInfo->Mechanic == MECHANIC_SHIELD &&
                 m_spellInfo->SpellIconID == 566)                       // Power Word: Shield
                 m_preCastSpell = 6788;                                 // Weakened Soul
+            if (m_spellInfo->Id == 47585)                              // Dispersion (transform)
+                m_preCastSpell = 60069;                                // Dispersion (mana regen)
             break;
         }
         case SPELLFAMILY_PALADIN:
@@ -5206,18 +5203,22 @@ void Spell::Delayed()
     if (m_spellState == SPELL_STATE_DELAYED)
         return;                                             // spell is active and can't be time-backed
 
+    if(isDelayableNoMore())                                 // Spells may only be delayed twice
+        return;
+
     // spells not loosing casting time ( slam, dynamites, bombs.. )
     if(!(m_spellInfo->InterruptFlags & SPELL_INTERRUPT_FLAG_DAMAGE))
         return;
 
-    //check resist chance
-    int32 resistChance = 100;                               //must be initialized to 100 for percent modifiers
-    ((Player*)m_caster)->ApplySpellMod(m_spellInfo->Id,SPELLMOD_NOT_LOSE_CASTING_TIME,resistChance, this);
-    resistChance += m_caster->GetTotalAuraModifier(SPELL_AURA_RESIST_PUSHBACK) - 100;
-    if (roll_chance_i(resistChance))
+    //check pushback reduce
+    int32 delaytime = 500;                                  // spellcasting delay is normally 500ms
+    int32 delayReduce = 100;                                // must be initialized to 100 for percent modifiers
+    ((Player*)m_caster)->ApplySpellMod(m_spellInfo->Id,SPELLMOD_NOT_LOSE_CASTING_TIME, delayReduce, this);
+    delayReduce += m_caster->GetTotalAuraModifier(SPELL_AURA_REDUCE_PUSHBACK) - 100;
+    if(delayReduce >= 100)
         return;
 
-    int32 delaytime = GetNextDelayAtDamageMsTime();
+    delaytime = delaytime * (100 - delayReduce) / 100;
 
     if(int32(m_timer) + delaytime > m_casttime)
     {
@@ -5241,14 +5242,18 @@ void Spell::DelayedChannel()
     if(!m_caster || m_caster->GetTypeId() != TYPEID_PLAYER || getState() != SPELL_STATE_CASTING)
         return;
 
-    //check resist chance
-    int32 resistChance = 100;                               //must be initialized to 100 for percent modifiers
-    ((Player*)m_caster)->ApplySpellMod(m_spellInfo->Id,SPELLMOD_NOT_LOSE_CASTING_TIME,resistChance, this);
-    resistChance += m_caster->GetTotalAuraModifier(SPELL_AURA_RESIST_PUSHBACK) - 100;
-    if (roll_chance_i(resistChance))
+    if(isDelayableNoMore())                                 // Spells may only be delayed twice
         return;
 
-    int32 delaytime = GetNextDelayAtDamageMsTime();
+    //check pushback reduce
+    int32 delaytime = GetSpellDuration(m_spellInfo) * 25 / 100; // channeling delay is normally 25% of its time per hit
+    int32 delayReduce = 100;                               // must be initialized to 100 for percent modifiers
+    ((Player*)m_caster)->ApplySpellMod(m_spellInfo->Id,SPELLMOD_NOT_LOSE_CASTING_TIME,delayReduce, this);
+    delayReduce += m_caster->GetTotalAuraModifier(SPELL_AURA_REDUCE_PUSHBACK) - 100;
+    if(delayReduce >= 100)
+        return;
+
+    delaytime = delaytime * (100 - delayReduce) / 100;
 
     if(int32(m_timer) < delaytime)
     {

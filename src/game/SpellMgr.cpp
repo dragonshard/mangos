@@ -888,7 +888,7 @@ bool SpellMgr::IsSpellProcEventCanTriggeredBy(SpellProcEventEntry const * spellP
         return false;
 
     // Always trigger for this
-    if (EventProcFlag & (PROC_FLAG_KILLED | PROC_FLAG_KILL))
+    if (EventProcFlag & (PROC_FLAG_KILLED | PROC_FLAG_KILL | PROC_FLAG_ON_TRAP_ACTIVATION))
         return true;
 
     if (spellProcEvent)     // Exist event data
@@ -1261,6 +1261,10 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 //StarShards and Shadow Word: Pain
                 if( (spellInfo_1->SpellFamilyFlags & 0x200000) && (spellInfo_2->SpellFamilyFlags & 0x8000) ||
                     (spellInfo_2->SpellFamilyFlags & 0x200000) && (spellInfo_1->SpellFamilyFlags & 0x8000) )
+                    return false;
+                // Dispersion
+                if( (spellInfo_1->Id == 47585 && spellInfo_2->Id == 60069) ||
+                    (spellInfo_2->Id == 47585 && spellInfo_1->Id == 60069) )
                     return false;
             }
             break;

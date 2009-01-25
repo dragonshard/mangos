@@ -199,7 +199,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS]=
     &Aura::HandleNoImmediateEffect,                         //146 SPELL_AURA_ALLOW_TAME_PET_TYPE
     &Aura::HandleNULL,                                      //147 SPELL_AURA_ADD_CREATURE_IMMUNITY
     &Aura::HandleAuraRetainComboPoints,                     //148 SPELL_AURA_RETAIN_COMBO_POINTS
-    &Aura::HandleNoImmediateEffect,                         //149 SPELL_AURA_RESIST_PUSHBACK
+    &Aura::HandleNoImmediateEffect,                         //149 SPELL_AURA_REDUCE_PUSHBACK
     &Aura::HandleShieldBlockValue,                          //150 SPELL_AURA_MOD_SHIELD_BLOCKVALUE_PCT
     &Aura::HandleAuraTrackStealthed,                        //151 SPELL_AURA_TRACK_STEALTHED
     &Aura::HandleNoImmediateEffect,                         //152 SPELL_AURA_MOD_DETECTED_RANGE implemented in Creature::GetAttackDistance
@@ -2253,6 +2253,28 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         }
         case SPELLFAMILY_MAGE:
         {
+            break;
+        }
+        case SPELLFAMILY_PRIEST:
+        {
+            // Pain and Suffering
+            if( m_spellProto->SpellIconID == 2874 && m_target->GetTypeId()==TYPEID_PLAYER )
+            {
+                if(apply)
+                {
+                    // Reduce backfire damage (dot damage) from Shadow Word: Death
+                    SpellModifier *mod = new SpellModifier;
+                    mod->op = SPELLMOD_DOT;
+                    mod->value = m_modifier.m_amount;
+                    mod->type = SPELLMOD_PCT;
+                    mod->spellId = GetId();
+                    mod->mask = 0x0000000200000000LL;
+                    mod->mask2= 0LL;
+                    m_spellmod = mod;
+                }
+                ((Player*)m_target)->AddSpellMod(m_spellmod, apply);
+                return;
+            }
             break;
         }
         case SPELLFAMILY_DRUID:
@@ -5814,59 +5836,6 @@ void Aura::PeriodicTick()
             }
 
             pdamage = pCaster->SpellDamageBonus(m_target,GetSpellProto(),pdamage,DOT);
-
-            // talent Soul Siphon add bonus to Drain Life spells
-            if( GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARLOCK && (GetSpellProto()->SpellFamilyFlags & 0x8) )
-            {
-                // find talent max bonus percentage
-                Unit::AuraList const& mClassScriptAuras = pCaster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                for(Unit::AuraList::const_iterator i = mClassScriptAuras.begin(); i != mClassScriptAuras.end(); ++i)
-                {
-                    if ((*i)->GetModifier()->m_miscvalue == 4992 || (*i)->GetModifier()->m_miscvalue == 4993)
-                    {
-                        if((*i)->GetEffIndex()!=1)
-                        {
-                            sLog.outError("Expected spell %u structure change, need code update",(*i)->GetId());
-                            break;
-                        }
-
-                        // effect 1 m_amount
-                        int32 maxPercent = (*i)->GetModifier()->m_amount;
-                        // effect 0 m_amount
-                        int32 stepPercent = pCaster->CalculateSpellDamage((*i)->GetSpellProto(),0,(*i)->GetSpellProto()->EffectBasePoints[0],pCaster);
-
-                        // count affliction effects and calc additional damage in percentage
-                        int32 modPercent = 0;
-                        Unit::AuraMap const& victimAuras = m_target->GetAuras();
-                        for (Unit::AuraMap::const_iterator itr = victimAuras.begin(); itr != victimAuras.end(); ++itr)
-                        {
-                            Aura* aura = itr->second;
-                            if (aura->IsPositive())continue;
-                            SpellEntry const* m_spell = aura->GetSpellProto();
-                            if (m_spell->SpellFamilyName != SPELLFAMILY_WARLOCK)
-                                continue;
-
-                            SkillLineAbilityMap::const_iterator lower = spellmgr.GetBeginSkillLineAbilityMap(m_spell->Id);
-                            SkillLineAbilityMap::const_iterator upper = spellmgr.GetEndSkillLineAbilityMap(m_spell->Id);
-
-                            for(SkillLineAbilityMap::const_iterator _spell_idx = lower; _spell_idx != upper; ++_spell_idx)
-                            {
-                                if(_spell_idx->second->skillId == SKILL_AFFLICTION)
-                                {
-                                    modPercent += stepPercent;
-                                    if (modPercent >= maxPercent)
-                                    {
-                                        modPercent = maxPercent;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        pdamage += (pdamage*modPercent/100);
-                        break;
-                    }
-                }
-            }
 
             //As of 2.2 resilience reduces damage from DoT ticks as much as the chance to not be critically hit
             // Reduce dot damage from resilience for players

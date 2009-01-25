@@ -2601,7 +2601,12 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         // not do anything if already known in expected state
         if(itr->second->state != PLAYERSPELL_REMOVED && itr->second->active == active &&
             itr->second->dependent == dependent && itr->second->disabled == disabled)
+        {
+            if(!IsInWorld() && !learning)                   // explicitly load from DB and then exist in it already and set correctly
+                itr->second->state = PLAYERSPELL_UNCHANGED;
+
             return false;
+        }
 
         // dependent spell known as not dependent, overwrite state
         if (itr->second->state != PLAYERSPELL_REMOVED && !itr->second->dependent && dependent)
@@ -2617,8 +2622,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         {
             itr->second->active = active;
 
-            // !IsInWorld() && !learning == explicitly load from DB and then exist in it already and set correctly
-            if(!IsInWorld() && !learning && !dependent_set)
+            if(!IsInWorld() && !learning && !dependent_set) // explicitly load from DB and then exist in it already and set correctly
                 itr->second->state = PLAYERSPELL_UNCHANGED;
             else if(itr->second->state != PLAYERSPELL_NEW)
                 itr->second->state = PLAYERSPELL_CHANGED;
@@ -2694,10 +2698,6 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
                     // skip learning spell and no rank spell case
                     uint32 rankSpellId = talentInfo->RankID[i];
                     if(!rankSpellId || rankSpellId==spell_id)
-                        continue;
-
-                    // skip unknown ranks
-                    if(!HasSpell(rankSpellId))
                         continue;
 
                     removeSpell(rankSpellId);
@@ -2943,7 +2943,7 @@ void Player::learnSpell(uint32 spell_id, bool dependent)
     GetSession()->SendPacket(&data);
 }
 
-void Player::removeSpell(uint32 spell_id, bool disabled)
+void Player::removeSpell(uint32 spell_id, bool disabled, bool update_action_bar_for_low_rank)
 {
     PlayerSpellMap::iterator itr = m_spells.find(spell_id);
     if (itr == m_spells.end())
@@ -3079,13 +3079,13 @@ void Player::removeSpell(uint32 spell_id, bool disabled)
     {
         SpellEntry const *spellInfo = sSpellStore.LookupEntry(spell_id);
 
-        // if talent then lesser rank also talen and need learn
+            // if talent then lesser rank also talent and need learn
         if(talentCosts)
             learnSpell (prev_id,false);
-        // if ranked non-stackable spell: need activate lesser rank and update dendence state
+            // if ranked non-stackable spell: need activate lesser rank and update dendence state
         else if(cur_active && !SpellMgr::canStackSpellRanks(spellInfo) && spellmgr.GetSpellRank(spellInfo->Id) != 0)
         {
-            // need manually update dependence state (learn spell ignore like attempts)
+                // need manually update dependence state (learn spell ignore like attempts)
             PlayerSpellMap::iterator prev_itr = m_spells.find(prev_id);
             if (prev_itr != m_spells.end())
             {
@@ -3101,12 +3101,15 @@ void Player::removeSpell(uint32 spell_id, bool disabled)
                 {
                     if(addSpell(prev_id,true,false,prev_itr->second->dependent,prev_itr->second->disabled))
                     {
-                        // downgrade spell ranks in spellbook and action bar
-                        WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
-                        data << uint16(spell_id);
-                        data << uint16(prev_id);
-                        GetSession()->SendPacket( &data );
-                        prev_activate = true;
+                        if(update_action_bar_for_low_rank)
+                        {
+                            // downgrade spell ranks in spellbook and action bar
+                            WorldPacket data(SMSG_SUPERCEDED_SPELL, (4));
+                            data << uint16(spell_id);
+                            data << uint16(prev_id);
+                            GetSession()->SendPacket( &data );
+                            prev_activate = true;
+                        }
                     }
                 }
             }
@@ -3340,18 +3343,6 @@ bool Player::resetTalents(bool no_cost)
     RemovePet(NULL,PET_SAVE_NOT_IN_SLOT, true);
 
     return true;
-}
-
-bool Player::_removeSpell(uint16 spell_id)
-{
-    PlayerSpellMap::iterator itr = m_spells.find(spell_id);
-    if (itr != m_spells.end())
-    {
-        delete itr->second;
-        m_spells.erase(itr);
-        return true;
-    }
-    return false;
 }
 
 Mail* Player::GetMail(uint32 id)
@@ -5107,8 +5098,11 @@ void Player::SetSkill(uint32 id, uint16 currVal, uint16 maxVal)
             SetUInt32Value(PLAYER_SKILL_VALUE_INDEX(i),0);
             SetUInt32Value(PLAYER_SKILL_BONUS_INDEX(i),0);
 
-            // remove spells that depend on this skill when removing the skill
-            learnSkillRewardedSpells(id, 0);
+            // remove all spells that related to this skill
+            for (uint32 j=0; j<sSkillLineAbilityStore.GetNumRows(); ++j)
+                if(SkillLineAbilityEntry const *pAbility = sSkillLineAbilityStore.LookupEntry(j))
+                    if (pAbility->skillId==id)
+                        removeSpell(spellmgr.GetFirstSpellInChain(pAbility->spellId));
         }
     }
     else if(currVal)                                        //add
@@ -8901,8 +8895,8 @@ uint8 Player::_CanStoreItem_InSpecificSlot( uint8 bag, uint8 slot, ItemPosCountV
             if(slot >= KEYRING_SLOT_START && slot < KEYRING_SLOT_START+GetMaxKeyringSize() && !(pProto->BagFamily & BAG_FAMILY_MASK_KEYS))
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
-            // vanitypet case (disabled until proper implement)
-            if(slot >= VANITYPET_SLOT_START && slot < VANITYPET_SLOT_END && !(false /*pProto->BagFamily & BAG_FAMILY_MASK_VANITY_PETS*/))
+            // vanitypet case (not use, vanity pets stored as spells)
+            if(slot >= VANITYPET_SLOT_START && slot < VANITYPET_SLOT_END)
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
             // currencytoken case (disabled until proper implement)
@@ -9245,28 +9239,9 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
             }
-            /* until proper implementation
-            else if(pProto->BagFamily & BAG_FAMILY_MASK_VANITY_PETS)
-            {
-                res = _CanStoreItem_InInventorySlots(VANITYPET_SLOT_START,VANITYPET_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
-                if(res!=EQUIP_ERR_OK)
-                {
-                    if(no_space_count)
-                        *no_space_count = count + no_similar_count;
-                    return res;
-                }
 
-                if(count==0)
-                {
-                    if(no_similar_count==0)
-                        return EQUIP_ERR_OK;
+            // Vanity pet case skipped as not used
 
-                    if(no_space_count)
-                        *no_space_count = count + no_similar_count;
-                    return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
-                }
-            }
-            */
             /* until proper implementation
             else if(pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
             {
@@ -9458,28 +9433,9 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
         }
-        /* until proper implementation
-        else if(false pProto->BagFamily & BAG_FAMILY_MASK_VANITY_PETS)
-        {
-            res = _CanStoreItem_InInventorySlots(VANITYPET_SLOT_START,VANITYPET_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
-            if(res!=EQUIP_ERR_OK)
-            {
-                if(no_space_count)
-                    *no_space_count = count + no_similar_count;
-                return res;
-            }
 
-            if(count==0)
-            {
-                if(no_similar_count==0)
-                    return EQUIP_ERR_OK;
+        // Vanity pet case skipped as not used
 
-                if(no_space_count)
-                    *no_space_count = count + no_similar_count;
-                return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
-            }
-        }
-        */
         /* until proper implementation
         else if(false pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
         {
@@ -9594,14 +9550,12 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
     int inv_slot_items[INVENTORY_SLOT_ITEM_END-INVENTORY_SLOT_ITEM_START];
     int inv_bags[INVENTORY_SLOT_BAG_END-INVENTORY_SLOT_BAG_START][MAX_BAG_SIZE];
     int inv_keys[KEYRING_SLOT_END-KEYRING_SLOT_START];
-    int inv_pets[VANITYPET_SLOT_END-VANITYPET_SLOT_START];
     int inv_tokens[CURRENCYTOKEN_SLOT_END-CURRENCYTOKEN_SLOT_START];
     int inv_quests[QUESTBAG_SLOT_END-QUESTBAG_SLOT_START];
 
     memset(inv_slot_items,0,sizeof(int)*(INVENTORY_SLOT_ITEM_END-INVENTORY_SLOT_ITEM_START));
     memset(inv_bags,0,sizeof(int)*(INVENTORY_SLOT_BAG_END-INVENTORY_SLOT_BAG_START)*MAX_BAG_SIZE);
     memset(inv_keys,0,sizeof(int)*(KEYRING_SLOT_END-KEYRING_SLOT_START));
-    memset(inv_pets,0,sizeof(int)*(VANITYPET_SLOT_END-VANITYPET_SLOT_START));
     memset(inv_tokens,0,sizeof(int)*(CURRENCYTOKEN_SLOT_END-CURRENCYTOKEN_SLOT_START));
     memset(inv_quests,0,sizeof(int)*(QUESTBAG_SLOT_END-QUESTBAG_SLOT_START));
 
@@ -9625,15 +9579,7 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
         }
     }
 
-    for(int i = VANITYPET_SLOT_START; i < VANITYPET_SLOT_END; i++)
-    {
-        pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-
-        if (pItem2 && !pItem2->IsInTrade())
-        {
-            inv_pets[i-VANITYPET_SLOT_START] = pItem2->GetCount();
-        }
-    }
+    // Vanity pet case skipped as not used
 
     for(int i = CURRENCYTOKEN_SLOT_START; i < CURRENCYTOKEN_SLOT_END; i++)
     {
@@ -9714,17 +9660,7 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
             }
             if (b_found) continue;
 
-            for(int t = VANITYPET_SLOT_START; t < VANITYPET_SLOT_END; t++)
-            {
-                pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, t );
-                if( pItem2 && pItem2->GetEntry() == pItem->GetEntry() && inv_pets[t-VANITYPET_SLOT_START] + pItem->GetCount() <= pProto->GetMaxStackSize())
-                {
-                    inv_pets[t-VANITYPET_SLOT_START] += pItem->GetCount();
-                    b_found = true;
-                    break;
-                }
-            }
-            if (b_found) continue;
+            // Vanity pet case skipped as not used
 
             for(int t = CURRENCYTOKEN_SLOT_START; t < CURRENCYTOKEN_SLOT_END; t++)
             {
@@ -9802,22 +9738,8 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
 
             if (b_found) continue;
 
-            /* until proper implementation
-            if(pProto->BagFamily & BAG_FAMILY_MASK_VANITY_PETS)
-            {
-                for(uint32 t = VANITYPET_SLOT_START; t < VANITYPET_SLOT_END; ++t)
-                {
-                    if( inv_pets[t-VANITYPET_SLOT_START] == 0 )
-                    {
-                        inv_pets[t-VANITYPET_SLOT_START] = 1;
-                        b_found = true;
-                        break;
-                    }
-                }
-            }
+            // Vanity pet case skipped as not used
 
-            if (b_found) continue;
-            */
             /* until proper implementation
             if(pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
             {
@@ -14533,6 +14455,17 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
                 break;
         }
 
+        switch(sWorld.getConfig(CONFIG_GM_VISIBLE_STATE))
+        {
+            default:
+            case 0: SetGMVisible(false); break;             // invisible
+            case 1:                      break;             // visible
+            case 2:                                         // save state
+                if(extraflags & PLAYER_EXTRA_GM_INVISIBLE)
+                    SetGMVisible(false);
+                break;
+        }
+
         switch(sWorld.getConfig(CONFIG_GM_ACCEPT_TICKETS))
         {
             default:
@@ -15992,9 +15925,8 @@ void Player::_SaveReputation()
 
 void Player::_SaveSpells()
 {
-    for (PlayerSpellMap::const_iterator itr = m_spells.begin(), next = m_spells.begin(); itr != m_spells.end(); itr = next)
+    for (PlayerSpellMap::iterator itr = m_spells.begin(), next = m_spells.begin(); itr != m_spells.end();)
     {
-        ++next;
         if (itr->second->state == PLAYERSPELL_REMOVED || itr->second->state == PLAYERSPELL_CHANGED)
             CharacterDatabase.PExecute("DELETE FROM character_spell WHERE guid = '%u' and spell = '%u'", GetGUIDLow(), itr->first);
 
@@ -16003,9 +15935,16 @@ void Player::_SaveSpells()
             CharacterDatabase.PExecute("INSERT INTO character_spell (guid,spell,active,disabled) VALUES ('%u', '%u', '%u', '%u')", GetGUIDLow(), itr->first, itr->second->active ? 1 : 0,itr->second->disabled ? 1 : 0);
 
         if (itr->second->state == PLAYERSPELL_REMOVED)
-            _removeSpell(itr->first);
+        {
+            delete itr->second;
+            m_spells.erase(itr++);
+        }
         else
+        {
             itr->second->state = PLAYERSPELL_UNCHANGED;
+            ++itr;
+        }
+
     }
 }
 
