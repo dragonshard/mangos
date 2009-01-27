@@ -8275,7 +8275,7 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
 
     int32 DoneAdvertisedBenefit  = SpellBaseHealingBonus(GetSpellSchoolMask(spellProto));
     int32 TakenAdvertisedBenefit = SpellBaseHealingBonusForVictim(GetSpellSchoolMask(spellProto), pVictim);
-    if (DoneAdvertisedBenefit != 0 && TakenAdvertisedBenefit!=0)
+    if (DoneAdvertisedBenefit != 0)
     {
         // Healing over Time spells
         float DotFactor = 1.0f;
@@ -8385,7 +8385,7 @@ uint32 Unit::SpellHealingBonus(SpellEntry const *spellProto, uint32 healamount, 
 
         SpellModSpellDamage /= 100.0f;
 
-        DoneTotal  += (float)DoneAdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * SpellModSpellDamage * LvlPenalty;
+        DoneTotal  += (float)DoneAdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * SpellModSpellDamage * 1.88f * LvlPenalty;
         TakenTotal += (float)TakenAdvertisedBenefit * ((float)CastingTime / 3500.0f) * DotFactor * SpellModSpellDamage * LvlPenalty;
     }
 
