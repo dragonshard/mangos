@@ -11349,7 +11349,7 @@ bool Unit::HandleMeandingAuraProc( Aura* triggeredByAura )
 
     // healing bonus
     int32 baseheal = triggeredByAura->GetModifier()->m_amount;
-    int32 basehb = triggeredByAura->GetCaster()->SpellHealingBonus(spellProto, 0, NODAMAGE, this);
+    int32 basehb = triggeredByAura->GetCaster()->SpellHealingBonus(this, spellProto, 0, NODAMAGE, 1);
     int32 heal = basehb * (5 - jumps) + baseheal;
 
     // current aura expire
