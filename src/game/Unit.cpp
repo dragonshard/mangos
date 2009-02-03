@@ -10750,7 +10750,7 @@ void Unit::StopMoving()
     SendMessageToSet(&data,false);
 }
 
-void Unit::SetFeared(bool apply, uint64 casterGUID, uint32 spellID)
+void Unit::SetFeared(bool apply, uint64 casterGUID, uint32 spellID, bool death)
 {
     if( apply )
     {
@@ -10772,7 +10772,7 @@ void Unit::SetFeared(bool apply, uint64 casterGUID, uint32 spellID)
 
         GetMotionMaster()->MovementExpired(false);
 
-        if( GetTypeId() != TYPEID_PLAYER && isAlive() )
+        if( GetTypeId() != TYPEID_PLAYER && !death )
         {
             // restore appropriate movement generator
             if(getVictim())
@@ -10791,7 +10791,7 @@ void Unit::SetFeared(bool apply, uint64 casterGUID, uint32 spellID)
         ((Player*)this)->SetClientControl(this, !apply);
 }
 
-void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID)
+void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID, bool death)
 {
     if( apply )
     {
@@ -10807,7 +10807,7 @@ void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID)
 
         GetMotionMaster()->MovementExpired(false);
 
-        if (GetTypeId() == TYPEID_UNIT)
+        if (GetTypeId() == TYPEID_UNIT && !death)
         {
             // if in combat restore movement generator
             if(getVictim())

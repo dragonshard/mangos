@@ -3261,7 +3261,13 @@ void Aura::HandleModConfuse(bool apply, bool Real)
     if(!Real)
         return;
 
-    m_target->SetConfused(apply, GetCasterGUID(), GetId());
+    // check if there are no other confuse auras
+    Unit::AuraList const& confuseAuras = m_target->GetAurasByType(SPELL_AURA_MOD_CONFUSE);
+    if(!apply && !confuseAuras.empty())
+        return;
+
+
+    m_target->SetConfused(apply, GetCasterGUID(), GetId(), m_removeMode==AURA_REMOVE_BY_DEATH);
 }
 
 void Aura::HandleModFear(bool apply, bool Real)
@@ -3269,7 +3275,12 @@ void Aura::HandleModFear(bool apply, bool Real)
     if (!Real)
         return;
 
-    m_target->SetFeared(apply, GetCasterGUID(), GetId());
+    // check if there are no other fear auras
+    Unit::AuraList const& fearAuras = m_target->GetAurasByType(SPELL_AURA_MOD_FEAR);
+    if(!apply && !fearAuras.empty())
+        return;
+
+    m_target->SetFeared(apply, GetCasterGUID(), GetId(), m_removeMode==AURA_REMOVE_BY_DEATH);
 }
 
 void Aura::HandleFeignDeath(bool apply, bool Real)
