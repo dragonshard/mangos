@@ -3375,14 +3375,17 @@ void Spell::EffectDispel(uint32 i)
             // TODO: possible chance depend from spell level??
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(unitTarget->HasAura(33206,0))
-               miss_chance += 65;
-            if(unitTarget->HasAura(14523,0))
-               miss_chance += 10;
-            if(unitTarget->HasAura(14784,0))
-               miss_chance += 10;
-            if(unitTarget->HasAura(14785,0))
-               miss_chance += 10;
+            Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
+            for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
+            {
+                for(int j=0; j<3; ++j)
+                {
+                    if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
+                       miss_chance += (*i)->GetModifier()->m_amount();
+                    break;
+                }
+            }
+
             // Apply dispel mod from aura caster
             if (Unit *caster = aur->GetCaster())
             {
@@ -6423,14 +6426,16 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
 
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(unitTarget->HasAura(33206,0))
-               miss_chance += 65;
-            if(unitTarget->HasAura(14523,0))
-               miss_chance += 10;
-            if(unitTarget->HasAura(14784,0))
-               miss_chance += 10;
-            if(unitTarget->HasAura(14785,0))
-               miss_chance += 10;
+            Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
+            for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
+            {
+                for(int j=0; j<3; ++j)
+                {
+                    if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
+                       miss_chance += (*i)->GetModifier()->m_amount();
+                    break;
+                }
+            }
 
             // TODO possible need do it
             if (!roll_chance_i(miss_chance))
