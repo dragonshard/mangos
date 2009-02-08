@@ -3381,7 +3381,7 @@ void Spell::EffectDispel(uint32 i)
                 for(int j=0; j<3; ++j)
                 {
                     if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
-                       miss_chance += (*a)->GetModifier()->m_amount();
+                       miss_chance += (*a)->GetModifier()->m_amount;
                     break;
                 }
             }
@@ -6432,7 +6432,7 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
                 for(int j=0; j<3; ++j)
                 {
                     if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
-                       miss_chance += (*a)->GetModifier()->m_amount();
+                       miss_chance += (*a)->GetModifier()->m_amount;
                     break;
                 }
             }
