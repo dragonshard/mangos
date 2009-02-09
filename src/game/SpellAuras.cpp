@@ -424,8 +424,10 @@ m_updated(false), m_isRemovedOnShapeLost(true), m_in_use(false)
     if(modOwner)
         modOwner->ApplySpellMod(GetId(), SPELLMOD_CHARGES, m_procCharges);
 
-    m_isRemovedOnShapeLost = (m_caster_guid==m_target->GetGUID() && m_spellProto->Stances &&
-                            !(m_spellProto->AttributesEx2 & 0x80000) && !(m_spellProto->Attributes & 0x10000));
+    m_isRemovedOnShapeLost = (m_caster_guid==m_target->GetGUID() && 
+                              m_spellProto->Stances &&
+                            !(m_spellProto->AttributesEx2 & SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT) && 
+                            !(m_spellProto->Attributes & SPELL_ATTR_NOT_SHAPESHIFT));
 }
 
 Aura::~Aura()
@@ -714,7 +716,7 @@ void AreaAura::Update(uint32 diff)
                     cell.SetNoCreate();
 
                     MaNGOS::AnyFriendlyUnitInObjectRangeCheck u_check(caster, owner, m_radius);
-                    MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(targets, u_check);
+                    MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(caster,targets, u_check);
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
                     CellLock<GridReadGuard> cell_lock(cell, p);
@@ -730,7 +732,7 @@ void AreaAura::Update(uint32 diff)
                     cell.SetNoCreate();
 
                     MaNGOS::AnyAoETargetUnitInObjectRangeCheck u_check(caster, owner, m_radius); // No GetCharmer in searcher
-                    MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck> searcher(targets, u_check);
+                    MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck> searcher(caster, targets, u_check);
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
                     CellLock<GridReadGuard> cell_lock(cell, p);
@@ -943,7 +945,7 @@ void Aura::_AddAura()
         {
             // Sitdown on apply aura req seated
             if (m_spellProto->AuraInterruptFlags & AURA_INTERRUPT_FLAG_NOT_SEATED && !m_target->IsSitState())
-                m_target->SetStandState(PLAYER_STATE_SIT);
+                m_target->SetStandState(UNIT_STAND_STATE_SIT);
 
             // register aura diminishing on apply
             if (getDiminishGroup() != DIMINISHING_NONE )
@@ -1224,6 +1226,7 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             case 34754:    // Clearcasting
             case 34936:    // Backlash
             case 48108:    // Hot Streak
+            case 54741:    // Firestarter
             case 57761:    // Fireball!
                 SetAuraCharges(1);
                 break;
@@ -1515,26 +1518,10 @@ void Aura::TriggerSpell()
                             Creature* creature = (Creature*)target;
                             // missing lootid has been reported on startup - just return
                             if (!creature->GetCreatureInfo()->SkinLootId)
-                            {
                                 return;
-                            }
-                            Loot *loot = &creature->loot;
-                            loot->clear();
-                            loot->FillLoot(creature->GetCreatureInfo()->SkinLootId, LootTemplates_Skinning, NULL);
-                            for(uint8 i=0;i<loot->items.size();i++)
-                            {
-                                LootItem *item = loot->LootItemInSlot(i,player);
-                                ItemPosCountVec dest;
-                                uint8 msg = player->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, item->itemid, item->count );
-                                if ( msg == EQUIP_ERR_OK )
-                                {
-                                    Item * newitem = player->StoreNewItem( dest, item->itemid, true, item->randomPropertyId);
 
-                                    player->SendNewItem(newitem, uint32(item->count), false, false, true);
-                                }
-                                else
-                                    player->SendEquipError( msg, NULL, NULL );
-                            }
+                            player->AutoStoreLoot(creature->GetCreatureInfo()->SkinLootId,LootTemplates_Skinning,true);
+
                             creature->setDeathState(JUST_DIED);
                             creature->RemoveCorpse();
                             creature->SetHealth(0);         // just for nice GM-mode view
@@ -2973,6 +2960,9 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         Unit* victim = GetTarget();
         if(!caster || caster->GetTypeId() != TYPEID_PLAYER || !victim || m_removeMode!=AURA_REMOVE_BY_DEATH)
             return;
+        // Item amount
+        if (m_modifier.m_amount <= 0)
+            return;
 
         SpellEntry const *spellInfo = GetSpellProto();
         if(spellInfo->EffectItemType[m_effIndex] == 0)
@@ -2983,16 +2973,22 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
             (victim->getLevel() <= MaNGOS::XP::GetGrayLevel(caster->getLevel()) ||
              victim->GetTypeId()==TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim)) )
             return;
+        //Adding items
+        uint32 noSpaceForCount = 0;
+        uint32 count = m_modifier.m_amount;
+
         ItemPosCountVec dest;
-        uint8 msg = ((Player*)caster)->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, spellInfo->EffectItemType[m_effIndex], 1 );
+        uint8 msg = ((Player*)caster)->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, spellInfo->EffectItemType[m_effIndex], count, &noSpaceForCount);
         if( msg != EQUIP_ERR_OK )
         {
+            count-=noSpaceForCount;
             ((Player*)caster)->SendEquipError( msg, NULL, NULL );
-            return;
+            if (count==0)
+                return;
         }
 
         Item* newitem = ((Player*)caster)->StoreNewItem(dest, spellInfo->EffectItemType[m_effIndex], true);
-        ((Player*)caster)->SendNewItem(newitem, 1, true, false);
+        ((Player*)caster)->SendNewItem(newitem, count, true, false);
     }
 }
 
@@ -3446,7 +3442,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         }
 
         // Wyvern Sting
-        if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellIconID == 1721)
+        if (m_spellProto->SpellFamilyName == SPELLFAMILY_HUNTER && m_spellProto->SpellFamilyFlags & 0x0000100000000000LL)
         {
             Unit* caster = GetCaster();
             if( !caster || caster->GetTypeId()!=TYPEID_PLAYER )
@@ -3460,6 +3456,8 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
                 case 24132: spell_id = 24134; break;
                 case 24133: spell_id = 24135; break;
                 case 27068: spell_id = 27069; break;
+                case 49011: spell_id = 49009; break;
+                case 49012: spell_id = 49010; break;
                 default:
                     sLog.outError("Spell selection called for unexpected original spell %u, new spell for this spell family?",GetId());
                     return;
@@ -3495,7 +3493,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
         // only at real aura add
         if(Real)
         {
-            m_target->SetByteValue(UNIT_FIELD_BYTES_1, 2, 0x02);
+            m_target->SetStandFlags(UNIT_STAND_FLAGS_CREEP);
             if(m_target->GetTypeId()==TYPEID_PLAYER)
                 m_target->SetFlag(PLAYER_FIELD_BYTES2, 0x2000);
 
@@ -3515,7 +3513,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
             // if last SPELL_AURA_MOD_STEALTH and no GM invisibility
             if(!m_target->HasAuraType(SPELL_AURA_MOD_STEALTH) && m_target->GetVisibility()!=VISIBILITY_OFF)
             {
-                m_target->SetByteValue(UNIT_FIELD_BYTES_1, 2, 0x00);
+                m_target->RemoveStandFlags(UNIT_STAND_FLAGS_CREEP);
                 if(m_target->GetTypeId()==TYPEID_PLAYER)
                     m_target->RemoveFlag(PLAYER_FIELD_BYTES2, 0x2000);
 
@@ -5321,7 +5319,7 @@ void Aura::HandleShapeshiftBoosts(bool apply)
                 if(itr->second->state == PLAYERSPELL_REMOVED) continue;
                 if(itr->first==spellId || itr->first==spellId2) continue;
                 SpellEntry const *spellInfo = sSpellStore.LookupEntry(itr->first);
-                if (!spellInfo || !(spellInfo->Attributes & ((1<<6) | (1<<7)))) continue;
+                if (!spellInfo || !(spellInfo->Attributes & (SPELL_ATTR_PASSIVE | (1<<7)))) continue;
                 if (spellInfo->Stances & (1<<form))
                     m_target->CastSpell(m_target, itr->first, true, NULL, this);
             }
@@ -5388,9 +5386,9 @@ void Aura::HandleAuraEmpathy(bool apply, bool Real)
 void Aura::HandleAuraUntrackable(bool apply, bool Real)
 {
     if(apply)
-        m_target->SetFlag(UNIT_FIELD_BYTES_1, PLAYER_STATE_FLAG_UNTRACKABLE);
+        m_target->SetByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_UNTRACKABLE);
     else
-        m_target->RemoveFlag(UNIT_FIELD_BYTES_1, PLAYER_STATE_FLAG_UNTRACKABLE);
+        m_target->RemoveByteFlag(UNIT_FIELD_BYTES_1, 3, UNIT_BYTE1_FLAG_UNTRACKABLE);
 }
 
 void Aura::HandleAuraModPacify(bool apply, bool Real)
@@ -5557,7 +5555,7 @@ void Aura::HandleSpiritOfRedemption( bool apply, bool Real )
 
             // set stand state (expected in this form)
             if(!m_target->IsStandState())
-                m_target->SetStandState(PLAYER_STATE_NONE);
+                m_target->SetStandState(UNIT_STAND_STATE_STAND);
         }
 
         m_target->SetHealth(1);
@@ -6661,22 +6659,36 @@ void Aura::HandleAuraConvertRune(bool apply, bool Real)
 
 void Aura::HandlePhase(bool apply, bool Real)
 {
+    if(!Real)
+        return;
+
+    // always non stackable
+    if(apply)
+    {
+        Unit::AuraList const& phases = m_target->GetAurasByType(SPELL_AURA_PHASE);
+        if(!phases.empty())
+            m_target->RemoveAurasDueToSpell(phases.front()->GetId(),this);
+    }
+
     // no-phase is also phase state so same code for apply and remove
 
-    // phase auras normaly not expected at BG but anyway better check
-    if(Real && m_target->GetTypeId()==TYPEID_PLAYER)
+    // phase auras normally not expected at BG but anyway better check
+    if(m_target->GetTypeId()==TYPEID_PLAYER)
     {
         // drop flag at invisible in bg
         if(((Player*)m_target)->InBattleGround())
             if(BattleGround *bg = ((Player*)m_target)->GetBattleGround())
                 bg->EventPlayerDroppedFlag((Player*)m_target);
-    }
 
-    // apply/remove only if not in GM invisibility
-    if(m_target->GetVisibility()!=VISIBILITY_OFF)
-    {
-        // just need triggering visibility update base at aura presence
-        m_target->SetVisibility(m_target->GetVisibility());
+        // GM-mode have mask 0xFFFFFFFF
+        if(!((Player*)m_target)->isGameMaster())
+            m_target->SetPhaseMask(apply ? GetMiscValue() : PHASEMASK_NORMAL,false);
     }
+    else
+        m_target->SetPhaseMask(apply ? GetMiscValue() : PHASEMASK_NORMAL,false);
+
+    // need triggering visibility update base at phase update of not GM invisible (other GMs anyway see in any phases)
+    if(m_target->GetVisibility()!=VISIBILITY_OFF)
+        m_target->SetVisibility(m_target->GetVisibility());
 }
 

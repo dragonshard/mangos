@@ -177,12 +177,16 @@ bool SpellCastTargets::read ( WorldPacket * data, Unit *caster )
         if(!data->readPackGUID(m_unitTargetGUID))
             return false;
 
-    if( m_targetMask & ( TARGET_FLAG_OBJECT | TARGET_FLAG_OBJECT_UNK ))
+    if( m_targetMask & ( TARGET_FLAG_OBJECT ))
         if(!data->readPackGUID(m_GOTargetGUID))
             return false;
 
     if(( m_targetMask & ( TARGET_FLAG_ITEM | TARGET_FLAG_TRADE_ITEM )) && caster->GetTypeId() == TYPEID_PLAYER)
         if(!data->readPackGUID(m_itemTargetGUID))
+            return false;
+
+    if( m_targetMask & (TARGET_FLAG_CORPSE | TARGET_FLAG_PVP_CORPSE ) )
+        if(!data->readPackGUID(m_CorpseTargetGUID))
             return false;
 
     if( m_targetMask & TARGET_FLAG_SOURCE_LOCATION )
@@ -197,7 +201,10 @@ bool SpellCastTargets::read ( WorldPacket * data, Unit *caster )
 
     if( m_targetMask & TARGET_FLAG_DEST_LOCATION )
     {
-        if(data->rpos()+4+4+4 > data->size())
+        if(data->rpos()+1+4+4+4 > data->size())
+            return false;
+
+        if(!data->readPackGUID(m_unitTargetGUID))
             return false;
 
         *data >> m_destX >> m_destY >> m_destZ;
@@ -213,10 +220,6 @@ bool SpellCastTargets::read ( WorldPacket * data, Unit *caster )
         *data >> m_strTarget;
     }
 
-    if( m_targetMask & (TARGET_FLAG_CORPSE | TARGET_FLAG_PVP_CORPSE ) )
-        if(!data->readPackGUID(m_CorpseTargetGUID))
-            return false;
-
     // find real units/GOs
     Update(caster);
     return true;
@@ -226,7 +229,7 @@ void SpellCastTargets::write ( WorldPacket * data )
 {
     *data << uint32(m_targetMask);
 
-    if( m_targetMask & ( TARGET_FLAG_UNIT | TARGET_FLAG_PVP_CORPSE | TARGET_FLAG_OBJECT | TARGET_FLAG_OBJECT_UNK | TARGET_FLAG_CORPSE | TARGET_FLAG_UNK2 ) )
+    if( m_targetMask & ( TARGET_FLAG_UNIT | TARGET_FLAG_PVP_CORPSE | TARGET_FLAG_OBJECT | TARGET_FLAG_CORPSE | TARGET_FLAG_UNK2 ) )
     {
         if(m_targetMask & TARGET_FLAG_UNIT)
         {
@@ -235,7 +238,7 @@ void SpellCastTargets::write ( WorldPacket * data )
             else
                 *data << uint8(0);
         }
-        else if( m_targetMask & ( TARGET_FLAG_OBJECT | TARGET_FLAG_OBJECT_UNK ) )
+        else if( m_targetMask & TARGET_FLAG_OBJECT )
         {
             if(m_GOTarget)
                 data->append(m_GOTarget->GetPackGUID());
@@ -260,7 +263,14 @@ void SpellCastTargets::write ( WorldPacket * data )
         *data << m_srcX << m_srcY << m_srcZ;
 
     if( m_targetMask & TARGET_FLAG_DEST_LOCATION )
+    {
+        if(m_unitTarget)
+            data->append(m_unitTarget->GetPackGUID());
+        else
+            *data << uint8(0);
+
         *data << m_destX << m_destY << m_destZ;
+    }
 
     if( m_targetMask & TARGET_FLAG_STRING )
         *data << m_strTarget;
@@ -363,7 +373,7 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
     // determine reflection
     m_canReflect = false;
 
-    if(m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && (m_spellInfo->AttributesEx2 & 0x4)==0)
+    if(m_spellInfo->DmgClass == SPELL_DAMAGE_CLASS_MAGIC && !(m_spellInfo->AttributesEx2 & SPELL_ATTR_EX2_CANT_REFLECTED))
     {
         for(int j=0;j<3;j++)
         {
@@ -373,7 +383,7 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
             if(!IsPositiveTarget(m_spellInfo->EffectImplicitTargetA[j],m_spellInfo->EffectImplicitTargetB[j]))
                 m_canReflect = true;
             else
-                m_canReflect = (m_spellInfo->AttributesEx & (1<<7)) ? true : false;
+                m_canReflect = (m_spellInfo->AttributesEx & SPELL_ATTR_EX_NEGATIVE) ? true : false;
 
             if(m_canReflect)
                 continue;
@@ -475,7 +485,7 @@ void Spell::FillTargetMap()
                             WorldObject* result = NULL;
 
                             MaNGOS::CannibalizeObjectCheck u_check(m_caster, max_range);
-                            MaNGOS::WorldObjectSearcher<MaNGOS::CannibalizeObjectCheck > searcher(result, u_check);
+                            MaNGOS::WorldObjectSearcher<MaNGOS::CannibalizeObjectCheck > searcher(m_caster, result, u_check);
 
                             TypeContainerVisitor<MaNGOS::WorldObjectSearcher<MaNGOS::CannibalizeObjectCheck >, GridTypeMapContainer > grid_searcher(searcher);
                             CellLock<GridReadGuard> cell_lock(cell, p);
@@ -589,6 +599,7 @@ void Spell::FillTargetMap()
                     break;
                 case SPELL_EFFECT_ENCHANT_ITEM:
                 case SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY:
+                case SPELL_EFFECT_ENCHANT_ITEM_PRISMATIC:
                 case SPELL_EFFECT_DISENCHANT:
                 case SPELL_EFFECT_PROSPECTING:
                 case SPELL_EFFECT_MILLING:
@@ -1079,7 +1090,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             if( !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) )
             {
                 if(!unit->IsStandState() && !unit->hasUnitState(UNIT_STAT_STUNNED))
-                    unit->SetStandState(PLAYER_STATE_NONE);
+                    unit->SetStandState(UNIT_STAND_STATE_STAND);
 
                 if(!unit->isInCombat() && unit->GetTypeId() != TYPEID_PLAYER && ((Creature*)unit)->AI())
                     ((Creature*)unit)->AI()->AttackStart(m_caster);
@@ -1313,7 +1324,7 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,std::list<Unit*> &TagUnitMap)
 
             {
                 MaNGOS::AnyAoETargetUnitInObjectRangeCheck u_check(m_caster, m_caster, max_range);
-                MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck> searcher(tempUnitMap, u_check);
+                MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck> searcher(m_caster, tempUnitMap, u_check);
 
                 TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                 TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
@@ -1382,7 +1393,7 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,std::list<Unit*> &TagUnitMap)
             std::list<Unit *> tempUnitMap;
             {
                 MaNGOS::AnyFriendlyUnitInObjectRangeCheck u_check(m_caster, m_caster, max_range);
-                MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(tempUnitMap, u_check);
+                MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck> searcher(m_caster, tempUnitMap, u_check);
 
                 TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                 TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
@@ -1479,7 +1490,7 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,std::list<Unit*> &TagUnitMap)
 
                     {
                         MaNGOS::AnyAoETargetUnitInObjectRangeCheck u_check(pUnitTarget, originalCaster, max_range);
-                        MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck> searcher(tempUnitMap, u_check);
+                        MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck> searcher(m_caster, tempUnitMap, u_check);
 
                         TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                         TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
@@ -3719,7 +3730,7 @@ uint8 Spell::CanCast(bool strict)
             // If 0 spell effect empty - client not send target data (need use selection)
             // TODO: check it on next client version
             if (m_targets.m_targetMask == TARGET_FLAG_SELF &&
-                m_spellInfo->Effect[0] == 0 && m_spellInfo->EffectImplicitTargetA[1] != TARGET_SELF)
+                m_spellInfo->EffectImplicitTargetA[1] == TARGET_CHAIN_DAMAGE)
             {
                 if (target = m_caster->GetUnit(*m_caster, ((Player *)m_caster)->GetSelection()))
                     m_targets.setUnitTarget(target);
@@ -3820,7 +3831,8 @@ uint8 Spell::CanCast(bool strict)
                 return SPELL_FAILED_NOT_IN_ARENA;
 
     // zone check
-    if(uint8 res= GetSpellAllowedInLocationError(m_spellInfo,m_caster->GetMapId(),m_caster->GetZoneId(),m_caster->GetAreaId()))
+    if (uint8 res= GetSpellAllowedInLocationError(m_spellInfo,m_caster->GetMapId(),m_caster->GetZoneId(),m_caster->GetAreaId(),
+        m_caster->GetTypeId()==TYPEID_PLAYER ? ((Player*)m_caster)->GetBattleGroundId() : 0))
         return res;
 
     // not let players cast spells at mount (and let do it to creatures)
@@ -3874,7 +3886,7 @@ uint8 Spell::CanCast(bool strict)
                                 cell.data.Part.reserved = ALL_DISTRICT;
 
                                 MaNGOS::NearestGameObjectEntryInObjectRangeCheck go_check(*m_caster,i_spellST->second.targetEntry,range);
-                                MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(p_GameObject,go_check);
+                                MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck> checker(m_caster, p_GameObject,go_check);
 
                                 TypeContainerVisitor<MaNGOS::GameObjectLastSearcher<MaNGOS::NearestGameObjectEntryInObjectRangeCheck>, GridTypeMapContainer > object_checker(checker);
                                 CellLock<GridReadGuard> cell_lock(cell, p);
@@ -3912,7 +3924,7 @@ uint8 Spell::CanCast(bool strict)
                             cell.SetNoCreate();             // Really don't know what is that???
 
                             MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck u_check(*m_caster,i_spellST->second.targetEntry,i_spellST->second.type!=SPELL_TARGET_TYPE_DEAD,range);
-                            MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(p_Creature, u_check);
+                            MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck> searcher(m_caster, p_Creature, u_check);
 
                             TypeContainerVisitor<MaNGOS::CreatureLastSearcher<MaNGOS::NearestCreatureEntryWithLiveStateInObjectRangeCheck>, GridTypeMapContainer >  grid_creature_searcher(searcher);
 
@@ -4623,15 +4635,16 @@ uint8 Spell::CheckCasterAuras() const
     //Check whether the cast should be prevented by any state you might have.
     uint8 prevented_reason = 0;
     // Have to check if there is a stun aura. Otherwise will have problems with ghost aura apply while logging out
-    if(!(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_STUNNED) && m_caster->HasAuraType(SPELL_AURA_MOD_STUN))
+    uint32 unitflag = m_caster->GetUInt32Value(UNIT_FIELD_FLAGS);     // Get unit state
+    if(unitflag & UNIT_FLAG_STUNNED && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_STUNNED))
         prevented_reason = SPELL_FAILED_STUNNED;
-    else if(m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED) && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_CONFUSED))
+    else if(unitflag & UNIT_FLAG_CONFUSED && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_CONFUSED))
         prevented_reason = SPELL_FAILED_CONFUSED;
-    else if(m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_FLEEING) && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_FEARED))
+    else if(unitflag & UNIT_FLAG_FLEEING && !(m_spellInfo->AttributesEx5 & SPELL_ATTR_EX5_USABLE_WHILE_FEARED))
         prevented_reason = SPELL_FAILED_FLEEING;
-    else if(m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED) && m_spellInfo->PreventionType==SPELL_PREVENTION_TYPE_SILENCE)
+    else if(unitflag & UNIT_FLAG_SILENCED && m_spellInfo->PreventionType==SPELL_PREVENTION_TYPE_SILENCE)
         prevented_reason = SPELL_FAILED_SILENCED;
-    else if(m_caster->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED) && m_spellInfo->PreventionType==SPELL_PREVENTION_TYPE_PACIFY)
+    else if(unitflag & UNIT_FLAG_PACIFIED && m_spellInfo->PreventionType==SPELL_PREVENTION_TYPE_PACIFY)
         prevented_reason = SPELL_FAILED_PACIFIED;
 
     // Attr must make flag drop spell totally immune from all effects
@@ -4979,7 +4992,7 @@ uint8 Spell::CheckItems()
 
         GameObject* ok = NULL;
         MaNGOS::GameObjectFocusCheck go_check(m_caster,m_spellInfo->RequiresSpellFocus);
-        MaNGOS::GameObjectSearcher<MaNGOS::GameObjectFocusCheck> checker(ok,go_check);
+        MaNGOS::GameObjectSearcher<MaNGOS::GameObjectFocusCheck> checker(m_caster,ok,go_check);
 
         TypeContainerVisitor<MaNGOS::GameObjectSearcher<MaNGOS::GameObjectFocusCheck>, GridTypeMapContainer > object_checker(checker);
         CellLock<GridReadGuard> cell_lock(cell, p);
@@ -5076,6 +5089,7 @@ uint8 Spell::CheckItems()
                 break;
             }
             case SPELL_EFFECT_ENCHANT_ITEM:
+            case SPELL_EFFECT_ENCHANT_ITEM_PRISMATIC:
             {
                 Item* targetItem = m_targets.getItemTarget();
                 if(!targetItem)

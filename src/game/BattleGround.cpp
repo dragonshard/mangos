@@ -19,6 +19,7 @@
 #include "Object.h"
 #include "Player.h"
 #include "BattleGround.h"
+#include "BattleGroundMgr.h"
 #include "Creature.h"
 #include "MapManager.h"
 #include "Language.h"
@@ -26,11 +27,14 @@
 #include "SpellAuras.h"
 #include "ArenaTeam.h"
 #include "World.h"
+#include "Group.h"
+#include "ObjectMgr.h"
+#include "WorldPacket.h"
 #include "Util.h"
 
 BattleGround::BattleGround()
 {
-    m_TypeID            = 0;
+    m_TypeID            = BattleGroundTypeId(0);
     m_InstanceID        = 0;
     m_Status            = 0;
     m_EndTime           = 0;
@@ -157,8 +161,6 @@ void BattleGround::Update(uint32 diff)
         m_RemovedPlayers.clear();
     }
 
-    // this code isn't efficient and its idea isn't implemented yet
-    /* offline players are removed from battleground in worldsession::LogoutPlayer()
     // remove offline players from bg after ~5 minutes
     if(GetPlayersSize())
     {
@@ -173,7 +175,7 @@ void BattleGround::Update(uint32 diff)
                 if(itr->second.LastOnlineTime >= MAX_OFFLINE_TIME)                   // 5 minutes
                     m_RemovedPlayers[itr->first] = 1;       // add to remove list (BG)
         }
-    }*/
+    }
 
     m_LastResurrectTime += diff;
     if (m_LastResurrectTime >= RESURRECTION_INTERVAL)
@@ -768,7 +770,7 @@ void BattleGround::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
         {
             if(!team) team = plr->GetTeam();
 
-            uint32 bgTypeId = GetTypeID();
+            BattleGroundTypeId bgTypeId = GetTypeID();
             uint32 bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(GetTypeID(), GetArenaType());
             // if arena, remove the specific arena auras
             if(isArena())
@@ -845,9 +847,7 @@ void BattleGround::RemovePlayerAtLeave(uint64 guid, bool Transport, bool SendPac
         plr->SetBGTeam(0);
 
         if(Transport)
-        {
-            plr->TeleportTo(plr->GetBattleGroundEntryPointMap(), plr->GetBattleGroundEntryPointX(), plr->GetBattleGroundEntryPointY(), plr->GetBattleGroundEntryPointZ(), plr->GetBattleGroundEntryPointO());
-        }
+            plr->TeleportTo(plr->GetBattleGroundEntryPoint());
 
         // Log
         sLog.outDetail("BATTLEGROUND: Removed player %s from BattleGround.", plr->GetName());
@@ -955,7 +955,7 @@ void BattleGround::AddPlayer(Player *plr)
             }
             (plr)->RemovePet(NULL,PET_SAVE_NOT_IN_SLOT);
         }
-    else
+        else
             (plr)->SetTemporaryUnsummonedPetNumber(0);
 
         if(GetStatus() == STATUS_WAIT_JOIN)                 // not started yet
@@ -1158,7 +1158,8 @@ bool BattleGround::AddObject(uint32 type, uint32 entry, float x, float y, float 
     // and when loading it (in go::LoadFromDB()), a new guid would be assigned to the object, and a new object would be created
     // so we must create it specific for this instance
     GameObject * go = new GameObject;
-    if(!go->Create(objmgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT),entry, map,x,y,z,o,rotation0,rotation1,rotation2,rotation3,100,1))
+    if(!go->Create(objmgr.GenerateLowGuid(HIGHGUID_GAMEOBJECT),entry, map,
+        PHASEMASK_NORMAL, x,y,z,o,rotation0,rotation1,rotation2,rotation3,100,1))
     {
         sLog.outErrorDb("Gameobject template %u not found in database! BattleGround not created!", entry);
         sLog.outError("Cannot create gameobject template %u! BattleGround not created!", entry);
@@ -1265,7 +1266,7 @@ Creature* BattleGround::AddCreature(uint32 entry, uint32 type, uint32 teamval, f
         return NULL;
 
     Creature* pCreature = new Creature;
-    if (!pCreature->Create(objmgr.GenerateLowGuid(HIGHGUID_UNIT), map, entry, teamval))
+    if (!pCreature->Create(objmgr.GenerateLowGuid(HIGHGUID_UNIT), map, PHASEMASK_NORMAL, entry, teamval))
     {
         sLog.outError("Can't create creature entry: %u",entry);
         delete pCreature;
@@ -1492,6 +1493,31 @@ uint32 BattleGround::GetPlayerTeam(uint64 guid)
     return 0;
 }
 
+bool BattleGround::IsPlayerInBattleGround(uint64 guid)
+{
+    std::map<uint64, BattleGroundPlayer>::const_iterator itr = m_Players.find(guid);
+    if(itr!=m_Players.end())
+        return true;
+    return false;
+}
+
+void BattleGround::PlayerRelogin(Player* plr)
+{
+    if(GetStatus() != STATUS_WAIT_LEAVE)
+        return;
+
+    WorldPacket data;
+    uint32 bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(GetTypeID(), GetArenaType());
+
+    BlockMovement(plr);
+
+    sBattleGroundMgr.BuildPvpLogDataPacket(&data, this);
+    plr->GetSession()->SendPacket(&data);
+
+    sBattleGroundMgr.BuildBattleGroundStatusPacket(&data, this, plr->GetTeam(), plr->GetBattleGroundQueueIndex(bgQueueTypeId), STATUS_IN_PROGRESS, TIME_TO_AUTOREMOVE, GetStartTime());
+    plr->GetSession()->SendPacket(&data);
+}
+
 uint32 BattleGround::GetAlivePlayersCountByTeam(uint32 Team) const
 {
     int count = 0;
@@ -1505,4 +1531,12 @@ uint32 BattleGround::GetAlivePlayersCountByTeam(uint32 Team) const
         }
     }
     return count;
+}
+
+void BattleGround::SetBgRaid( uint32 TeamID, Group *bg_raid )
+{
+    Group* &old_raid = TeamID == ALLIANCE ? m_BgRaids[BG_TEAM_ALLIANCE] : m_BgRaids[BG_TEAM_HORDE];
+    if(old_raid) old_raid->SetBattlegroundGroup(NULL);
+    if(bg_raid) bg_raid->SetBattlegroundGroup(this);
+    old_raid = bg_raid;
 }

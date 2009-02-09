@@ -22,7 +22,7 @@
 DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
-  `required_7199_02_mangos_spell_proc_event` bit(1) default NULL
+  `required_7252_02_mangos_mangos_string` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 
 --
@@ -264,6 +264,8 @@ INSERT INTO `command` VALUES
 ('cooldown',3,'Syntax: .cooldown [#spell_id]\r\n\r\nRemove all (if spell_id not provided) or #spel_id spell cooldown from selected character or you (if no selection).'),
 ('damage',3,'Syntax: .damage $damage_amount [$school [$spellid]]\r\n\r\nApply $damage to target. If not $school and $spellid provided then this flat clean melee damage without any modifiers. If $school provided then damage modified by armor reduction (if school physical), and target absorbing modifiers and result applied as melee damage to target. If spell provided then damage modified and applied as spell damage. $spellid can be shift-link.'),
 ('debug anim',2,'Syntax: .debug anim #emoteid\r\n\r\nPlay emote #emoteid for your character.'),
+('debug arena',3,'Syntax: .debug arena\r\n\r\nToggle debug mode for arenas. In debug mode GM can start arena with single player.'),
+('debug bg',3,'Syntax: .debug bg\r\n\r\nToggle debug mode for battlegrounds. In debug mode GM can start battleground with single player.'),
 ('debug getvalue',3,'Syntax: .debug getvalue #field #isInt\r\n\r\nGet the field #field of the selected creature. If no creature is selected, get the content of your field.\r\n\r\nUse a #isInt of value 1 if the expected field content is an integer.'),
 ('debug playsound',1,'Syntax: .debug playsound #soundid\r\n\r\nPlay sound with #soundid.\r\nSound will be play only for you. Other players do not hear this.\r\nWarning: client may have more 5000 sounds...'),
 ('debug setvalue',3,'Syntax: .debug setvalue #field #value #isInt\r\n\r\nSet the field #field of the selected creature with value #value. If no creature is selected, set the content of your field.\r\n\r\nUse a #isInt of value 1 if #value is an integer.'),
@@ -299,10 +301,11 @@ INSERT INTO `command` VALUES
 ('gobject delete',2,'Syntax: .gobject delete #go_guid\r\nDelete gameobject with guid #go_guid.'),
 ('gobject move',2,'Syntax: .gobject move #goguid [#x #y #z]\r\n\r\nMove gameobject #goguid to character coordinates (or to (#x,#y,#z) coordinates if its provide).'),
 ('gobject near ',3,'Syntax: .gobject near  [#distance]\r\n\r\nOutput gameobjects at distance #distance from player. Output gameobject guids and coordinates sorted by distance from character. If #distance not provided use 10 as default value.'),
+('gobject phase',3,'Syntax: .gobject phase #guid #phasemask\r\n\r\nGameobject with DB guid #guid phasemask changed to #phasemask with related world vision update for players. Gameobject state saved to DB and persistent.'),
 ('gobject turn',2,'Syntax: .gobject turn #goguid \r\n\r\nSet for gameobject #goguid orientation same as current character orientation.'),
 ('gobject target',2,'Syntax: .gobject target [#go_id|#go_name_part]\r\n\r\nLocate and show position nearest gameobject. If #go_id or #go_name_part provide then locate and show position of nearest gameobject with gameobject template id #go_id or name included #go_name_part as part.'),
 ('goname',1,'Syntax: .goname $charactername\r\n\r\nTeleport to the given character. Either specify the character name or click on the character\'s portrait, e.g. when you are in a group.'),
-('gps',1,'Syntax: .gps\r\n\r\nDisplay the position information for a selected character or creature. Position information includes X, Y, Z, and orientation, map Id and zone Id'),
+('gps',1,'Syntax: .gps [$name|$shift-link]\r\n\r\nDisplay the position information for a selected character or creature (also if player name $name provided then for named player, or if creature/gameobject shift-link provided then pointed creature/gameobject if it loaded). Position information includes X, Y, Z, and orientation, map Id and zone Id'),
 ('groupgo',1,'Syntax: .groupgo $charactername\r\n\r\nTeleport the given character and his group to you.'),
 ('guid',2,'Syntax: .guid\r\n\r\nDisplay the GUID for the selected character.'),
 ('guild create',2,'Syntax: .guild create $GuildLeaderName $GuildName\r\n\r\nCreate a guild named $GuildName with the player $GuildLeaderName as leader.'),
@@ -369,6 +372,7 @@ INSERT INTO `command` VALUES
 ('modify money',1,'Syntax:\r\n.modify money #money\r\n.money #money\r\n\r\nAdd or remove money to the selected player. If no player is selected, modify your money.\r\n\r\n #gold can be negative to remove money.'),
 ('modify morph',2,'Syntax: .modify morph #displayid\r\n\r\nChange your current model id to #displayid.'),
 ('modify mount',1,'Syntax:\r\n.modify mount #id #speed\r\nDisplay selected player as mounted at #id creature and set speed to #speed value.'),
+('modify phase',3,'Syntax: .modify phase #phasemask\r\n\r\nSelected character phasemask changed to #phasemask with related world vision update. Change active until in game phase changed, or GM-mode enable/disable, or re-login. Character pts pasemask update to same value.'),
 ('modify rage',1,'Syntax: .modify rage #newrage\r\n\r\nModify the rage of the selected player. If no player is selected, modify your rage.'),
 ('modify rep',2,'Syntax: .modify rep #repId (#repvalue | $rankname [#delta])\r\nSets the selected players reputation with faction #repId to #repvalue or to $reprank.\r\nIf the reputation rank name is provided, the resulting reputation will be the lowest reputation for that rank plus the delta amount, if specified.\r\nYou can use \'.pinfo rep\' to list all known reputation ids, or use \'.lookup faction $name\' to locate a specific faction id.'),
 ('modify runicpower',1,'Syntax: .modify runicpower #newrunicpower\r\n\r\nModify the runic power of the selected player. If no player is selected, modify your runic power.'),
@@ -395,6 +399,7 @@ INSERT INTO `command` VALUES
 ('npc info',3,'Syntax: .npc info\r\n\r\nDisplay a list of details for the selected creature.\r\n\r\nThe list includes:\r\n- GUID, Faction, NPC flags, Entry ID, Model ID,\r\n- Level,\r\n- Health (current/maximum),\r\n\r\n- Field flags, dynamic flags, faction template, \r\n- Position information,\r\n- and the creature type, e.g. if the creature is a vendor.'),
 ('npc move',2,'Syntax: .npc move [#creature_guid]\r\n\r\nMove the targeted creature spawn point to your coordinates.'),
 ('npc name',2,'Syntax: .npc name $name\r\n\r\nChange the name of the selected creature or character to $name.\r\n\r\nCommand disabled.'),
+('npc phase',3,'Syntax: .npc phase #phasemask\r\n\r\nSelected unit or pet phasemask changed to #phasemask with related world vision update for players. In creature case state saved to DB and persistent. In pet case change active until in game phase changed for owner, owner re-login, or GM-mode enable/disable..'),
 ('npc playemote',3,'Syntax: .npc playemote #emoteid\r\n\r\nMake the selected creature emote with an emote of id #emoteid.'),
 ('npc setmodel',2,'Syntax: .npc setmodel #displayid\r\n\r\nChange the model id of the selected creature to #displayid.'),
 ('npc setmovetype',2,'Syntax: .npc setmovetype [#creature_guid] stay/random/way [NODEL]\r\n\r\nSet for creature pointed by #creature_guid (or selected if #creature_guid not provided) movement type and move it to respawn position (if creature alive). Any existing waypoints for creature will be removed from the database if you do not use NODEL. If the creature is dead then movement type will applied at creature respawn.\r\nMake sure you use NODEL, if you want to keep the waypoints.'),
@@ -422,6 +427,7 @@ INSERT INTO `command` VALUES
 ('reload all_locales',3,'Syntax: .reload all_locales\r\n\r\nReload all `locales_*` tables with reload support added and that can be _safe_ reloaded.'),
 ('reload config',3,'Syntax: .reload config\r\n\r\nReload config settings (by default stored in mangosd.conf). Not all settings can be change at reload: some new setting values will be ignored until restart, some values will applied with delay or only to new objects/maps, some values will explicitly rejected to change at reload.'),
 ('repairitems',2,'Syntax: .repairitems\r\n\r\nRepair all selected player''s items.'),
+('reset achievements',3,'Syntax: .reset achievements [$playername]\r\n\r\nReset achievements data for selected or named (online or offline) character. Achievements for persistance progress data like completed quests/etc re-filled at reset. Achievements for events like kills/casts/etc will lost.'),
 ('reset all',3,'Syntax: .reset all spells\r\n\r\nSyntax: .reset all talents\r\n\r\nRequest reset spells or talents at next login each existed character.'),
 ('reset honor',3,'Syntax:\r\n.reset honor [Playername]\r\n  Reset all honor data for targeted character.'),
 ('reset level',3,'Syntax:\r\n.reset level [Playername]\r\n  Reset level to 1 including reset stats and talents.  Equipped items with greater level requirement can be lost.'),
@@ -488,6 +494,7 @@ CREATE TABLE `creature` (
   `id` mediumint(8) unsigned NOT NULL default '0' COMMENT 'Creature Identifier',
   `map` smallint(5) unsigned NOT NULL default '0' COMMENT 'Map Identifier',
   `spawnMask` tinyint(3) unsigned NOT NULL default '1',
+  `phaseMask` smallint(5) unsigned NOT NULL default '1',
   `modelid` mediumint(8) unsigned NOT NULL default '0',
   `equipment_id` mediumint(9) NOT NULL default '0',
   `position_x` float NOT NULL default '0',
@@ -1244,6 +1251,7 @@ CREATE TABLE `gameobject` (
   `id` mediumint(8) unsigned NOT NULL default '0' COMMENT 'Gameobject Identifier',
   `map` smallint(5) unsigned NOT NULL default '0' COMMENT 'Map Identifier',
   `spawnMask` tinyint(3) unsigned NOT NULL default '1',
+  `phaseMask` smallint(5) unsigned NOT NULL default '1',
   `position_x` float NOT NULL default '0',
   `position_y` float NOT NULL default '0',
   `position_z` float NOT NULL default '0',
@@ -2327,7 +2335,7 @@ INSERT INTO `mangos_string` VALUES
 (57,'Using World DB: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (58,'Using script library: %s',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (100,'Global notify: ',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
-(101,'Map: %u (%s) Zone: %u (%s) Area: %u (%s)\nX: %f Y: %f Z: %f Orientation: %f\ngrid[%u,%u]cell[%u,%u] InstanceID: %u\n ZoneX: %f ZoneY: %f\nGroundZ: %f FloorZ: %f Have height data (Map: %u VMap: %u)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(101,'Map: %u (%s) Zone: %u (%s) Area: %u (%s) Phase: %u\nX: %f Y: %f Z: %f Orientation: %f\ngrid[%u,%u]cell[%u,%u] InstanceID: %u\n ZoneX: %f ZoneY: %f\nGroundZ: %f FloorZ: %f Have height data (Map: %u VMap: %u)',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (102,'%s is already being teleported.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (103,'You can summon a player to your instance only if he is in your party with you as leader.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (104,'You cannot go to the player\'s instance because you are in a party now.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -2815,6 +2823,16 @@ INSERT INTO `mangos_string` VALUES
 (734,'You cannot summon players to a battleground or arena map.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (735,'You must be in GM mode to teleport to a player in a battleground.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (736,'You cannot teleport to a battleground from another battleground. Please leave the current battleground first.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(737,'Arenas are set to 1v1 for debugging. So, don\'t join as group.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(738,'Arenas are set to normal playercount.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(739,'Battlegrounds are set to 1v0 for debugging.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(740,'Battlegrounds are set to normal playercount.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(741,'Flushing Arena points based on team ratings, this may take a few minutes. Please stand by...',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(742,'Distributing arena points to players...',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(743,'Finished setting arena points for online players.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(744,'Modifying played count, arena points etc. for loaded arena teams, sending updated stats to online players...',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(745,'Modification done.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
+(746,'Done flushing Arena points.',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (801,'You do not have enough gold',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (802,'You do not have enough free slots',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
 (803,'Your partner does not have enough free bag slots',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),
@@ -13962,12 +13980,6 @@ INSERT INTO spell_chain VALUES
 (34120,56641,56641,2,0),
 (49051,34120,56641,3,0),
 (49052,49051,56641,4,0),
-/*ViperSting*/
-(3034,0,3034,1,0),
-(14279,3034,3034,2,0),
-(14280,14279,3034,3,0),
-(27018,14280,3034,4,0),
-(49008,27018,3034,5,0),
 /*Volley*/
 (1510,0,1510,1,0),
 (14294,1510,1510,2,0),
@@ -14837,7 +14849,7 @@ INSERT INTO spell_chain VALUES
 (27216,25311,172,8,0),
 (47812,27216,172,9,0),
 (47813,47812,172,10,0),
-/*CurseofAgony*/
+/*Curse of Agony*/
 (980,0,980,1,0),
 (1014,980,980,2,0),
 (6217,1014,980,3,0),
@@ -14847,27 +14859,27 @@ INSERT INTO spell_chain VALUES
 (27218,11713,980,7,0),
 (47863,27218,980,8,0),
 (47864,47863,980,9,0),
-/*CurseofDoom*/
+/*Curse of Doom*/
 (603,0,603,1,0),
 (30910,603,603,2,0),
 (47867,30910,603,3,0),
-/*CurseofRecklessness*/
+/*Curse of Recklessness*/
 (704,0,704,1,0),
 (7658,704,704,2,0),
 (7659,7658,704,3,0),
 (11717,7659,704,4,0),
 (27226,11717,704,5,0),
 (57595,27226,704,6,0),
-/*CurseoftheElements*/
+/*Curse of the Elements*/
 (1490,0,1490,1,0),
 (11721,1490,1490,2,0),
 (11722,11721,1490,3,0),
 (27228,11722,1490,4,0),
 (47865,27228,1490,5,0),
-/*CurseofTongues*/
+/*Curse of Tongues*/
 (1714,0,1714,1,0),
 (11719,1714,1714,2,0),
-/*CurseofWeakness*/
+/*Curse of Weakness*/
 (702,0,702,1,0),
 (1108,702,702,2,0),
 (6205,1108,702,3,0),
@@ -14877,14 +14889,20 @@ INSERT INTO spell_chain VALUES
 (27224,11708,702,7,0),
 (30909,27224,702,8,0),
 (50511,30909,702,9,0),
-/*DeathCoil*/
+/*Dark Pact*/
+(18220,0,    18220,1,0),
+(18937,18220,18220,2,0),
+(18938,18937,18220,3,0),
+(27265,18938,18220,4,0),
+(59092,27265,18220,5,0),
+/*Death Coil*/
 (6789,0,6789,1,0),
 (17925,6789,6789,2,0),
 (17926,17925,6789,3,0),
 (27223,17926,6789,4,0),
 (47859,27223,6789,5,0),
 (47860,47859,6789,6,0),
-/*DrainLife*/
+/*Drain Life*/
 (689,0,689,1,0),
 (699,689,689,2,0),
 (709,699,689,3,0),
@@ -14894,14 +14912,6 @@ INSERT INTO spell_chain VALUES
 (27219,11700,689,7,0),
 (27220,27219,689,8,0),
 (47857,27220,689,9,0),
-/*DrainMana*/
-(5138,0,5138,1,0),
-(6226,5138,5138,2,0),
-(11703,6226,5138,3,0),
-(11704,11703,5138,4,0),
-(27221,11704,5138,5,0),
-(30908,27221,5138,6,0),
-(47858,30908,5138,7,0),
 /*DrainSoul*/
 (1120,0,1120,1,0),
 (8288,1120,1120,2,0),
@@ -15700,15 +15710,6 @@ INSERT INTO spell_chain VALUES
 (25431,10952,588,7,0),
 (48040,25431,588,8,0),
 (48168,48040,588,9,0),
-/*ManaBurn*/
-(8129,0,8129,1,0),
-(8131,8129,8129,2,0),
-(10874,8131,8129,3,0),
-(10875,10874,8129,4,0),
-(10876,10875,8129,5,0),
-(25379,10876,8129,6,0),
-(25380,25379,8129,7,0),
-(48128,25380,8129,8,0),
 /*Penance*/
 (47540,0,47540,1,0),
 (53005,47540,47540,2,0),
@@ -15945,11 +15946,11 @@ INSERT INTO spell_chain VALUES
 (49937,49936,43265,3,0),
 (49938,49937,43265,4,0),
 /*DeathCoil*/
-(52375,0,52375,1,0),
-(49892,52375,52375,2,0),
-(49893,49892,52375,3,0),
-(49894,49893,52375,4,0),
-(49895,49894,52375,5,0),
+(47541,0,47541,1,0),
+(49892,47541,47541,2,0),
+(49893,49892,47541,3,0),
+(49894,49893,47541,4,0),
+(49895,49894,47541,5,0),
 /*DeathStrike*/
 (49998,0,49998,1,0),
 (49999,49998,49998,2,0),
@@ -17180,7 +17181,6 @@ INSERT INTO `spell_proc_event` VALUES
 (60132, 0x00000000, 15, 0x00000000, 0x08020000, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (60170, 0x00000000,  5, 0x00000006, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (60172, 0x00000000,  5, 0x00040000, 0x00000000, 0x00000000, 0x00000000, 0x00010000, 0.000000, 0.000000,  0),
-(60200, 0x00000000, 15, 0x00001000, 0x00000000, 0x00000000, 0x00000000, 0x00010000, 0.000000, 0.000000,  0),
 (60493, 0x00000000,  0, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000, 45),
 (60503, 0x00000000,  4, 0x00000004, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0.000000, 0.000000,  0),
 (60537, 0x00000000,  0, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000002, 0.000000, 0.000000,  0),
@@ -17278,7 +17278,10 @@ INSERT INTO `spell_bonus_data` VALUES
 ('116', '0.8143', '0', '0', 'Mage - Frost Bolt'),
 ('11426', '0.8053', '0', '0', 'Mage - Ice Barrier'),
 ('30455', '0.1429', '0', '0', 'Mage - Ice Lance'),
-('19750', '0.4286', '0', '0', 'Paladin - Flash of Light'),
+('34913','0', '0', '0', 'Mage - Molten Armor Triggered Rank 1'),
+('43043','0', '0', '0', 'Mage - Molten Armor Triggered Rank 2'),
+('43044','0', '0', '0', 'Mage - Molten Armor Triggered Rank 3'),
+('19750','0.4286', '0', '0', 'Paladin - Flash of Light'),
 ('635', '0.7143', '0', '0', 'Paladin - Holy Light'),
 ('25912', '0.4286', '0', '0', 'Paladin - Holy Shock Triggered Hurt Rank 1'),
 ('25911', '0.4286', '0', '0', 'Paladin - Holy Shock Triggered Hurt Rank 2'),
@@ -17308,6 +17311,7 @@ INSERT INTO `spell_bonus_data` VALUES
 ('53719', '0.25', '0', '0.16', 'Paladin - Seal of The Martyr Enemy Proc'),
 ('53718', '0.25', '0', '0.16', 'Paladin - Seal of The Martyr Self Proc'),
 ('25742', '0.07', '0', '0.039', 'Paladin - Seal of Righteousness Dummy Proc'),
+('53595', '0', '0', '0','Paladin - Hammer of the Righteous'),
 ('31803', '0', '0.013', '0.15', 'Paladin - Holy Vengeance'),
 ('52042', '0.045', '0', '0', 'Shaman - Healing Stream Totem Triggered Heal'),
 ('32546', '0.8068', '0', '0', 'Priest - Binding Heal'),
@@ -17441,7 +17445,11 @@ INSERT INTO `spell_bonus_data` VALUES
 ('42218', '0.952', '0', '0', 'Warlock - Rain of Fire Triggered Rank 5'),
 ('47817', '0.952', '0', '0', 'Warlock - Rain of Fire Triggered Rank 6'),
 ('47818', '0.952', '0', '0', 'Warlock - Rain of Fire Triggered Rank 7'),
-('18220', '0.96', '0', '0', 'Warlock - Dark Pact'),
+('18220', '0.96', '0', '0', 'Warlock - Dark Pact Rank 1'),
+('18937', '0.96', '0', '0', 'Warlock - Dark Pact Rank 2'),
+('18938', '0.96', '0', '0', 'Warlock - Dark Pact Rank 3'),
+('27265', '0.96', '0', '0', 'Warlock - Dark Pact Rank 4'),
+('59092', '0.96', '0', '0', 'Warlock - Dark Pact Rank 5'),
 ('6229', '0.3', '0', '0', 'Warlock - Shadow Ward');
 /*!40000 ALTER TABLE `spell_bonus_data` ENABLE KEYS */;
 UNLOCK TABLES;

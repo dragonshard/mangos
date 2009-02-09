@@ -188,10 +188,7 @@ struct CreatureInfo
     int32   resistance4;
     int32   resistance5;
     int32   resistance6;
-    uint32  spell1;
-    uint32  spell2;
-    uint32  spell3;
-    uint32  spell4;
+    uint32  spells[CREATURE_MAX_SPELLS];
     uint32  PetSpellDataId;
     uint32  mingold;
     uint32  maxgold;
@@ -247,6 +244,7 @@ struct CreatureData
 {
     uint32 id;                                              // entry in creature_template
     uint16 mapid;
+    uint16 phaseMask;
     uint32 displayid;
     int32 equipmentId;
     float posX;
@@ -342,6 +340,7 @@ struct VendorItemData
     {
         for (VendorItemList::iterator itr = m_items.begin(); itr != m_items.end(); ++itr)
             delete (*itr);
+        m_items.clear();
     }
 };
 
@@ -360,14 +359,14 @@ typedef std::list<VendorItemCount> VendorItemCounts;
 struct TrainerSpell
 {
     uint32 spell;
-    uint32 spellcost;
-    uint32 reqskill;
-    uint32 reqskillvalue;
-    uint32 reqlevel;
-    uint32 learned_spell;
+    uint32 spellCost;
+    uint32 reqSkill;
+    uint32 reqSkillValue;
+    uint32 reqLevel;
+    uint32 learnedSpell;
 
     // helpers
-    bool IsCastable() const { return learned_spell != spell; }
+    bool IsCastable() const { return learnedSpell != spell; }
 };
 
 typedef std::vector<TrainerSpell*> TrainerSpellList;
@@ -405,7 +404,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         void AddToWorld();
         void RemoveFromWorld();
 
-        bool Create (uint32 guidlow, Map *map, uint32 Entry, uint32 team, const CreatureData *data = NULL);
+        bool Create (uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, uint32 team, const CreatureData *data = NULL);
         bool LoadCreaturesAddon(bool reload = false);
         void SelectLevel(const CreatureInfo *cinfo);
         void LoadEquipment(uint32 equip_entry, bool force=false);
@@ -428,7 +427,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool canFly()  const { return GetCreatureInfo()->InhabitType & INHABIT_AIR; }
         ///// TODO RENAME THIS!!!!!
         bool isCanTrainingOf(Player* player, bool msg) const;
-        bool isCanIneractWithBattleMaster(Player* player, bool msg) const;
+        bool isCanInteractWithBattleMaster(Player* player, bool msg) const;
         bool isCanTrainingAndResetTalentsOf(Player* pPlayer) const;
         bool IsOutOfThreatArea(Unit* pVictim) const;
         bool IsImmunedToSpell(SpellEntry const* spellInfo);
@@ -531,7 +530,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool LoadFromDB(uint32 guid, Map *map);
         void SaveToDB();
                                                             // overwrited in Pet
-        virtual void SaveToDB(uint32 mapid, uint8 spawnMask);
+        virtual void SaveToDB(uint32 mapid, uint8 spawnMask, uint32 phaseMask);
         virtual void DeleteFromDB();                        // overwrited in Pet
 
         Loot loot;

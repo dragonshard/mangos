@@ -43,6 +43,7 @@
 #include "SpellAuras.h"
 #include "Util.h"
 #include "WaypointManager.h"
+#include "BattleGround.h"
 
 INSTANTIATE_SINGLETON_1(ObjectMgr);
 
@@ -264,14 +265,14 @@ void ObjectMgr::RemoveArenaTeam(ArenaTeam* arenaTeam)
     mArenaTeamMap.erase( arenaTeam->GetId() );
 }
 
-AuctionHouseObject * ObjectMgr::GetAuctionsMap( uint32 location )
+AuctionHouseObject * ObjectMgr::GetAuctionsMap( AuctionLocation location )
 {
     switch ( location )
     {
-        case 6:                                             //horde
+        case AUCTION_HORDE:
             return & mHordeAuctions;
             break;
-        case 2:                                             //alliance
+        case AUCTION_ALLIANCE:
             return & mAllianceAuctions;
             break;
         default:                                            //neutral
@@ -279,18 +280,18 @@ AuctionHouseObject * ObjectMgr::GetAuctionsMap( uint32 location )
     }
 }
 
-uint32 ObjectMgr::GetAuctionCut(uint32 location, uint32 highBid)
+uint32 ObjectMgr::GetAuctionCut(AuctionLocation location, uint32 highBid)
 {
-    if (location == 7 && !sWorld.getConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
+    if (location == AUCTION_NEUTRAL && !sWorld.getConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
         return (uint32) (0.15f * highBid * sWorld.getRate(RATE_AUCTION_CUT));
     else
         return (uint32) (0.05f * highBid * sWorld.getRate(RATE_AUCTION_CUT));
 }
 
-uint32 ObjectMgr::GetAuctionDeposit(uint32 location, uint32 time, Item *pItem)
+uint32 ObjectMgr::GetAuctionDeposit(AuctionLocation location, uint32 time, Item *pItem)
 {
     float percentance;                                      // in 0..1
-    if ( location == 7 && !sWorld.getConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
+    if (location == AUCTION_NEUTRAL && !sWorld.getConfig(CONFIG_ALLOW_TWO_SIDE_INTERACTION_AUCTION))
         percentance = 0.75f;
     else
         percentance = 0.15f;
@@ -792,6 +793,15 @@ void ObjectMgr::LoadCreatureTemplates()
                 sLog.outErrorDb("Creature (Entry: %u) has non-existing PetSpellDataId (%u)", cInfo->Entry, cInfo->PetSpellDataId);
         }
 
+        for(int i = 0; i < CREATURE_MAX_SPELLS; ++i)
+        {
+            if(cInfo->spells[i] && !sSpellStore.LookupEntry(cInfo->spells[i]))
+            {
+                sLog.outErrorDb("Creature (Entry: %u) has non-existing Spell%d (%u), set to 0", cInfo->Entry, i+1,cInfo->spells[i]);
+                const_cast<CreatureInfo*>(cInfo)->spells[i] = 0;
+            }
+        }
+
         if(cInfo->MovementType >= MAX_DB_MOTION_TYPE)
         {
             sLog.outErrorDb("Creature (Entry: %u) has wrong movement generator type (%u), ignore and set to IDLE.",cInfo->Entry,cInfo->MovementType);
@@ -1042,8 +1052,8 @@ void ObjectMgr::LoadCreatures()
     QueryResult *result = WorldDatabase.Query("SELECT creature.guid, id, map, modelid,"
     //   4             5           6           7           8            9              10         11
         "equipment_id, position_x, position_y, position_z, orientation, spawntimesecs, spawndist, currentwaypoint,"
-    //   12         13       14          15            16         17
-        "curhealth, curmana, DeathState, MovementType, spawnMask, event "
+    //   12         13       14          15            16         17         18
+        "curhealth, curmana, DeathState, MovementType, spawnMask, phaseMask, event "
         "FROM creature LEFT OUTER JOIN game_event_creature ON creature.guid = game_event_creature.guid");
 
     if(!result)
@@ -1091,7 +1101,8 @@ void ObjectMgr::LoadCreatures()
         data.is_dead        = fields[14].GetBool();
         data.movementType   = fields[15].GetUInt8();
         data.spawnMask      = fields[16].GetUInt8();
-        int16 gameEvent     = fields[17].GetInt16();
+        data.phaseMask      = fields[17].GetUInt16();
+        int16 gameEvent     = fields[18].GetInt16();
 
         CreatureInfo const* cInfo = GetCreatureTemplate(data.id);
         if(!cInfo)
@@ -1149,6 +1160,40 @@ void ObjectMgr::LoadCreatures()
             }
         }
 
+        if(data.phaseMask==0)
+        {
+            sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with `phaseMask`=0 (not visible for anyone), set to 1.",guid,data.id );
+            data.phaseMask = 1;
+        }
+        else
+        {
+            int count = 0;
+            for(int i=0; i < sizeof(data.phaseMask)*8; ++i)
+                if(data.phaseMask & (1 << i))
+                    ++count;
+
+            if(count > 1)
+            {
+                uint32 phaseMask = data.phaseMask & ~PHASEMASK_NORMAL;
+                count = 0;
+                for(int i=0; i < sizeof(phaseMask)*8; ++i)
+                    if(phaseMask & (1 << i))
+                        ++count;
+
+                if(count > 1)
+                {
+                    sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with more single bit set in `phaseMask` (not visible for anyone), set to 1.",guid,data.id );
+                    data.phaseMask = phaseMask;
+                }
+                else
+                {
+                    sLog.outErrorDb("Table `creature` have creature (GUID: %u Entry: %u) with more single bit set in `phaseMask` (not visible for anyone), set to %u (possible expected).",guid,data.id,phaseMask);
+                    data.phaseMask = 1;
+                }
+
+            }
+        }
+
         if (gameEvent==0)                                   // if not this is to be managed by GameEvent System
             AddCreatureToGrid(guid, &data);
         ++count;
@@ -1199,8 +1244,8 @@ void ObjectMgr::LoadGameobjects()
 
     //                                                0                1   2    3           4           5           6
     QueryResult *result = WorldDatabase.Query("SELECT gameobject.guid, id, map, position_x, position_y, position_z, orientation,"
-    //   7          8          9          10         11             12            13     14         15
-        "rotation0, rotation1, rotation2, rotation3, spawntimesecs, animprogress, state, spawnMask, event "
+    //   7          8          9          10         11             12            13     14         15         16
+        "rotation0, rotation1, rotation2, rotation3, spawntimesecs, animprogress, state, spawnMask, phaseMask, event "
         "FROM gameobject LEFT OUTER JOIN game_event_gameobject ON gameobject.guid = game_event_gameobject.guid");
 
     if(!result)
@@ -1239,13 +1284,20 @@ void ObjectMgr::LoadGameobjects()
         data.animprogress   = fields[12].GetUInt32();
         data.go_state       = fields[13].GetUInt32();
         data.spawnMask      = fields[14].GetUInt8();
-        int16 gameEvent     = fields[15].GetInt16();
+        data.phaseMask      = fields[15].GetUInt16();
+        int16 gameEvent     = fields[16].GetInt16();
 
         GameObjectInfo const* gInfo = GetGameObjectInfo(data.id);
         if(!gInfo)
         {
             sLog.outErrorDb("Table `gameobject` have gameobject (GUID: %u) with not existed gameobject entry %u, skipped.",guid,data.id );
             continue;
+        }
+
+        if(data.phaseMask==0)
+        {
+            sLog.outErrorDb("Table `gameobject` have gameobject (GUID: %u Entry: %u) with `phaseMask`=0 (not visible for anyone), set to 1.",guid,data.id );
+            data.phaseMask = 1;
         }
 
         if (gameEvent==0)                                   // if not this is to be managed by GameEvent System
@@ -1513,18 +1565,31 @@ void ObjectMgr::LoadAuctions()
         aItem->bid = fields[8].GetUInt32();
         aItem->startbid = fields[9].GetUInt32();
         aItem->deposit = fields[10].GetUInt32();
-        aItem->location = fields[11].GetUInt8();
-        //check if sold item exists
-        if ( GetAItem( aItem->item_guidlow ) )
+
+        uint32 loc = fields[11].GetUInt8();
+        if(!IsValidAuctionLocation(loc))
         {
-            GetAuctionsMap( aItem->location )->AddAuction(aItem);
+            CharacterDatabase.PExecute("DELETE FROM auctionhouse WHERE id = '%u'",aItem->Id);
+            sLog.outError("Auction %u has wrong auction location (%u)", aItem->Id, loc);
+            delete aItem;
+            continue;
         }
-        else
+        aItem->location = AuctionLocation(loc);
+
+        // check if sold item exists for guid
+        // and item_template in fact (GetAItem will fail if problematic in result check in ObjectMgr::LoadAuctionItems)
+        if ( !GetAItem( aItem->item_guidlow ) )
         {
             CharacterDatabase.PExecute("DELETE FROM auctionhouse WHERE id = '%u'",aItem->Id);
             sLog.outError("Auction %u has not a existing item : %u", aItem->Id, aItem->item_guidlow);
             delete aItem;
+            continue;
         }
+
+        if(aItem->location)
+
+        GetAuctionsMap( aItem->location )->AddAuction(aItem);
+
     } while (result->NextRow());
     delete result;
 
@@ -5688,10 +5753,10 @@ void ObjectMgr::LoadGameobjectInfo()
                 break;
             }
             case GAMEOBJECT_TYPE_CHAIR:                     //7
-                if(goInfo->chair.height > 2)
+                if(goInfo->chair.height > (UNIT_STAND_STATE_SIT_HIGH_CHAIR-UNIT_STAND_STATE_SIT_LOW_CHAIR) )
                 {
-                    sLog.outErrorDb("Gameobject (Entry: %u GoType: %u) have data1=%u but correct chair height in range 0..2.",
-                        id,goInfo->type,goInfo->chair.height);
+                    sLog.outErrorDb("Gameobject (Entry: %u GoType: %u) have data1=%u but correct chair height in range 0..%i.",
+                        id,goInfo->type,goInfo->chair.height,UNIT_STAND_STATE_SIT_HIGH_CHAIR-UNIT_STAND_STATE_SIT_LOW_CHAIR);
 
                     // prevent client and server unexpected work
                     const_cast<GameObjectInfo*>(goInfo)->chair.height = 0;
@@ -5786,6 +5851,16 @@ void ObjectMgr::LoadGameobjectInfo()
                 }
                 break;
             }
+            case GAMEOBJECT_TYPE_BARBER_CHAIR:              //32
+                if(goInfo->barberChair.chairheight > (UNIT_STAND_STATE_SIT_HIGH_CHAIR-UNIT_STAND_STATE_SIT_LOW_CHAIR) )
+                {
+                    sLog.outErrorDb("Gameobject (Entry: %u GoType: %u) have data1=%u but correct chair height in range 0..%i.",
+                        id,goInfo->type,goInfo->barberChair.chairheight,UNIT_STAND_STATE_SIT_HIGH_CHAIR-UNIT_STAND_STATE_SIT_LOW_CHAIR);
+
+                    // prevent client and server unexpected work
+                    const_cast<GameObjectInfo*>(goInfo)->barberChair.chairheight = 0;
+                }
+                break;
         }
     }
 
@@ -6488,46 +6563,6 @@ int ObjectMgr::GetOrNewIndexForLocale( LocaleConstant loc )
     return m_LocalForIndex.size()-1;
 }
 
-void ObjectMgr::LoadBattleMastersEntry()
-{
-    mBattleMastersMap.clear();                              // need for reload case
-
-    QueryResult *result = WorldDatabase.Query( "SELECT entry,bg_template FROM battlemaster_entry" );
-
-    uint32 count = 0;
-
-    if( !result )
-    {
-        barGoLink bar( 1 );
-        bar.step();
-
-        sLog.outString();
-        sLog.outString( ">> Loaded 0 battlemaster entries - table is empty!" );
-        return;
-    }
-
-    barGoLink bar( result->GetRowCount() );
-
-    do
-    {
-        ++count;
-        bar.step();
-
-        Field *fields = result->Fetch();
-
-        uint32 entry = fields[0].GetUInt32();
-        uint32 bgTypeId  = fields[1].GetUInt32();
-
-        mBattleMastersMap[entry] = bgTypeId;
-
-    } while( result->NextRow() );
-
-    delete result;
-
-    sLog.outString();
-    sLog.outString( ">> Loaded %u battlemaster entries", count );
-}
-
 void ObjectMgr::LoadGameObjectForQuests()
 {
     mGameObjectForQuestSet.clear();                         // need for reload case
@@ -7213,16 +7248,16 @@ void ObjectMgr::LoadTrainerSpell()
 
         TrainerSpell* pTrainerSpell = new TrainerSpell();
         pTrainerSpell->spell         = spell;
-        pTrainerSpell->spellcost     = fields[2].GetUInt32();
-        pTrainerSpell->reqskill      = fields[3].GetUInt32();
-        pTrainerSpell->reqskillvalue = fields[4].GetUInt32();
-        pTrainerSpell->reqlevel      = fields[5].GetUInt32();
+        pTrainerSpell->spellCost     = fields[2].GetUInt32();
+        pTrainerSpell->reqSkill      = fields[3].GetUInt32();
+        pTrainerSpell->reqSkillValue = fields[4].GetUInt32();
+        pTrainerSpell->reqLevel      = fields[5].GetUInt32();
 
-        if(!pTrainerSpell->reqlevel)
-            pTrainerSpell->reqlevel = spellinfo->spellLevel;
+        if(!pTrainerSpell->reqLevel)
+            pTrainerSpell->reqLevel = spellinfo->spellLevel;
 
         // calculate learned spell for profession case when stored cast-spell
-        pTrainerSpell->learned_spell = spell;
+        pTrainerSpell->learnedSpell = spell;
         for(int i = 0; i <3; ++i)
         {
             if(spellinfo->Effect[i]!=SPELL_EFFECT_LEARN_SPELL)
@@ -7230,7 +7265,7 @@ void ObjectMgr::LoadTrainerSpell()
 
             if(SpellMgr::IsProfessionOrRidingSpell(spellinfo->EffectTriggerSpell[i]))
             {
-                pTrainerSpell->learned_spell = spellinfo->EffectTriggerSpell[i];
+                pTrainerSpell->learnedSpell = spellinfo->EffectTriggerSpell[i];
                 break;
             }
         }

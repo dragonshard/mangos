@@ -277,7 +277,7 @@ enum ItemQualities
 
 #define SPELL_ATTR_EX2_UNK0                       0x00000001            // 0
 #define SPELL_ATTR_EX2_UNK1                       0x00000002            // 1
-#define SPELL_ATTR_EX2_UNK2                       0x00000004            // 2
+#define SPELL_ATTR_EX2_CANT_REFLECTED             0x00000004            // 2 ? used for detect can or not spell reflected
 #define SPELL_ATTR_EX2_UNK3                       0x00000008            // 3
 #define SPELL_ATTR_EX2_UNK4                       0x00000010            // 4
 #define SPELL_ATTR_EX2_AUTOREPEAT_FLAG            0x00000020            // 5
@@ -674,7 +674,7 @@ enum SpellEffects
     SPELL_EFFECT_153                       = 153,
     SPELL_EFFECT_154                       = 154,
     SPELL_EFFECT_TITAN_GRIP                = 155,
-    SPELL_EFFECT_ADD_SOCKET                = 156,
+    SPELL_EFFECT_ENCHANT_ITEM_PRISMATIC    = 156,
     SPELL_EFFECT_CREATE_ITEM_2             = 157,
     SPELL_EFFECT_MILLING                   = 158,
     SPELL_EFFECT_ALLOW_RENAME_PET          = 159,
@@ -1908,13 +1908,14 @@ enum CorpseDynFlags
 };
 
 // Passive Spell codes explicit used in code
-#define SPELL_ID_GENERIC_LEARN                   483
-#define SPELL_ID_GENERIC_LEARN_PET               55884      // used for learning mounts and companions
-#define SPELL_ID_PASSIVE_BATTLE_STANCE           2457
-#define SPELL_ID_PASSIVE_RESURRECTION_SICKNESS   15007
-#define SPELL_ID_WEAPON_SWITCH_COOLDOWN_1_5s     6119
-#define SPELL_ID_WEAPON_SWITCH_COOLDOWN_1_0s     6123
-#define SPELL_ID_AUTOSHOT                        75         // used for checks in other spells interruption
+#define SPELL_ID_GENERIC_LEARN                  483
+#define SPELL_ID_GENERIC_LEARN_PET              55884       // used for learning mounts and companions
+#define SPELL_ID_PASSIVE_BATTLE_STANCE          2457
+#define SPELL_ID_PASSIVE_RESURRECTION_SICKNESS  15007
+#define SPELL_ID_WEAPON_SWITCH_COOLDOWN_1_5s    6119
+#define SPELL_ID_WEAPON_SWITCH_COOLDOWN_1_0s    6123
+#define SPELL_ID_AUTOSHOT                       75          // used for checks in other spells interruption
+#define SPELL_ID_SHADOWMELD                     58984       // used for check ignore stealth stance state
 
 enum WeatherType
 {
@@ -2210,5 +2211,22 @@ enum BanReturn
     BAN_SYNTAX_ERROR,
     BAN_NOTFOUND
 };
+
+// indexes of BattlemasterList.dbc
+enum BattleGroundTypeId
+{
+    BATTLEGROUND_AV            = 1,
+    BATTLEGROUND_WS            = 2,
+    BATTLEGROUND_AB            = 3,
+    BATTLEGROUND_NA            = 4,
+    BATTLEGROUND_BE            = 5,
+    BATTLEGROUND_AA            = 6,
+    BATTLEGROUND_EY            = 7,
+    BATTLEGROUND_RL            = 8,
+    BATTLEGROUND_SA            = 9,
+    BATTLEGROUND_DS            = 10,
+    BATTLEGROUND_RV            = 11
+};
+#define MAX_BATTLEGROUND_TYPE_ID 12
 
 #endif

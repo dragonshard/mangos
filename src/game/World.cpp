@@ -1286,7 +1286,7 @@ void World::SetInitialWorldSettings()
     objmgr.LoadGameObjectForQuests();
 
     sLog.outString( "Loading BattleMasters..." );
-    objmgr.LoadBattleMastersEntry();
+    sBattleGroundMgr.LoadBattleMastersEntry();
 
     sLog.outString( "Loading GameTeleports..." );
     objmgr.LoadGameTele();
@@ -1478,13 +1478,13 @@ void World::Update(uint32 diff)
             switch (i)
             {
                 case 0:
-                    AuctionMap = objmgr.GetAuctionsMap( 6 );//horde
+                    AuctionMap = objmgr.GetAuctionsMap(AUCTION_HORDE);
                     break;
                 case 1:
-                    AuctionMap = objmgr.GetAuctionsMap( 2 );//alliance
+                    AuctionMap = objmgr.GetAuctionsMap(AUCTION_ALLIANCE);
                     break;
                 case 2:
-                    AuctionMap = objmgr.GetAuctionsMap( 7 );//neutral
+                    AuctionMap = objmgr.GetAuctionsMap(AUCTION_NEUTRAL);
                     break;
             }
 
@@ -1955,7 +1955,7 @@ void World::ScriptsProcess()
                 cell.data.Part.reserved = ALL_DISTRICT;
 
                 MaNGOS::GameObjectWithDbGUIDCheck go_check(*summoner,step.script->datalong);
-                MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(go,go_check);
+                MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(summoner, go,go_check);
 
                 TypeContainerVisitor<MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck>, GridTypeMapContainer > object_checker(checker);
                 CellLock<GridReadGuard> cell_lock(cell, p);
@@ -2016,7 +2016,7 @@ void World::ScriptsProcess()
                 cell.data.Part.reserved = ALL_DISTRICT;
 
                 MaNGOS::GameObjectWithDbGUIDCheck go_check(*caster,step.script->datalong);
-                MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(door,go_check);
+                MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(caster,door,go_check);
 
                 TypeContainerVisitor<MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck>, GridTypeMapContainer > object_checker(checker);
                 CellLock<GridReadGuard> cell_lock(cell, p);
@@ -2072,7 +2072,7 @@ void World::ScriptsProcess()
                 cell.data.Part.reserved = ALL_DISTRICT;
 
                 MaNGOS::GameObjectWithDbGUIDCheck go_check(*caster,step.script->datalong);
-                MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(door,go_check);
+                MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck> checker(caster,door,go_check);
 
                 TypeContainerVisitor<MaNGOS::GameObjectSearcher<MaNGOS::GameObjectWithDbGUIDCheck>, GridTypeMapContainer > object_checker(checker);
                 CellLock<GridReadGuard> cell_lock(cell, p);
@@ -2329,7 +2329,7 @@ void World::SendWorldText(int32 string_id, ...)
             delete data_cache[i][j];
 }
 
-/// Send a System Message to all players (except self if mentioned)
+/// DEPRICATED, only for debug purpose. Send a System Message to all players (except self if mentioned)
 void World::SendGlobalText(const char* text, WorldSession *self)
 {
     WorldPacket data;
