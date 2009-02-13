@@ -5401,7 +5401,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 {
                     if (pVictim->getPowerType() == POWER_MANA)
                     {
-                        uint32 gainMana = pVictim->GetMaxPower(POWER_MANA) * triggeredByAura->GetBasePoints() / 100;
+                        int32 gainMana = pVictim->GetMaxPower(POWER_MANA) * triggeredByAura->GetBasePoints() / 100;
                         pVictim->CastCustomSpell(pVictim, 20268, &gainMana, 0, 0, true, 0, triggeredByAura);
                     }
                     return true;
