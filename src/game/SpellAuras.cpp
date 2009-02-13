@@ -5967,7 +5967,7 @@ void Aura::PeriodicTick()
             int32 drain_amount = m_target->GetPower(power) > pdamage ? pdamage : m_target->GetPower(power);
 
             SkillLineAbilityMap::const_iterator const skillLine = spellmgr.GetBeginSkillLineAbilityMap(GetSpellProto()->Id);
-            if(skillLine->second->skillId == SKILL_AFFLICTION)
+            if(skillLine->second->skillId == SKILL_AFFLICTION || skillLine->second->skillId == SKILL_MARKSMANSHIP)
             {
                uint32 drain = m_target->GetMaxPower(power) * drain_amount /100;
 
