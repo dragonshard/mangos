@@ -3411,15 +3411,18 @@ void Spell::EffectDispel(uint32 i)
             // TODO: possible chance depend from spell level??
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
-            for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
+            if(GetCaster()->IsInWorld())
             {
-                for(int j=0; j<3; ++j)
-                {
-                    if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
-                       miss_chance += (*a)->GetModifier()->m_amount;
-                    break;
-                }
+               Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
+               for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
+               {
+                   for(int j=0; j<3; ++j)
+                   {
+                       if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
+                          miss_chance += (*a)->GetModifier()->m_amount;
+                       break;
+                   }
+               }
             }
 
             // Apply dispel mod from aura caster
@@ -6527,15 +6530,18 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
 
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
-            for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
+            if(GetCaster()->IsInWorld())
             {
-                for(int j=0; j<3; ++j)
-                {
-                    if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
-                       miss_chance += (*a)->GetModifier()->m_amount;
-                    break;
-                }
+               Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
+               for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
+               {
+                   for(int j=0; j<3; ++j)
+                   {
+                       if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
+                          miss_chance += (*a)->GetModifier()->m_amount;
+                       break;
+                   }
+               }
             }
 
             // TODO possible need do it
