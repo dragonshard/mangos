@@ -3411,7 +3411,7 @@ void Spell::EffectDispel(uint32 i)
             // TODO: possible chance depend from spell level??
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(GetCaster()->IsInWorld())
+            if(aur->GetCaster()->IsInWorld())
             {
                Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
                for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
@@ -6530,7 +6530,7 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
 
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(GetCaster()->IsInWorld())
+            if(aur->GetCaster()->IsInWorld())
             {
                Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
                for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
