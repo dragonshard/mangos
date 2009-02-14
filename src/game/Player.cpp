@@ -368,7 +368,7 @@ Player::Player (WorldSession *session): Unit(), m_achievementMgr(this)
     m_bgBattleGroundID = 0;
     for (int j=0; j < PLAYER_MAX_BATTLEGROUND_QUEUES; j++)
     {
-        m_bgBattleGroundQueueID[j].bgQueueType  = 0;
+        m_bgBattleGroundQueueID[j].bgQueueTypeId  = BATTLEGROUND_QUEUE_NONE;
         m_bgBattleGroundQueueID[j].invitedToInstance = 0;
     }
     m_bgTeam = 0;
@@ -1518,7 +1518,7 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
     }
     else
     {
-        sLog.outDebug("Player %s will teleported to map %u", GetName(), mapid);
+        sLog.outDebug("Player %s is being teleported to map %u", GetName(), mapid);
     }
 
     // if we were on a transport, leave
@@ -2308,11 +2308,11 @@ void Player::InitStatsForLevel(bool reapplyMods)
     SetFloatValue(UNIT_FIELD_MINRANGEDDAMAGE, 0.0f );
     SetFloatValue(UNIT_FIELD_MAXRANGEDDAMAGE, 0.0f );
 
-    SetUInt32Value(UNIT_FIELD_ATTACK_POWER,            0 );
-    SetUInt32Value(UNIT_FIELD_ATTACK_POWER_MODS,       0 );
+    SetInt32Value(UNIT_FIELD_ATTACK_POWER,            0 );
+    SetInt32Value(UNIT_FIELD_ATTACK_POWER_MODS,       0 );
     SetFloatValue(UNIT_FIELD_ATTACK_POWER_MULTIPLIER,0.0f);
-    SetUInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER,     0 );
-    SetUInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER_MODS,0 );
+    SetInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER,     0 );
+    SetInt32Value(UNIT_FIELD_RANGED_ATTACK_POWER_MODS,0 );
     SetFloatValue(UNIT_FIELD_RANGED_ATTACK_POWER_MULTIPLIER,0.0f);
 
     // Base crit values (will be recalculated in UpdateAllStats() at loading and in _ApplyAllStatBonuses() at reset
@@ -6728,6 +6728,7 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto, uint8 slot, bool appl
                 break;
             case ITEM_MOD_ATTACK_POWER:
                 HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, float(val), apply);
+                HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, float(val), apply);
                 break;
             case ITEM_MOD_RANGED_ATTACK_POWER:
                 HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, float(val), apply);
@@ -6803,6 +6804,14 @@ void Player::_ApplyItemBonuses(ItemPrototype const *proto, uint8 slot, bool appl
     {
         damage = apply ? proto->Damage[0].DamageMax : BASE_MAXDAMAGE;
         SetBaseWeaponDamage(attType, MAXDAMAGE, damage);
+    }
+
+    // Druids get feral AP bonus from weapon dps
+    if(getClass() == CLASS_DRUID)
+    {
+        int32 feral_bonus = proto->getFeralBonus();
+        if (feral_bonus > 0)
+            ApplyFeralAPBonus(feral_bonus, apply);
     }
 
     if(!IsUseEquipedWeapon(slot==EQUIPMENT_SLOT_MAINHAND))
@@ -12033,6 +12042,7 @@ void Player::ApplyEnchantment(Item *item,EnchantmentSlot slot,bool apply, bool a
                         break;
                     case ITEM_MOD_ATTACK_POWER:
                         HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, float(enchant_amount), apply);
+                        HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, float(enchant_amount), apply);
                         sLog.outDebug("+ %u ATTACK_POWER", enchant_amount);
                         break;
                     case ITEM_MOD_RANGED_ATTACK_POWER:
@@ -14162,18 +14172,23 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
         SetBattleGroundEntryPoint(fields[36].GetUInt32(),fields[37].GetFloat(),fields[38].GetFloat(),fields[39].GetFloat(),fields[40].GetFloat());
 
         // check entry point and fix to homebind if need
-        if(!MapManager::IsValidMapCoord(m_bgEntryPoint))
+        MapEntry const* mapEntry = sMapStore.LookupEntry(m_bgEntryPoint.mapid);
+        if(!mapEntry || mapEntry->Instanceable() || !MapManager::IsValidMapCoord(m_bgEntryPoint))
             SetBattleGroundEntryPoint(m_homebindMapId,m_homebindX,m_homebindY,m_homebindZ,0.0f);
 
         BattleGround *currentBg = sBattleGroundMgr.GetBattleGround(bgid);
 
         if(currentBg && currentBg->IsPlayerInBattleGround(GetGUID()))
         {
-            uint32 bgQueueTypeId = sBattleGroundMgr.BGQueueTypeId(currentBg->GetTypeID(), currentBg->GetArenaType());
+            BattleGroundQueueTypeId bgQueueTypeId = sBattleGroundMgr.BGQueueTypeId(currentBg->GetTypeID(), currentBg->GetArenaType());
             uint32 queueSlot = AddBattleGroundQueueId(bgQueueTypeId);
 
             SetBattleGroundId(currentBg->GetInstanceID());
             SetBGTeam(bgteam);
+
+            //join player to battleground group
+            currentBg->PlayerRelogin(this);
+            currentBg->AddOrSetPlayerToCorrectBgGroup(this, GetGUID(), bgteam);
 
             SetInviteForBattleGroundQueueType(bgQueueTypeId,currentBg->GetInstanceID());
         }
@@ -14193,8 +14208,10 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
             // return to BG master
             SetMapId(fields[36].GetUInt32());
             Relocate(fields[37].GetFloat(),fields[38].GetFloat(),fields[39].GetFloat(),fields[40].GetFloat());
+
             // check entry point and fix to homebind if need
-            if(!IsPositionValid())
+            mapEntry = sMapStore.LookupEntry(GetMapId());
+            if(!mapEntry || mapEntry->IsBattleGroundOrArena() || !IsPositionValid())
                 RelocateToHomebind();
         }
     }
@@ -18094,40 +18111,6 @@ void Player::SendInitialPacketsAfterAddToMap()
         SendMessageToSet(&data,true);
     }
 
-    // setup BG group membership if need
-    if(BattleGround* currentBg = GetBattleGround())
-    {
-        // call for invited (join) or listed (relogin) and avoid other cases (GM teleport)
-        if (IsInvitedForBattleGroundInstance(GetBattleGroundId()) ||
-            currentBg->IsPlayerInBattleGround(GetGUID()))
-        {
-            currentBg->PlayerRelogin(this);
-            if(currentBg->GetMapId() == GetMapId())             // we teleported/login to/in bg
-            {
-                uint32 team = currentBg->GetPlayerTeam(GetGUID());
-                if(!team)
-                    team = GetTeam();
-                Group* group = currentBg->GetBgRaid(team);
-                if(!group)                                      // first player joined
-                {
-                    group = new Group;
-                    currentBg->SetBgRaid(team, group);
-                    group->Create(GetGUIDLow(), GetName());
-                }
-                else                                            // raid already exist
-                {
-                    if(group->IsMember(GetGUID()))
-                    {
-                        uint8 subgroup = group->GetMemberGroup(GetGUID());
-                        SetGroup(group, subgroup);
-                    }
-                    else
-                        currentBg->GetBgRaid(team)->AddMember(GetGUID(), GetName());
-                }
-            }
-        }
-    }
-
     SendAurasForTarget(this);
     SendEnchantmentDurations();                             // must be after add to map
     SendItemDurations();                                    // must be after add to map
@@ -18458,39 +18441,34 @@ bool Player::GetBGAccessByLevel(BattleGroundTypeId bgTypeId) const
     return true;
 }
 
-uint32 Player::GetMinLevelForBattleGroundQueueId(uint32 queue_id)
+uint32 Player::GetMinLevelForBattleGroundQueueId(uint32 queue_id, BattleGroundTypeId bgTypeId)
 {
-    if(queue_id < 1)
-        return 0;
-
-    if(queue_id >=7)
-        queue_id = 7;
-
-    return 10*(queue_id+1);
-}
-
-uint32 Player::GetMaxLevelForBattleGroundQueueId(uint32 queue_id)
-{
-    if(queue_id >=7)
-        return 255;                                         // hardcoded max level
-
-    return 10*(queue_id+2)-1;
-}
-
-uint32 Player::GetBattleGroundQueueIdFromLevel() const
-{
-    uint32 level = getLevel();
-    if(level <= 19)
-        return 0;
-    else if (level > 79)
-        return 7;
-    else
-        return level/10 - 1;                                // 20..29 -> 1, 30-39 -> 2, ...
-    /*
-    assert(bgTypeId < MAX_BATTLEGROUND_TYPES);
     BattleGround *bg = sBattleGroundMgr.GetBattleGroundTemplate(bgTypeId);
     assert(bg);
-    return (getLevel() - bg->GetMinLevel()) / 10;*/
+    return (queue_id*10)+bg->GetMinLevel();
+}
+
+uint32 Player::GetMaxLevelForBattleGroundQueueId(uint32 queue_id, BattleGroundTypeId bgTypeId)
+{
+    return GetMinLevelForBattleGroundQueueId(queue_id, bgTypeId)+10;
+}
+
+uint32 Player::GetBattleGroundQueueIdFromLevel(BattleGroundTypeId bgTypeId) const
+{
+    BattleGround *bg = sBattleGroundMgr.GetBattleGroundTemplate(bgTypeId);
+    assert(bg);
+    if(getLevel()<bg->GetMinLevel())
+    {
+        sLog.outError("getting queue_id for player who doesn't meet the requirements - this shouldn't happen");
+        return 0;
+    }
+    uint32 queue_id = (getLevel() - bg->GetMinLevel()) / 10;
+    if(queue_id>MAX_BATTLEGROUND_QUEUES)
+    {
+        sLog.outError("to high queue_id %u this shouldn't happen",queue_id);
+        return 0;
+    }
+    return queue_id;
 }
 
 float Player::GetReputationPriceDiscount( Creature const* pCreature ) const
