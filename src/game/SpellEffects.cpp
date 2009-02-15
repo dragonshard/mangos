@@ -3411,7 +3411,7 @@ void Spell::EffectDispel(uint32 i)
             // TODO: possible chance depend from spell level??
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(aur->GetCaster()->IsInWorld())
+            if(aur->GetCaster())
             {
                Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
                for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
@@ -3419,8 +3419,10 @@ void Spell::EffectDispel(uint32 i)
                    for(int j=0; j<3; ++j)
                    {
                        if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
+                       {
                           miss_chance += (*a)->GetModifier()->m_amount;
-                       break;
+                          break;
+                       }
                    }
                }
             }
@@ -6530,7 +6532,7 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
 
             /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(aur->GetCaster()->IsInWorld())
+            if(aur->GetCaster())
             {
                Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
                for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
@@ -6538,8 +6540,10 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
                    for(int j=0; j<3; ++j)
                    {
                        if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
+                       {
                           miss_chance += (*a)->GetModifier()->m_amount;
-                       break;
+                          break;
+                       }
                    }
                }
             }
