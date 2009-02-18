@@ -233,6 +233,11 @@ struct NpcOptionLocale
     std::vector<std::string> BoxText;
 };
 
+struct PointOfInterestLocale
+{
+    std::vector<std::string> IconName;
+};
+
 struct EquipmentInfo
 {
     uint32  entry;
@@ -607,6 +612,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
         void GetCombatStartPosition(float &x, float &y, float &z) { x = CombatStartX; y = CombatStartY; z = CombatStartZ; }
 
         uint32 GetGlobalCooldown() const { return m_GlobalCooldown; }
+
+        void SetDeadByDefault (bool death_state) {m_isDeadByDefault = death_state;}
 
     protected:
         bool CreateFromProto(uint32 guidlow,uint32 Entry,uint32 team, const CreatureData *data = NULL);

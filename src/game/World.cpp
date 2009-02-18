@@ -53,6 +53,7 @@
 #include "VMapFactory.h"
 #include "GlobalEvents.h"
 #include "GameEvent.h"
+#include "PoolHandler.h"
 #include "Database/DatabaseImpl.h"
 #include "GridNotifiersImpl.h"
 #include "CellImpl.h"
@@ -1094,6 +1095,7 @@ void World::SetInitialWorldSettings()
     objmgr.LoadNpcTextLocales();
     objmgr.LoadPageTextLocales();
     objmgr.LoadNpcOptionLocales();
+    objmgr.LoadPointOfInterestLocales();
     objmgr.SetDBCLocaleIndex(GetDefaultDbcLocale());        // Get once for all the locale index of DBC language (console/broadcasts)
     sLog.outString( ">>> Localization strings loaded" );
     sLog.outString();
@@ -1152,6 +1154,9 @@ void World::SetInitialWorldSettings()
     sLog.outString( "Loading Creature Reputation OnKill Data..." );
     objmgr.LoadReputationOnKill();
 
+    sLog.outString( "Loading Points Of Interest Data..." );
+    objmgr.LoadPointsOfInterest();
+
     sLog.outString( "Loading Pet Create Spells..." );
     objmgr.LoadPetCreateSpells();
 
@@ -1172,6 +1177,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString( "Loading Gameobject Respawn Data..." ); // must be after PackInstances()
     objmgr.LoadGameobjectRespawnTimes();
+
+    sLog.outString( "Loading Objects Pooling Data...");
+    poolhandler.LoadFromDB();
 
     sLog.outString( "Loading Game Event Data...");
     sLog.outString();
@@ -1388,6 +1396,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Calculate next daily quest reset time..." );
     InitDailyQuestResetTime();
+
+    sLog.outString("Starting objects Pooling system..." );
+    poolhandler.Initialize();
 
     sLog.outString("Starting Game Event system..." );
     uint32 nextGameEvent = gameeventmgr.Initialize();
