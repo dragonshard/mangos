@@ -801,8 +801,7 @@ LootStoreItem const * LootTemplate::LootGroup::Roll(bool rate) const
                 return &ExplicitlyChanced[i];
 
             ItemPrototype const *pProto = objmgr.GetItemPrototype(ExplicitlyChanced[i].itemid);
-            float qualityMultiplier = pProto && rate ? sWorld.getRate(qualityToRate[pProto->Quality]) : 1.0f;
-            Roll -= ExplicitlyChanced[i].chance * qualityMultiplier;
+            Roll -= ExplicitlyChanced[i].chance;
             if (Roll < 0)
                 return &ExplicitlyChanced[i];
         }
