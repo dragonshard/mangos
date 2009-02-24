@@ -1775,7 +1775,7 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
                                        gainHealth = (*k)->GetModifier()->m_amount * currentAbsorb/100;
                                     else
                                        gainHealth = (*k)->GetModifier()->m_amount * RemainingDamage/100;
-                                    pVictim->CastCustomSpell(pVictim,56160,&gainHealth,0,0,true,0,0,caster->GetGUID());
+                                    pVictim->CastCustomSpell(pVictim, 56160, &gainHealth, NULL, NULL, true, NULL, *k, caster->GetGUID());
                                  }
                             } break;
                             case 5065:                          // Rank 1
