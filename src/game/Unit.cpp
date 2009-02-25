@@ -5104,7 +5104,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 return true;                                // no hidden cooldown
             }
             // Divine Aegis
-            if (dummySpell->SpellIconID == 2820)
+            if (dummySpell->SpellIconID == 2820 && procSpell->Id != 56160)
             {
                 basepoints0 = damage * triggerAmount/100;
                 triggered_spell_id = 47753;
