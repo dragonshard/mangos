@@ -1757,24 +1757,11 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
                 // Reflective Shield
                 if (spellProto->SpellFamilyFlags == 0x1)
                 {
-                    int32 gainHealth = 0;
                     AuraList const& vOverRideCS = caster->GetAurasByType(SPELL_AURA_DUMMY);
                     for(AuraList::const_iterator k = vOverRideCS.begin(); k != vOverRideCS.end(); ++k)
                     {
                         switch((*k)->GetModifier()->m_miscvalue)
                         {
-                            case 23:
-                            {
-                                if((*k)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_PRIEST) // Glyph of Power Word: Shield
-                                {
-                                   if(RemainingDamage >= currentAbsorb)
-                                      gainHealth = (*k)->GetModifier()->m_amount * currentAbsorb/100;
-                                   else
-                                      gainHealth = (*k)->GetModifier()->m_amount * RemainingDamage/100;
-                                   pVictim->CastCustomSpell(pVictim, 56160, &gainHealth, NULL, NULL, true, NULL, *k, caster->GetGUID());
-                                }
-                                break;
-                            }
                             case 5065:                          // Rank 1
                             case 5064:                          // Rank 2
                             case 5063:                          // Rank 3
