@@ -576,7 +576,7 @@ void Aura::Update(uint32 diff)
             {
                 Powers powertype = Powers(m_spellProto->powerType);
                 int32 manaPerSecond = m_spellProto->manaPerSecond + m_spellProto->manaPerSecondPerLevel * caster->getLevel();
-                m_timeCla = 1000;
+                m_timeCla = 1*IN_MILISECONDS;
                 if (manaPerSecond)
                 {
                     if(powertype==POWER_HEALTH)
@@ -935,6 +935,16 @@ void Aura::_AddAura()
 
     Unit* caster = GetCaster();
 
+    // set infinity cooldown state for spells
+    if(caster && caster->GetTypeId() == TYPEID_PLAYER)
+    {
+        if (m_spellProto->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE)
+        {
+            Item* castItem = m_castItemGuid ? ((Player*)caster)->GetItemByGuid(m_castItemGuid) : NULL;
+            ((Player*)caster)->AddSpellAndCategoryCooldowns(m_spellProto,castItem ? castItem->GetEntry() : 0, NULL,true);
+        }
+    }
+
     // passive auras (except totem auras) do not get placed in the slots
     // area auras with SPELL_AURA_NONE are not shown on target
     if((!m_isPassive || (caster && caster->GetTypeId() == TYPEID_UNIT && ((Creature*)caster)->isTotem())) &&
@@ -1117,6 +1127,7 @@ void Aura::_RemoveAura()
         if(caster && caster->GetTypeId() == TYPEID_PLAYER)
         {
             if ( GetSpellProto()->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE )
+                // note: item based cooldowns and cooldown spell mods with charges ignored (unknown existed cases)
                 ((Player*)caster)->SendCooldownEvent(GetSpellProto());
         }
     }
@@ -2123,66 +2134,41 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             return;
         }
 
-        // Waiting to Resurrect
-        if(GetId()==2584)
+        switch(GetId())
         {
-            // Waiting to resurrect spell cancel, we must remove player from resurrect queue
-            if(m_target->GetTypeId() == TYPEID_PLAYER)
-                if(BattleGround *bg = ((Player*)m_target)->GetBattleGround())
-                    bg->RemovePlayerFromResurrectQueue(m_target->GetGUID());
-            return;
-        }
-
-        // Dark Fiend
-        if(GetId()==45934)
-        {
-            // Kill target if dispelled
-            if (m_removeMode==AURA_REMOVE_BY_DISPEL)
-                m_target->DealDamage(m_target, m_target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
-            return;
-        }
-
-        // Living Bomb
-        if(GetId()==44457 || GetId()==55359 || GetId()==55360)
-        {
-            if (m_removeMode!=AURA_REMOVE_BY_DEATH)
+            case 2584:                                      // Waiting to Resurrect
             {
-                uint32 finalSpelId = 0;
-                switch(GetId())
-                {
-                   case 44457: finalSpelId = 44461; break;
-                   case 55359: finalSpelId = 55361; break;
-                   case 55360: finalSpelId = 55362; break;
-                }
-                if(finalSpelId)
-                   caster->CastSpell(m_target,finalSpelId,true,NULL,this);
+                // Waiting to resurrect spell cancel, we must remove player from resurrect queue
+                if(m_target->GetTypeId() == TYPEID_PLAYER)
+                    if(BattleGround *bg = ((Player*)m_target)->GetBattleGround())
+                        bg->RemovePlayerFromResurrectQueue(m_target->GetGUID());
+                return;
             }
-            return;
-        }
-
-        // Seed of Corruption
-        if(GetId()==27243 || GetId()==47835 || GetId()==47836)
-        {
-            if (m_removeMode==AURA_REMOVE_BY_DEATH)
+            case 45934:                                     // Dark Fiend
             {
-                uint32 finalSpelId = 0;
-                switch(GetId())
-                {
-                   case 27243: finalSpelId = 27285; break;
-                   case 47835: finalSpelId = 47833; break;
-                   case 47836: finalSpelId = 47834; break;
-                }
-                if(finalSpelId)
-                   caster->CastSpell(m_target,finalSpelId,true,NULL,this);
+                // Kill target if dispelled
+                if (m_removeMode==AURA_REMOVE_BY_DISPEL)
+                    m_target->DealDamage(m_target, m_target->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+                return;
             }
-            return;
-        }
-
-        // Burning Winds
-        if(GetId()==46308)                                  // casted only at creatures at spawn
-        {
-            m_target->CastSpell(m_target,47287,true,NULL,this);
-            return;
+            case 46308:                                     // Burning Winds
+            {
+                // casted only at creatures at spawn
+                m_target->CastSpell(m_target,47287,true,NULL,this);
+                return;
+            }
+            case 44457:                                     // Living Bomb Rank1
+                caster->CastSpell(m_target,44461,true,NULL,this); return;
+            case 55359:                                     // Living Bomb Rank2
+                caster->CastSpell(m_target,55361,true,NULL,this); return;
+            case 55360:                                     // Living Bomb Rank3
+                caster->CastSpell(m_target,55362,true,NULL,this); return;
+            case 27243:                                     // Seed of Corruption Rank1
+                caster->CastSpell(m_target,27285,true,NULL,this); return;
+            case 47835:                                     // Seed of Corruption Rank2
+                caster->CastSpell(m_target,47833,true,NULL,this); return;
+            case 47836:                                     // Seed of Corruption Rank3
+                caster->CastSpell(m_target,47834,true,NULL,this); return;
         }
 
         if (caster && m_removeMode == AURA_REMOVE_BY_DEATH)
@@ -2895,7 +2881,7 @@ void Aura::HandleAuraTransform(bool apply, bool Real)
             // for players, start regeneration after 1s (in polymorph fast regeneration case)
             // only if caster is Player (after patch 2.4.2)
             if(IS_PLAYER_GUID(GetCasterGUID()) )
-                ((Player*)m_target)->setRegenTimer(1000);
+                ((Player*)m_target)->setRegenTimer(1*IN_MILISECONDS);
 
             //dismount polymorphed target (after patch 2.4.2)
             if (m_target->IsMounted())
