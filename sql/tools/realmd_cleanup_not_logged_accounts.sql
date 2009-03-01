@@ -1,0 +1,1 @@
+ DELETE FROM account WHERE (UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(joindate)) > 604800 AND last_login = '0000-00-00 00:00:00';

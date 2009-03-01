@@ -1,0 +1,1 @@
+DELETE FROM account WHERE id NOT IN (SELECT DISTINCT account FROM characters.characters) AND (UNIX_TIMESTAMP(NOW()) - UNIX_TIMESTAMP(last_login)) > 604800 AND last_login <> '0000-00-00 00:00:00';
