@@ -3342,6 +3342,13 @@ bool Player::resetTalents(bool no_cost)
     //FIXME: remove pet before or after unlearn spells? for now after unlearn to allow removing of talent related, pet affecting auras
     RemovePet(NULL,PET_SAVE_NOT_IN_SLOT, true);
 
+    if(m_canTitanGrip)
+    {
+        m_canTitanGrip = false;
+        if(sWorld.getConfig(CONFIG_OFFHAND_CHECK_AT_TALENTS_RESET))
+            AutoUnequipOffhandIfNeed();
+    }
+
     return true;
 }
 
@@ -4254,10 +4261,8 @@ void Player::RepopAtGraveyard()
     WorldSafeLocsEntry const *ClosestGrave = NULL;
 
     // Special handle for battleground maps
-    BattleGround *bg = sBattleGroundMgr.GetBattleGround(GetBattleGroundId(), m_bgTypeID);
-
-    if(bg && (bg->GetTypeID() == BATTLEGROUND_AB || bg->GetTypeID() == BATTLEGROUND_EY))
-        ClosestGrave = bg->GetClosestGraveYard(GetPositionX(), GetPositionY(), GetPositionZ(), GetTeam());
+    if( BattleGround *bg = GetBattleGround() )
+        ClosestGrave = bg->GetClosestGraveYard(this);
     else
         ClosestGrave = objmgr.GetClosestGraveYard( GetPositionX(), GetPositionY(), GetPositionZ(), GetMapId(), GetTeam() );
 
@@ -6416,6 +6421,9 @@ void Player::UpdateZone(uint32 newZone)
     // if player resurrected at teleport this will be applied in resurrect code
     if(isAlive())
         DestroyZoneLimitedItem( true, newZone );
+
+    // check some item equip limitations (in result lost CanTitanGrip at talent reset, for example)
+    AutoUnequipOffhandIfNeed();
 
     // recent client version not send leave/join channel packets for built-in local channels
     UpdateLocalChannels( newZone );
@@ -13808,28 +13816,21 @@ bool Player::HasQuestForItem( uint32 itemid ) const
             for (int j = 0; j < QUEST_SOURCE_ITEM_IDS_COUNT; j++)
             {
                 // examined item is a source item
-                if (qinfo->ReqSourceId[j] == itemid && qinfo->ReqSourceRef[j] > 0 && qinfo->ReqSourceRef[j] <= QUEST_OBJECTIVES_COUNT)
+                if (qinfo->ReqSourceId[j] == itemid)
                 {
-                    uint32 idx = qinfo->ReqSourceRef[j]-1;
+                    ItemPrototype const *pProto = objmgr.GetItemPrototype(itemid);
 
-                    // total count of created ReqItems and SourceItems is less than ReqItemCount
-                    if(qinfo->ReqItemId[idx] != 0 &&
-                        q_status.m_itemcount[idx] * qinfo->ReqSourceCount[j] + GetItemCount(itemid,true) < qinfo->ReqItemCount[idx] * qinfo->ReqSourceCount[j])
+                    // 'unique' item
+                    if (pProto->MaxCount && GetItemCount(itemid,true) < pProto->MaxCount)
                         return true;
 
-                    // total count of casted ReqCreatureOrGOs and SourceItems is less than ReqCreatureOrGOCount
-                    if (qinfo->ReqCreatureOrGOId[idx] != 0)
+                    // allows custom amount drop when not 0
+                    if (qinfo->ReqSourceCount[j])
                     {
-                        if(q_status.m_creatureOrGOcount[idx] * qinfo->ReqSourceCount[j] + GetItemCount(itemid,true) < qinfo->ReqCreatureOrGOCount[idx] * qinfo->ReqSourceCount[j])
+                        if (GetItemCount(itemid,true) < qinfo->ReqSourceCount[j])
                             return true;
-                    }
-                    // spell with SPELL_EFFECT_QUEST_COMPLETE or SPELL_EFFECT_SEND_EVENT (with script) case
-                    else if(qinfo->ReqSpell[idx] != 0)
-                    {
-                        // not casted and need more reagents/item for use.
-                        if(!q_status.m_explored && GetItemCount(itemid,true) < qinfo->ReqSourceCount[j])
-                            return true;
-                    }
+                    } else if (GetItemCount(itemid,true) < pProto->Stackable)
+                        return true;
                 }
             }
         }
@@ -18806,8 +18807,8 @@ void Player::AutoUnequipOffhandIfNeed()
     if(!offItem)
         return;
 
-    // need unequip for 2h-weapon without TitanGrip
-    if (!IsTwoHandUsed())
+    // need unequip offhand for 2h-weapon without TitanGrip (in any from hands)
+    if (CanTitanGrip() || (offItem->GetProto()->InventoryType != INVTYPE_2HWEAPON && !IsTwoHandUsed()))
         return;
 
     ItemPosCountVec off_dest;
@@ -18819,7 +18820,16 @@ void Player::AutoUnequipOffhandIfNeed()
     }
     else
     {
-        sLog.outError("Player::EquipItem: Can's store offhand item at 2hand item equip for player (GUID: %u).",GetGUIDLow());
+        MailItemsInfo mi;
+        mi.AddItem(offItem->GetGUIDLow(), offItem->GetEntry(), offItem);
+        MoveItemFromInventory(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND, true);
+        CharacterDatabase.BeginTransaction();
+        offItem->DeleteFromInventoryDB();                   // deletes item from character's inventory
+        offItem->SaveToDB();                                // recursive and not have transaction guard into self, item not in inventory and can be save standalone
+        CharacterDatabase.CommitTransaction();
+
+        std::string subject = GetSession()->GetMangosString(LANG_NOT_EQUIPPED_ITEM);
+        WorldSession::SendMailTo(this, MAIL_NORMAL, MAIL_STATIONERY_GM, GetGUIDLow(), GetGUIDLow(), subject, 0, &mi, 0, 0, MAIL_CHECK_MASK_NONE);
     }
 }
 
