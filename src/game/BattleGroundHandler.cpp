@@ -23,7 +23,6 @@
 #include "Player.h"
 #include "ObjectMgr.h"
 #include "WorldSession.h"
-#include "MapManager.h"
 #include "ObjectAccessor.h"
 #include "Object.h"
 #include "Chat.h"
@@ -370,7 +369,7 @@ void WorldSession::HandleBattleGroundPlayerPortOpcode( WorldPacket &recv_data )
 
     BattleGroundQueueTypeId bgQueueTypeId = BATTLEGROUND_QUEUE_NONE;
     // get the bg what we were invited to
-    bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(bgTypeId,type);
+    bgQueueTypeId = BattleGroundMgr::BGQueueTypeId(bgTypeId, type);
     BattleGroundQueue::QueuedPlayersMap& qpMap = sBattleGroundMgr.m_BattleGroundQueues[bgQueueTypeId].m_QueuedPlayers;
     BattleGroundQueue::QueuedPlayersMap::iterator itrPlayerStatus = qpMap.find(_player->GetGUID());
     if(itrPlayerStatus == qpMap.end())
@@ -425,6 +424,12 @@ void WorldSession::HandleBattleGroundPlayerPortOpcode( WorldPacket &recv_data )
         {
             sLog.outError("Battleground: Invalid player queue info!");
             return;
+        }
+        //if player is trying to enter battleground (not arena!) and he has deserter debuff, we must just remove him from queue
+        if( arenatype == 0 && !_player->CanJoinToBattleground() )
+        {
+            sLog.outDebug("Battleground: player %s (%u) has a deserter debuff, do not port him to battleground!", _player->GetName(), _player->GetGUIDLow());
+            action = 0;
         }
         WorldPacket data;
         switch(action)
