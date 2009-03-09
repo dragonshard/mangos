@@ -1148,19 +1148,6 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(const char* args)
 
     if( dontdel_str )
     {
-<<<<<<< HEAD:src/game/Level2.cpp
-        Player *chr = m_session->GetPlayer();
-
-        Map* map = obj->GetMap();
-        map->Remove(obj,false);
-
-        obj->Relocate(chr->GetPositionX(), chr->GetPositionY(), chr->GetPositionZ(), chr->GetOrientation());
-        obj->SetFloatValue(GAMEOBJECT_POS_X, chr->GetPositionX());
-        obj->SetFloatValue(GAMEOBJECT_POS_Y, chr->GetPositionY());
-        obj->SetFloatValue(GAMEOBJECT_POS_Z, chr->GetPositionZ());
-        obj->SetFloatValue(GAMEOBJECT_FACING, chr->GetOrientation()); 
-        map->Add(obj);
-=======
         //sLog.outError("DEBUG: All 3 params are set");
 
         // All 3 params are set
@@ -1172,7 +1159,6 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(const char* args)
             //sLog.outError("DEBUG: doNotDelete = true;");
             doNotDelete = true;
         }
->>>>>>> dad016b0fa691a4bc7078b42b1c6c84f4f6955ea:src/game/Level2.cpp
     }
     else
     {
@@ -1226,19 +1212,6 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(const char* args)
     // now lowguid is low guid really existed creature
     // and pCreature point (maybe) to this creature or NULL
 
-<<<<<<< HEAD:src/game/Level2.cpp
-        obj->Relocate(x, y, z, obj->GetOrientation());
-        obj->SetFloatValue(GAMEOBJECT_POS_X, x);
-        obj->SetFloatValue(GAMEOBJECT_POS_Y, y);
-        obj->SetFloatValue(GAMEOBJECT_POS_Z, z);
-        map->Add(obj);
-    }
-
-    obj->SaveToDB();
-    obj->LoadFromDB( lowguid, obj->GetMap());
-    
-    PSendSysMessage(LANG_COMMAND_MOVEOBJMESSAGE, obj->GetGUIDLow());
-=======
     MovementGeneratorType move_type;
 
     std::string type = type_str;
@@ -1275,7 +1248,6 @@ bool ChatHandler::HandleNpcSetMoveTypeCommand(const char* args)
     {
         PSendSysMessage(LANG_MOVE_TYPE_SET_NODEL,type_str);
     }
->>>>>>> dad016b0fa691a4bc7078b42b1c6c84f4f6955ea:src/game/Level2.cpp
 
     return true;
 }
