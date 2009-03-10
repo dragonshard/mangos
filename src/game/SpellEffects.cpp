@@ -53,6 +53,7 @@
 #include "TemporarySummon.h"
 #include "ScriptCalls.h"
 #include "SkillDiscovery.h"
+#include "Formulas.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -588,6 +589,11 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     float averange = (m_caster->GetFloatValue(UNIT_FIELD_MINDAMAGE) + m_caster->GetFloatValue(UNIT_FIELD_MAXDAMAGE)) / 2;
                     int32 count = m_caster->CalculateSpellDamage(m_spellInfo, 2, m_spellInfo->EffectBasePoints[2], unitTarget);
                     damage += count * int32(averange * IN_MILISECONDS) / m_caster->GetAttackTime(BASE_ATTACK);
+                }
+                // Shield of Righteousness
+                else if(m_spellInfo->SpellFamilyFlags&0x0010000000000000LL)
+                {
+                    damage+=int32(m_caster->GetShieldBlockValue());
                 }
                 break;
             }
@@ -3791,13 +3797,18 @@ void Spell::EffectAddHonor(uint32 /*i*/)
     if(unitTarget->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    sLog.outDebug("SpellEffect::AddHonor called for spell_id %u , that rewards %d honor points to player: %u", m_spellInfo->Id, damage, ((Player*)unitTarget)->GetGUIDLow());
+    uint32 honor_reward = MaNGOS::Honor::hk_honor_at_level(unitTarget->getLevel(), damage);
+    sLog.outDebug("SpellEffect::AddHonor called for spell_id %u, that rewards %u honor points to player: %u", m_spellInfo->Id, honor_reward, ((Player*)unitTarget)->GetGUIDLow());
 
-    // TODO: find formula for honor reward based on player's level!
-
-    // now fixed only for level 70 players:
-    if (((Player*)unitTarget)->getLevel() == 70)
+    // do not allow to add too many honor for player (50 * 21) = 1040 at level 70, or (50 * 31) = 1550 at level 80
+    if( damage <= 50 )
+        ((Player*)unitTarget)->RewardHonor(NULL, 1, honor_reward);
+    else
+    {
+        //maybe we have correct honor_gain in damage already
         ((Player*)unitTarget)->RewardHonor(NULL, 1, damage);
+        sLog.outError("SpellEffect::AddHonor called for spell_id %u, that rewards %d * honor for one honorable kill and it is too much (%u of honor) for player: %u", m_spellInfo->Id, damage, honor_reward, ((Player*)unitTarget)->GetGUIDLow());
+    }
 }
 
 void Spell::EffectTradeSkill(uint32 /*i*/)
