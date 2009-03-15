@@ -5867,7 +5867,7 @@ void Spell::EffectMomentMove(uint32 i)
         if (hit == false)
             itr_j = last_valid;
 
-        unitTarget->NearTeleportTo(fx, fy, fz, unitTarget->GetOrientation(),unitTarget==m_caster);
+        unitTarget->NearTeleportTo(fx[itr_j], fy[itr_j], fz[itr_j] + 0.07531, orientation, unitTarget==m_caster);
         delete [] fx; delete [] fy; delete [] fz;
     }
 }
