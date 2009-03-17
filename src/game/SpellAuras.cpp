@@ -6047,10 +6047,10 @@ void Aura::PeriodicTick()
             SkillLineAbilityMap::const_iterator const skillLine = spellmgr.GetBeginSkillLineAbilityMap(GetSpellProto()->Id);
             if(skillLine->second->skillId == SKILL_AFFLICTION || skillLine->second->skillId == SKILL_MARKSMANSHIP)
             {
-               uint32 drain = m_target->GetMaxPower(power) * drain_amount /100;
+               int32 drain = m_target->GetMaxPower(power) * (GetBasePoints() + 1) /100;
 
-               if(drain > GetCaster()->GetMaxPower(power) * drain_amount / 50)
-                  drain_amount = GetCaster()->GetMaxPower(power) * drain_amount / 50;
+               if(drain > GetCaster()->GetMaxPower(power) * (GetBasePoints() + 1) / 50)
+                  drain_amount = GetCaster()->GetMaxPower(power) * (GetBasePoints() + 1) / 50;
                else
                   drain_amount = drain;
             }
