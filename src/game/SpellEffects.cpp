@@ -1130,6 +1130,14 @@ void Spell::EffectDummy(uint32 i)
                     unitTarget->CastSpell(unitTarget, 58421, true);
                     return;
                 }
+                case 52759:                                 // Ancestral Awakening
+                {
+                    if(!unitTarget)
+                        return;
+
+                    m_caster->CastCustomSpell(unitTarget, 52752, &damage, NULL, NULL, true);
+                    return;
+                }
             }
 
             //All IconID Check in there
