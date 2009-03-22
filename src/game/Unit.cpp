@@ -5195,6 +5195,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     triggered_spell_id = 28810;
                     break;
                 }
+                // Glyph of Dispel Magic
+                case 55677:
+                {
+                    if(!target->IsFriendlyTo(this))
+                        return false;
+
+                    basepoints0 = int32(target->GetMaxHealth() * triggerAmount / 100);
+                    triggered_spell_id = 56131;
+                    break;
+                }
             }
             break;
         }
@@ -9854,7 +9864,7 @@ float Unit::GetModifierValue(UnitMods unitMod, UnitModifierType modifierType) co
 {
     if( unitMod >= UNIT_MOD_END || modifierType >= MODIFIER_TYPE_END)
     {
-        sLog.outError("ERROR: trial to access non existed modifier value from UnitMods!");
+        sLog.outError("trial to access non existed modifier value from UnitMods!");
         return 0.0f;
     }
 
@@ -9884,7 +9894,7 @@ float Unit::GetTotalAuraModValue(UnitMods unitMod) const
 {
     if(unitMod >= UNIT_MOD_END)
     {
-        sLog.outError("ERROR: trial to access non existed UnitMods in GetTotalAuraModValue()!");
+        sLog.outError("trial to access non existed UnitMods in GetTotalAuraModValue()!");
         return 0.0f;
     }
 
@@ -11314,7 +11324,7 @@ Pet* Unit::CreateTamedPetFrom(Creature* creatureTarget,uint32 spell_id)
 
     if(!pet->InitStatsForLevel(level))
     {
-        sLog.outError("ERROR: Pet::InitStatsForLevel() failed for creature (Entry: %u)!",creatureTarget->GetEntry());
+        sLog.outError("Pet::InitStatsForLevel() failed for creature (Entry: %u)!",creatureTarget->GetEntry());
         delete pet;
         return NULL;
     }

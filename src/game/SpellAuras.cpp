@@ -3138,7 +3138,7 @@ void Aura::HandleModPossess(bool apply, bool Real)
 
         if(caster->GetTypeId() == TYPEID_PLAYER)
         {
-            WorldPacket data(SMSG_PET_SPELLS, 8);
+            WorldPacket data(SMSG_PET_SPELLS, 8+4);
             data << uint64(0);
             data << uint32(0);
             ((Player*)caster)->GetSession()->SendPacket(&data);
@@ -3294,7 +3294,7 @@ void Aura::HandleModCharm(bool apply, bool Real)
 
             if(caster->GetTypeId() == TYPEID_PLAYER)
             {
-                WorldPacket data(SMSG_PET_SPELLS, 8);
+                WorldPacket data(SMSG_PET_SPELLS, 8+4);
                 data << uint64(0);
                 data << uint32(0);
                 ((Player*)caster)->GetSession()->SendPacket(&data);

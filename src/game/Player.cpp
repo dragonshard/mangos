@@ -2746,7 +2746,7 @@ bool Player::addSpell(uint32 spell_id, bool active, bool learning, bool dependen
         {
             if(TalentEntry const *talentInfo = sTalentStore.LookupEntry( talentPos->talent_id ))
             {
-                for(int i=0; i <5; ++i)
+                for(int i=0; i < MAX_TALENT_RANK; ++i)
                 {
                     // skip learning spell and no rank spell case
                     uint32 rankSpellId = talentInfo->RankID[i];
@@ -3196,7 +3196,7 @@ void Player::RemoveArenaSpellCooldowns()
             // notify player
             WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
             data << uint32(itr->first);
-            data << GetGUID();
+            data << uint64(GetGUID());
             GetSession()->SendPacket(&data);
             // remove cooldown
             m_spellCooldowns.erase(itr);
@@ -3359,7 +3359,7 @@ bool Player::resetTalents(bool no_cost)
         if( (getClassMask() & talentTabInfo->ClassMask) == 0 )
             continue;
 
-        for (int j = 0; j < 5; j++)
+        for (int j = 0; j < MAX_TALENT_RANK; j++)
         {
             for(PlayerSpellMap::iterator itr = GetSpellMap().begin(); itr != GetSpellMap().end();)
             {
@@ -4231,7 +4231,7 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
             DurabilityCostsEntry const *dcost = sDurabilityCostsStore.LookupEntry(ditemProto->ItemLevel);
             if(!dcost)
             {
-                sLog.outError("ERROR: RepairDurability: Wrong item lvl %u", ditemProto->ItemLevel);
+                sLog.outError("RepairDurability: Wrong item lvl %u", ditemProto->ItemLevel);
                 return TotalCost;
             }
 
@@ -4239,7 +4239,7 @@ uint32 Player::DurabilityRepair(uint16 pos, bool cost, float discountMod, bool g
             DurabilityQualityEntry const *dQualitymodEntry = sDurabilityQualityStore.LookupEntry(dQualitymodEntryId);
             if(!dQualitymodEntry)
             {
-                sLog.outError("ERROR: RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
+                sLog.outError("RepairDurability: Wrong dQualityModEntry %u", dQualitymodEntryId);
                 return TotalCost;
             }
 
@@ -4482,7 +4482,7 @@ float Player::GetBaseModValue(BaseModGroup modGroup, BaseModType modType) const
 {
     if(modGroup >= BASEMOD_END || modType > MOD_END)
     {
-        sLog.outError("ERROR: trial to access non existed BaseModGroup or wrong BaseModType!");
+        sLog.outError("trial to access non existed BaseModGroup or wrong BaseModType!");
         return 0.0f;
     }
 
@@ -4496,7 +4496,7 @@ float Player::GetTotalBaseModValue(BaseModGroup modGroup) const
 {
     if(modGroup >= BASEMOD_END)
     {
-        sLog.outError("ERROR: wrong BaseModGroup in GetTotalBaseModValue()!");
+        sLog.outError("wrong BaseModGroup in GetTotalBaseModValue()!");
         return 0.0f;
     }
 
@@ -5507,7 +5507,7 @@ void Player::CheckExploreSystem()
 
     if(offset >= 128)
     {
-        sLog.outError("ERROR: Wrong area flag %u in map data for (X: %f Y: %f) point to field PLAYER_EXPLORED_ZONES_1 + %u ( %u must be < 128 ).",areaFlag,GetPositionX(),GetPositionY(),offset,offset);
+        sLog.outError("Wrong area flag %u in map data for (X: %f Y: %f) point to field PLAYER_EXPLORED_ZONES_1 + %u ( %u must be < 128 ).",areaFlag,GetPositionX(),GetPositionY(),offset,offset);
         return;
     }
 
@@ -8332,10 +8332,10 @@ uint8 Player::FindEquipSlot( ItemPrototype const* proto, uint32 slot, bool swap 
             slots[0] = EQUIPMENT_SLOT_RANGED;
             break;
         case INVTYPE_BAG:
-            slots[0] = INVENTORY_SLOT_BAG_1;
-            slots[1] = INVENTORY_SLOT_BAG_2;
-            slots[2] = INVENTORY_SLOT_BAG_3;
-            slots[3] = INVENTORY_SLOT_BAG_4;
+            slots[0] = INVENTORY_SLOT_BAG_START + 0;
+            slots[1] = INVENTORY_SLOT_BAG_START + 1;
+            slots[2] = INVENTORY_SLOT_BAG_START + 2;
+            slots[3] = INVENTORY_SLOT_BAG_START + 3;
             break;
         case INVTYPE_RELIC:
         {
@@ -8996,11 +8996,11 @@ uint8 Player::_CanStoreItem_InSpecificSlot( uint8 bag, uint8 slot, ItemPosCountV
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
             // currencytoken case (disabled until proper implement)
-            if(slot >= CURRENCYTOKEN_SLOT_START && slot < CURRENCYTOKEN_SLOT_END && !(false /*pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS*/))
+            if(slot >= CURRENCYTOKEN_SLOT_START && slot < CURRENCYTOKEN_SLOT_END && !(pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS))
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
-            // guestbag case (disabled until proper implement)
-            if(slot >= QUESTBAG_SLOT_START && slot < QUESTBAG_SLOT_END && !(false /*pProto->BagFamily & BAG_FAMILY_MASK_QUEST_ITEMS*/))
+            // guestbag case (not use)
+            if(slot >= QUESTBAG_SLOT_START && slot < QUESTBAG_SLOT_END)
                 return EQUIP_ERR_ITEM_DOESNT_GO_INTO_BAG;
 
             // prevent cheating
@@ -9334,11 +9334,25 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
                         *no_space_count = count + no_similar_count;
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
+
+                res = _CanStoreItem_InInventorySlots(CURRENCYTOKEN_SLOT_START,CURRENCYTOKEN_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
+                if(res!=EQUIP_ERR_OK)
+                {
+                    if(no_space_count)
+                        *no_space_count = count + no_similar_count;
+                    return res;
+                }
+
+                if(count==0)
+                {
+                    if(no_similar_count==0)
+                        return EQUIP_ERR_OK;
+
+                    if(no_space_count)
+                        *no_space_count = count + no_similar_count;
+                    return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
+                }
             }
-
-            // Vanity pet case skipped as not used
-
-            /* until proper implementation
             else if(pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
             {
                 res = _CanStoreItem_InInventorySlots(CURRENCYTOKEN_SLOT_START,CURRENCYTOKEN_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
@@ -9359,29 +9373,6 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
                     return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
                 }
             }
-            */
-            /* until proper implementation
-            else if(pProto->BagFamily & BAG_FAMILY_MASK_QUEST_ITEMS)
-            {
-                res = _CanStoreItem_InInventorySlots(QUESTBAG_SLOT_START,QUESTBAG_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
-                if(res!=EQUIP_ERR_OK)
-                {
-                    if(no_space_count)
-                        *no_space_count = count + no_similar_count;
-                    return res;
-                }
-
-                if(count==0)
-                {
-                    if(no_similar_count==0)
-                        return EQUIP_ERR_OK;
-
-                    if(no_space_count)
-                        *no_space_count = count + no_similar_count;
-                    return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
-                }
-            }
-            */
 
             res = _CanStoreItem_InInventorySlots(INVENTORY_SLOT_ITEM_START,INVENTORY_SLOT_ITEM_END,dest,pProto,count,false,pItem,bag,slot);
             if(res!=EQUIP_ERR_OK)
@@ -9529,11 +9520,7 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
         }
-
-        // Vanity pet case skipped as not used
-
-        /* until proper implementation
-        else if(false pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
+        else if(pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
         {
             res = _CanStoreItem_InInventorySlots(CURRENCYTOKEN_SLOT_START,CURRENCYTOKEN_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
             if(res!=EQUIP_ERR_OK)
@@ -9553,29 +9540,6 @@ uint8 Player::_CanStoreItem( uint8 bag, uint8 slot, ItemPosCountVec &dest, uint3
                 return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
             }
         }
-        */
-        /* until proper implementation
-        else if(false pProto->BagFamily & BAG_FAMILY_MASK_QUEST_ITEMS)
-        {
-            res = _CanStoreItem_InInventorySlots(QUESTBAG_SLOT_START,QUESTBAG_SLOT_END,dest,pProto,count,false,pItem,bag,slot);
-            if(res!=EQUIP_ERR_OK)
-            {
-                if(no_space_count)
-                    *no_space_count = count + no_similar_count;
-                return res;
-            }
-
-            if(count==0)
-            {
-                if(no_similar_count==0)
-                    return EQUIP_ERR_OK;
-
-                if(no_space_count)
-                    *no_space_count = count + no_similar_count;
-                return EQUIP_ERR_CANT_CARRY_MORE_OF_THIS;
-            }
-        }
-        */
 
         for(int i = INVENTORY_SLOT_BAG_START; i < INVENTORY_SLOT_BAG_END; i++)
         {
@@ -9647,13 +9611,11 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
     int inv_bags[INVENTORY_SLOT_BAG_END-INVENTORY_SLOT_BAG_START][MAX_BAG_SIZE];
     int inv_keys[KEYRING_SLOT_END-KEYRING_SLOT_START];
     int inv_tokens[CURRENCYTOKEN_SLOT_END-CURRENCYTOKEN_SLOT_START];
-    int inv_quests[QUESTBAG_SLOT_END-QUESTBAG_SLOT_START];
 
     memset(inv_slot_items,0,sizeof(int)*(INVENTORY_SLOT_ITEM_END-INVENTORY_SLOT_ITEM_START));
     memset(inv_bags,0,sizeof(int)*(INVENTORY_SLOT_BAG_END-INVENTORY_SLOT_BAG_START)*MAX_BAG_SIZE);
     memset(inv_keys,0,sizeof(int)*(KEYRING_SLOT_END-KEYRING_SLOT_START));
     memset(inv_tokens,0,sizeof(int)*(CURRENCYTOKEN_SLOT_END-CURRENCYTOKEN_SLOT_START));
-    memset(inv_quests,0,sizeof(int)*(QUESTBAG_SLOT_END-QUESTBAG_SLOT_START));
 
     for(int i = INVENTORY_SLOT_ITEM_START; i < INVENTORY_SLOT_ITEM_END; i++)
     {
@@ -9675,8 +9637,6 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
         }
     }
 
-    // Vanity pet case skipped as not used
-
     for(int i = CURRENCYTOKEN_SLOT_START; i < CURRENCYTOKEN_SLOT_END; i++)
     {
         pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
@@ -9684,16 +9644,6 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
         if (pItem2 && !pItem2->IsInTrade())
         {
             inv_tokens[i-CURRENCYTOKEN_SLOT_START] = pItem2->GetCount();
-        }
-    }
-
-    for(int i = QUESTBAG_SLOT_START; i < QUESTBAG_SLOT_END; i++)
-    {
-        pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, i );
-
-        if (pItem2 && !pItem2->IsInTrade())
-        {
-            inv_quests[i-QUESTBAG_SLOT_START] = pItem2->GetCount();
         }
     }
 
@@ -9756,26 +9706,12 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
             }
             if (b_found) continue;
 
-            // Vanity pet case skipped as not used
-
             for(int t = CURRENCYTOKEN_SLOT_START; t < CURRENCYTOKEN_SLOT_END; t++)
             {
                 pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, t );
                 if( pItem2 && pItem2->GetEntry() == pItem->GetEntry() && inv_tokens[t-CURRENCYTOKEN_SLOT_START] + pItem->GetCount() <= pProto->GetMaxStackSize())
                 {
                     inv_tokens[t-CURRENCYTOKEN_SLOT_START] += pItem->GetCount();
-                    b_found = true;
-                    break;
-                }
-            }
-            if (b_found) continue;
-
-            for(int t = QUESTBAG_SLOT_START; t < QUESTBAG_SLOT_END; t++)
-            {
-                pItem2 = GetItemByPos( INVENTORY_SLOT_BAG_0, t );
-                if( pItem2 && pItem2->GetEntry() == pItem->GetEntry() && inv_quests[t-QUESTBAG_SLOT_START] + pItem->GetCount() <= pProto->GetMaxStackSize())
-                {
-                    inv_quests[t-QUESTBAG_SLOT_START] += pItem->GetCount();
                     b_found = true;
                     break;
                 }
@@ -9834,8 +9770,6 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
 
             if (b_found) continue;
 
-            // Vanity pet case skipped as not used
-
             /* until proper implementation
             if(pProto->BagFamily & BAG_FAMILY_MASK_CURRENCY_TOKENS)
             {
@@ -9844,22 +9778,6 @@ uint8 Player::CanStoreItems( Item **pItems,int count) const
                     if( inv_tokens[t-CURRENCYTOKEN_SLOT_START] == 0 )
                     {
                         inv_tokens[t-CURRENCYTOKEN_SLOT_START] = 1;
-                        b_found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (b_found) continue;
-            */
-            /* until proper implementation
-            if(pProto->BagFamily & BAG_FAMILY_MASK_QUEST_ITEMS)
-            {
-                for(uint32 t = QUESTBAG_SLOT_START; t < QUESTBAG_SLOT_END; ++t)
-                {
-                    if( inv_quests[t-QUESTBAG_SLOT_START] == 0 )
-                    {
-                        inv_quests[t-QUESTBAG_SLOT_START] = 1;
                         b_found = true;
                         break;
                     }
@@ -10520,6 +10438,10 @@ Item* Player::_StoreItem( uint16 pos, Item *pItem, uint32 count, bool clone, boo
             pItem->SetSlot( slot );
             pItem->SetContainer( NULL );
 
+            // need update known currency
+            if (slot >= CURRENCYTOKEN_SLOT_START && slot < CURRENCYTOKEN_SLOT_END)
+                UpdateKnownCurrencies(pItem->GetEntry(),true);
+
             if( IsInWorld() && update )
             {
                 pItem->AddToWorld();
@@ -10804,23 +10726,32 @@ void Player::RemoveItem( uint8 bag, uint8 slot, bool update )
 
                 // remove item dependent auras and casts (only weapon and armor slots)
                 if(slot < EQUIPMENT_SLOT_END)
+                {
                     RemoveItemDependentAurasAndCasts(pItem);
 
-                // remove held enchantments
-                if ( slot == EQUIPMENT_SLOT_MAINHAND )
-                {
-                    if (pItem->GetItemSuffixFactor())
+                    // remove held enchantments, update expertise
+                    if ( slot == EQUIPMENT_SLOT_MAINHAND )
                     {
-                        pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_3);
-                        pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_4);
+                        if (pItem->GetItemSuffixFactor())
+                        {
+                            pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_3);
+                            pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_4);
+                        }
+                        else
+                        {
+                            pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_0);
+                            pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_1);
+                        }
+
+                        UpdateExpertise(BASE_ATTACK);
                     }
-                    else
-                    {
-                        pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_0);
-                        pItem->ClearEnchantment(PROP_ENCHANTMENT_SLOT_1);
-                    }
+                    else if( slot == EQUIPMENT_SLOT_OFFHAND )
+                        UpdateExpertise(OFF_ATTACK);
                 }
             }
+            // need update known currency
+            else if (slot >= CURRENCYTOKEN_SLOT_START && slot < CURRENCYTOKEN_SLOT_END)
+                UpdateKnownCurrencies(pItem->GetEntry(),false);
 
             m_items[slot] = NULL;
             SetUInt64Value((uint16)(PLAYER_FIELD_INV_SLOT_HEAD + (slot*2)), 0);
@@ -10839,11 +10770,6 @@ void Player::RemoveItem( uint8 bag, uint8 slot, bool update )
         pItem->SetSlot( NULL_SLOT );
         if( IsInWorld() && update )
             pItem->SendUpdateToPlayer( this );
-
-        if( slot == EQUIPMENT_SLOT_MAINHAND )
-            UpdateExpertise(BASE_ATTACK);
-        else if( slot == EQUIPMENT_SLOT_OFFHAND )
-            UpdateExpertise(OFF_ATTACK);
     }
 }
 
@@ -10928,9 +10854,18 @@ void Player::DestroyItem( uint8 bag, uint8 slot, bool update )
                 // remove item dependent auras and casts (only weapon and armor slots)
                 RemoveItemDependentAurasAndCasts(pItem);
 
+                // update expertise
+                if ( slot == EQUIPMENT_SLOT_MAINHAND )
+                    UpdateExpertise(BASE_ATTACK);
+                else if( slot == EQUIPMENT_SLOT_OFFHAND )
+                    UpdateExpertise(OFF_ATTACK);
+
                 // equipment visual show
                 SetVisibleItemSlot(slot,NULL);
             }
+            // need update known currency
+            else if (slot >= CURRENCYTOKEN_SLOT_START && slot < CURRENCYTOKEN_SLOT_END)
+                UpdateKnownCurrencies(pItem->GetEntry(),false);
 
             m_items[slot] = NULL;
         }
@@ -10983,6 +10918,7 @@ void Player::DestroyItemCount( uint32 item, uint32 count, bool update, bool uneq
             }
         }
     }
+
     for(int i = KEYRING_SLOT_START; i < QUESTBAG_SLOT_END; i++)
     {
         if (Item* pItem = GetItemByPos( INVENTORY_SLOT_BAG_0, i ))
@@ -14026,7 +13962,7 @@ bool Player::MinimalLoadFromDB( QueryResult *result, uint32 guid )
 
     if(!LoadValues( fields[1].GetString()))
     {
-        sLog.outError("ERROR: Player #%d have broken data in `data` field. Can't be loaded for character list.",GUID_LOPART(guid));
+        sLog.outError("Player #%d have broken data in `data` field. Can't be loaded for character list.",GUID_LOPART(guid));
         if(delete_result) delete result;
         return false;
     }
@@ -14189,7 +14125,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     if(!result)
     {
-        sLog.outError("ERROR: Player (GUID: %u) not found in table `characters`, can't load. ",guid);
+        sLog.outError("Player (GUID: %u) not found in table `characters`, can't load. ",guid);
         return false;
     }
 
@@ -14201,7 +14137,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
     // player should be able to load/delete character only with correct account!
     if( dbAccountId != GetSession()->GetAccountId() )
     {
-        sLog.outError("ERROR: Player (GUID: %u) loading from wrong account (is: %u, should be: %u)",guid,GetSession()->GetAccountId(),dbAccountId);
+        sLog.outError("Player (GUID: %u) loading from wrong account (is: %u, should be: %u)",guid,GetSession()->GetAccountId(),dbAccountId);
         delete result;
         return false;
     }
@@ -14220,7 +14156,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     if(!LoadValues( fields[2].GetString()))
     {
-        sLog.outError("ERROR: Player #%d have broken data in `data` field. Can't be loaded.",GUID_LOPART(guid));
+        sLog.outError("Player #%d have broken data in `data` field. Can't be loaded.",GUID_LOPART(guid));
         delete result;
         return false;
     }
@@ -14298,7 +14234,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
     if(!IsPositionValid())
     {
-        sLog.outError("ERROR: Player (guidlow %d) have invalid coordinates (X: %f Y: %f Z: %f O: %f). Teleport to default race/class locations.",guid,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
+        sLog.outError("Player (guidlow %d) have invalid coordinates (X: %f Y: %f Z: %f O: %f). Teleport to default race/class locations.",guid,GetPositionX(),GetPositionY(),GetPositionZ(),GetOrientation());
         RelocateToHomebind();
 
         transGUID = 0;
@@ -14374,7 +14310,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
             // transport size limited
             m_movementInfo.t_x > 50 || m_movementInfo.t_y > 50 || m_movementInfo.t_z > 50 )
         {
-            sLog.outError("ERROR: Player (guidlow %d) have invalid transport coordinates (X: %f Y: %f Z: %f O: %f). Teleport to default race/class locations.",
+            sLog.outError("Player (guidlow %d) have invalid transport coordinates (X: %f Y: %f Z: %f O: %f). Teleport to default race/class locations.",
                 guid,GetPositionX()+m_movementInfo.t_x,GetPositionY()+m_movementInfo.t_y,
                 GetPositionZ()+m_movementInfo.t_z,GetOrientation()+m_movementInfo.t_o);
 
@@ -14412,7 +14348,7 @@ bool Player::LoadFromDB( uint32 guid, SqlQueryHolder *holder )
 
         if(!m_transport)
         {
-            sLog.outError("ERROR: Player (guidlow %d) have problems with transport guid (%u). Teleport to default race/class locations.",
+            sLog.outError("Player (guidlow %d) have problems with transport guid (%u). Teleport to default race/class locations.",
                 guid,transGUID);
 
             RelocateToHomebind();
@@ -14862,7 +14798,7 @@ void Player::_LoadAuras(QueryResult *result, uint32 timediff)
 
 void Player::_LoadGlyphAuras()
 {
-    for (uint8 i = 0; i <= MAX_GLYPH_SLOT_INDEX; ++i)
+    for (uint8 i = 0; i < MAX_GLYPH_SLOT_INDEX; ++i)
     {
         if (uint32 glyph = GetGlyph(i))
         {
@@ -16646,7 +16582,7 @@ void Player::RemovePet(Pet* pet, PetSaveMode mode, bool returnreagent)
 
     if(pet->isControlled())
     {
-        WorldPacket data(SMSG_PET_SPELLS, 8);
+        WorldPacket data(SMSG_PET_SPELLS, 8+4);
         data << uint64(0);
         data << uint32(0);
         GetSession()->SendPacket(&data);
@@ -16878,7 +16814,7 @@ void Player::PossessSpellInitialize()
     data << uint64(charm->GetGUID());
     data << uint32(0x00000000);
     data << uint32(0);
-    data << uint8(0) << uint8(0) << uint16(0);
+    data << uint32(0);
 
     for(uint32 i = 0; i < 10; i++)                          //40
     {
@@ -18359,10 +18295,6 @@ void Player::SendInitialPacketsBeforeAddToMap()
     data << uint32(secsToTimeBitFields(sWorld.GetGameTime()));
     data << (float)0.01666667f;                             // game speed
     GetSession()->SendPacket( &data );
-
-    data.Initialize(SMSG_TIME_SYNC_REQ, 4);                 // new 2.0.x, enable movement
-    data << uint32(0x00000000);                             // on blizz it increments periodically
-    GetSession()->SendPacket(&data);
 
     // set fly flag if in fly form or taxi flight to prevent visually drop at ground in showup moment
     if(HasAuraType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED) || isInFlight())
@@ -20007,4 +19939,264 @@ void Player::HandleFall(MovementInfo const& movementInfo)
 void Player::UpdateAchievementCriteria( AchievementCriteriaTypes type, uint32 miscvalue1/*=0*/, uint32 miscvalue2/*=0*/, Unit *unit/*=NULL*/, uint32 time/*=0*/ )
 {
     GetAchievementMgr().UpdateAchievementCriteria(type, miscvalue1,miscvalue2,unit,time);
+}
+
+void Player::LearnTalent(uint32 talentId, uint32 talentRank)
+{
+    uint32 CurTalentPoints = GetFreeTalentPoints();
+
+    if(CurTalentPoints == 0)
+        return;
+
+    if (talentRank >= MAX_TALENT_RANK)
+        return;
+
+    TalentEntry const *talentInfo = sTalentStore.LookupEntry( talentId );
+
+    if(!talentInfo)
+        return;
+
+    TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry( talentInfo->TalentTab );
+
+    if(!talentTabInfo)
+        return;
+
+    // prevent learn talent for different class (cheating)
+    if( (getClassMask() & talentTabInfo->ClassMask) == 0 )
+        return;
+
+    // find current max talent rank
+    int32 curtalent_maxrank = 0;
+    for(int32 k = MAX_TALENT_RANK-1; k > -1; --k)
+    {
+        if(talentInfo->RankID[k] && HasSpell(talentInfo->RankID[k]))
+        {
+            curtalent_maxrank = k + 1;
+            break;
+        }
+    }
+
+    // we already have same or higher talent rank learned
+    if(curtalent_maxrank >= (talentRank + 1))
+        return;
+
+    // check if we have enough talent points
+    if(CurTalentPoints < (talentRank - curtalent_maxrank + 1))
+        return;
+
+    // Check if it requires another talent
+    if (talentInfo->DependsOn > 0)
+    {
+        if(TalentEntry const *depTalentInfo = sTalentStore.LookupEntry(talentInfo->DependsOn))
+        {
+            bool hasEnoughRank = false;
+            for (int i = talentInfo->DependsOnRank; i < MAX_TALENT_RANK; i++)
+            {
+                if (depTalentInfo->RankID[i] != 0)
+                    if (HasSpell(depTalentInfo->RankID[i]))
+                        hasEnoughRank = true;
+            }
+            if (!hasEnoughRank)
+                return;
+        }
+    }
+
+    // Find out how many points we have in this field
+    uint32 spentPoints = 0;
+
+    uint32 tTab = talentInfo->TalentTab;
+    if (talentInfo->Row > 0)
+    {
+        unsigned int numRows = sTalentStore.GetNumRows();
+        for (unsigned int i = 0; i < numRows; i++)          // Loop through all talents.
+        {
+            // Someday, someone needs to revamp
+            const TalentEntry *tmpTalent = sTalentStore.LookupEntry(i);
+            if (tmpTalent)                                  // the way talents are tracked
+            {
+                if (tmpTalent->TalentTab == tTab)
+                {
+                    for (int j = 0; j < MAX_TALENT_RANK; j++)
+                    {
+                        if (tmpTalent->RankID[j] != 0)
+                        {
+                            if (HasSpell(tmpTalent->RankID[j]))
+                            {
+                                spentPoints += j + 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // not have required min points spent in talent tree
+    if(spentPoints < (talentInfo->Row * MAX_TALENT_RANK))
+        return;
+
+    // spell not set in talent.dbc
+    uint32 spellid = talentInfo->RankID[talentRank];
+    if( spellid == 0 )
+    {
+        sLog.outError("Talent.dbc have for talent: %u Rank: %u spell id = 0", talentId, talentRank);
+        return;
+    }
+
+    // already known
+    if(HasSpell(spellid))
+        return;
+
+    // learn! (other talent ranks will unlearned at learning)
+    learnSpell(spellid, false);
+    sLog.outDetail("TalentID: %u Rank: %u Spell: %u\n", talentId, talentRank, spellid);
+
+    // update free talent points
+    SetFreeTalentPoints(CurTalentPoints - (talentRank - curtalent_maxrank + 1));
+}
+
+void Player::LearnPetTalent(uint64 petGuid, uint32 talentId, uint32 talentRank)
+{
+    Pet *pet = GetPet();
+
+    if(!pet)
+        return;
+
+    if(petGuid != pet->GetGUID())
+        return;
+
+    uint32 CurTalentPoints = pet->GetFreeTalentPoints();
+
+    if(CurTalentPoints == 0)
+        return;
+
+    if (talentRank >= MAX_PET_TALENT_RANK)
+        return;
+
+    TalentEntry const *talentInfo = sTalentStore.LookupEntry(talentId);
+
+    if(!talentInfo)
+        return;
+
+    TalentTabEntry const *talentTabInfo = sTalentTabStore.LookupEntry(talentInfo->TalentTab);
+
+    if(!talentTabInfo)
+        return;
+
+    CreatureInfo const *ci = pet->GetCreatureInfo();
+
+    if(!ci)
+        return;
+
+    CreatureFamilyEntry const *pet_family = sCreatureFamilyStore.LookupEntry(ci->family);
+
+    if(!pet_family)
+        return;
+
+    if(pet_family->petTalentType < 0)                       // not hunter pet
+        return;
+
+    // prevent learn talent for different family (cheating)
+    if(!((1 << pet_family->petTalentType) & talentTabInfo->petTalentMask))
+        return;
+
+    // find current max talent rank
+    int32 curtalent_maxrank = 0;
+    for(int32 k = MAX_TALENT_RANK-1; k > -1; --k)
+    {
+        if(talentInfo->RankID[k] && pet->HasSpell(talentInfo->RankID[k]))
+        {
+            curtalent_maxrank = k + 1;
+            break;
+        }
+    }
+
+    // we already have same or higher talent rank learned
+    if(curtalent_maxrank >= (talentRank + 1))
+        return;
+
+    // check if we have enough talent points
+    if(CurTalentPoints < (talentRank - curtalent_maxrank + 1))
+        return;
+
+    // Check if it requires another talent
+    if (talentInfo->DependsOn > 0)
+    {
+        if(TalentEntry const *depTalentInfo = sTalentStore.LookupEntry(talentInfo->DependsOn))
+        {
+            bool hasEnoughRank = false;
+            for (int i = talentInfo->DependsOnRank; i < MAX_TALENT_RANK; i++)
+            {
+                if (depTalentInfo->RankID[i] != 0)
+                    if (pet->HasSpell(depTalentInfo->RankID[i]))
+                        hasEnoughRank = true;
+            }
+            if (!hasEnoughRank)
+                return;
+        }
+    }
+
+    // Find out how many points we have in this field
+    uint32 spentPoints = 0;
+
+    uint32 tTab = talentInfo->TalentTab;
+    if (talentInfo->Row > 0)
+    {
+        unsigned int numRows = sTalentStore.GetNumRows();
+        for (unsigned int i = 0; i < numRows; ++i)          // Loop through all talents.
+        {
+            // Someday, someone needs to revamp
+            const TalentEntry *tmpTalent = sTalentStore.LookupEntry(i);
+            if (tmpTalent)                                  // the way talents are tracked
+            {
+                if (tmpTalent->TalentTab == tTab)
+                {
+                    for (int j = 0; j < MAX_TALENT_RANK; j++)
+                    {
+                        if (tmpTalent->RankID[j] != 0)
+                        {
+                            if (pet->HasSpell(tmpTalent->RankID[j]))
+                            {
+                                spentPoints += j + 1;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // not have required min points spent in talent tree
+    if(spentPoints < (talentInfo->Row * MAX_PET_TALENT_RANK))
+        return;
+
+    // spell not set in talent.dbc
+    uint32 spellid = talentInfo->RankID[talentRank];
+    if( spellid == 0 )
+    {
+        sLog.outError("Talent.dbc have for talent: %u Rank: %u spell id = 0", talentId, talentRank);
+        return;
+    }
+
+    // already known
+    if(pet->HasSpell(spellid))
+        return;
+
+    // learn! (other talent ranks will unlearned at learning)
+    pet->learnSpell(spellid);
+    sLog.outDetail("PetTalentID: %u Rank: %u Spell: %u\n", talentId, talentRank, spellid);
+
+    // update free talent points
+    pet->SetFreeTalentPoints(CurTalentPoints - (talentRank - curtalent_maxrank + 1));
+}
+
+void Player::UpdateKnownCurrencies(uint32 itemId, bool apply)
+{
+    if(CurrencyTypesEntry const* ctEntry = sCurrencyTypesStore.LookupEntry(itemId))
+    {
+        if(apply)
+            SetFlag64(PLAYER_FIELD_KNOWN_CURRENCIES,(1LL << (ctEntry->BitIndex-1)));
+        else
+            RemoveFlag64(PLAYER_FIELD_KNOWN_CURRENCIES,(1LL << (ctEntry->BitIndex-1)));
+    }
 }
