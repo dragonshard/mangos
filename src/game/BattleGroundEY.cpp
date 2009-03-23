@@ -25,7 +25,6 @@
 #include "Language.h"
 #include "WorldPacket.h"
 #include "Util.h"
-#include "SpellAuras.h"
 
 BattleGroundEY::BattleGroundEY()
 {
@@ -75,25 +74,6 @@ void BattleGroundEY::Update(uint32 diff)
                 else
                     RespawnFlagAfterDrop();
             }
-        }
-
-        if(m_FlagState == BG_EY_FLAG_STATE_ON_PLAYER)
-        {
-           Player* pFlagCarrier = HashMapHolder<Player>::Find(GetFlagPickerGUID());
-           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
-           {
-              Unit::AuraList::iterator iter, next;
-              Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
-              for (iter = pAuras.begin(); iter != pAuras.end(); iter = next)
-              {
-                 next = iter;
-                 ++next;
-
-                 if (*iter)
-                    if((*iter)->IsPositive())
-                       EventPlayerDroppedFlag(pFlagCarrier);
-              }
-           }
         }
 
         m_TowerCapCheckTimer -= diff;
@@ -381,7 +361,7 @@ void BattleGroundEY::RemovePlayer(Player *plr, uint64 guid)
 
 void BattleGroundEY::HandleAreaTrigger(Player *Source, uint32 Trigger)
 {
-    if((GetStatus() != STATUS_IN_PROGRESS) || Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
+    if(GetStatus() != STATUS_IN_PROGRESS)
         return;
 
     if(!Source->isAlive())                                  //hack code, must be removed later
@@ -632,7 +612,7 @@ void BattleGroundEY::EventPlayerDroppedFlag(Player *Source)
 
 void BattleGroundEY::EventPlayerClickedOnFlag(Player *Source, GameObject* target_obj)
 {
-    if(GetStatus() != STATUS_IN_PROGRESS || IsFlagPickedup() || Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL) || !Source->IsWithinDistInMap(target_obj, 10))
+    if(GetStatus() != STATUS_IN_PROGRESS || IsFlagPickedup() || !Source->IsWithinDistInMap(target_obj, 10))
         return;
 
     if(Source->GetTeam() == ALLIANCE)

@@ -25,7 +25,6 @@
 #include "ObjectMgr.h"
 #include "WorldPacket.h"
 #include "Language.h"
-#include "SpellAuras.h"
 
 BattleGroundWS::BattleGroundWS()
 {
@@ -48,45 +47,6 @@ void BattleGroundWS::Update(uint32 diff)
 
     if(GetStatus() == STATUS_IN_PROGRESS)
     {
-
-        if(m_FlagState[BG_TEAM_ALLIANCE] == BG_WS_FLAG_STATE_ON_PLAYER)
-        {
-           Player* pFlagCarrier = HashMapHolder<Player>::Find(GetAllianceFlagPickerGUID());
-           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
-           {
-              Unit::AuraList::iterator iter, next;
-              Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
-              for (iter = pAuras.begin(); iter != pAuras.end(); iter = next)
-              {
-                 next = iter;
-                 ++next;
-
-                 if (*iter)
-                    if((*iter)->IsPositive())
-                       EventPlayerDroppedFlag(pFlagCarrier);
-              }
-           }
-        }
-
-        if(m_FlagState[BG_TEAM_HORDE] == BG_WS_FLAG_STATE_ON_PLAYER)
-        {
-           Player* pFlagCarrier = HashMapHolder<Player>::Find(GetHordeFlagPickerGUID());
-           if(pFlagCarrier->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
-           {
-              Unit::AuraList::iterator iter, next;
-              Unit::AuraList pAuras = pFlagCarrier->GetAurasByType(SPELL_AURA_SCHOOL_IMMUNITY);
-              for (iter = pAuras.begin(); iter != pAuras.end(); iter = next)
-              {
-                 next = iter;
-                 ++next;
-
-                 if (*iter)
-                    if((*iter)->IsPositive())
-                       EventPlayerDroppedFlag(pFlagCarrier);
-              }
-           }
-        }
-
         if(m_FlagState[BG_TEAM_ALLIANCE] == BG_WS_FLAG_STATE_WAIT_RESPAWN)
         {
             m_FlagsTimer[BG_TEAM_ALLIANCE] -= diff;
@@ -370,7 +330,7 @@ void BattleGroundWS::EventPlayerDroppedFlag(Player *Source)
 
 void BattleGroundWS::EventPlayerClickedOnFlag(Player *Source, GameObject* target_obj)
 {
-    if((GetStatus() != STATUS_IN_PROGRESS) || Source->IsImmunedToDamage(SPELL_SCHOOL_MASK_ALL))
+    if(GetStatus() != STATUS_IN_PROGRESS)
         return;
 
     int32 message_id = 0;
