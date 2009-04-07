@@ -4471,10 +4471,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 case 9799:
                 case 25988:
                 {
-                    // prevent damage back from weapon special attacks
-                    if (!procSpell || procSpell->DmgClass != SPELL_DAMAGE_CLASS_MAGIC )
-                        return false;
-
                     // return damage % to attacker but < 50% own total health
                     basepoints0 = triggerAmount*int32(damage)/100;
                     if(basepoints0 > GetMaxHealth()/2)
@@ -10266,10 +10262,10 @@ void CharmInfo::InitEmptyActionBar()
 
 void CharmInfo::InitPossessCreateSpells()
 {
-    if(m_unit->GetTypeId() == TYPEID_PLAYER)
-        return;
-
     InitEmptyActionBar();                                   //charm action bar
+
+    if(m_unit->GetTypeId() == TYPEID_PLAYER)                //possessed players don't have spells, keep the action bar empty
+        return;
 
     for(uint32 x = 0; x < CREATURE_MAX_SPELLS; ++x)
     {
@@ -10742,7 +10738,7 @@ Player* Unit::GetSpellModOwner()
 void Unit::SendPetCastFail(uint32 spellid, SpellCastResult msg)
 {
     if(msg == SPELL_CAST_OK)
-        return; 
+        return;
 
     Unit *owner = GetCharmerOrOwner();
     if(!owner || owner->GetTypeId() != TYPEID_PLAYER)

@@ -38,6 +38,7 @@
 #include "AchievementMgr.h"
 #include "AuctionHouseMgr.h"
 #include "ObjectMgr.h"
+#include "CreatureEventAIMgr.h"
 #include "SpellMgr.h"
 #include "Chat.h"
 #include "DBCStores.h"
@@ -1265,7 +1266,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString( "Loading Achievements..." );
     sLog.outString();
+    achievementmgr.LoadAchievementReferenceList();
     achievementmgr.LoadAchievementCriteriaList();
+    achievementmgr.LoadAchievementCriteriaData();
     achievementmgr.LoadRewards();
     achievementmgr.LoadRewardLocales();
     achievementmgr.LoadCompletedAchievements();
@@ -1337,6 +1340,15 @@ void World::SetInitialWorldSettings()
 
     sLog.outString( "Loading Scripts text locales..." );    // must be after Load*Scripts calls
     objmgr.LoadDbScriptStrings();
+
+    sLog.outString( "Loading CreatureEventAI Texts...");
+    CreatureEAI_Mgr.LoadCreatureEventAI_Texts();
+
+    sLog.outString( "Loading CreatureEventAI Summons...");
+    CreatureEAI_Mgr.LoadCreatureEventAI_Summons();
+
+    sLog.outString( "Loading CreatureEventAI Scripts...");
+    CreatureEAI_Mgr.LoadCreatureEventAI_Scripts();
 
     sLog.outString( "Initializing Scripts..." );
     if(!LoadScriptingModule())
