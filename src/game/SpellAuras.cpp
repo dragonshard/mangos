@@ -3456,23 +3456,6 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         data << uint32(0);
         m_target->SendMessageToSet(&data,true);
 
-        /* FIXMEPLZ - THIS IS AN HACK */
-        if(m_target->getClass() == CLASS_WARRIOR)
-        {
-           /*Second wind rank 1: 29841*/
-           /*Second wind rank 2: 29842*/
-           if(m_target->HasSpell(29838))
-           {
-              SpellEntry const* spellInfo = sSpellStore.LookupEntry(29842);
-              m_target->CastSpell(m_target,spellInfo,true,NULL,this);
-           }
-           else if(m_target->HasSpell(29834))
-                {
-                   SpellEntry const* spellInfo = sSpellStore.LookupEntry(29841);
-                   m_target->CastSpell(m_target,spellInfo,true,NULL,this);
-                }
-        }
-
         // Summon the Naj'entus Spine GameObject on target if spell is Impaling Spine
         if(GetId() == 39837)
         {
@@ -3739,9 +3722,10 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
 
         m_target->addUnitState(UNIT_STAT_ROOT);
         m_target->SetUInt64Value (UNIT_FIELD_TARGET, 0);
-// probably wrong (this add skinable flag)
-// TODO: find correct flag
-//        m_target->SetFlag(UNIT_FIELD_FLAGS,(apply_stat<<16));
+
+        // probably wrong (this add skinable flag)
+        // TODO: find correct flag
+        //        m_target->SetFlag(UNIT_FIELD_FLAGS,(apply_stat<<16));
 
         //Save last orientation
         if( m_target->getVictim() )
@@ -3759,23 +3743,6 @@ void Aura::HandleAuraModRoot(bool apply, bool Real)
         }
         else
             ((Creature *)m_target)->StopMoving();
-		
-        /* FIXMEPLZ - THIS IS AN HACK */
-        if(m_target->getClass() == CLASS_WARRIOR)
-        {
-           /*Second wind rank 1: 29841*/
-           /*Second wind rank 2: 29842*/
-           if(m_target->HasSpell(29838))
-           {
-              SpellEntry const* spellInfo = sSpellStore.LookupEntry(29842);
-              m_target->CastSpell(m_target,spellInfo,true,NULL,this);
-           }
-           else if(m_target->HasSpell(29834))
-                {
-                   SpellEntry const* spellInfo = sSpellStore.LookupEntry(29841);
-                   m_target->CastSpell(m_target,spellInfo,true,NULL,this);
-                }
-        }
     }
     else
     {
