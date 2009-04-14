@@ -79,17 +79,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
     switch(criteria->requiredType)
     {
         case ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL2:
-            switch(dataType)
-            {
-                case ACHIEVEMENT_CRITERIA_DATA_TYPE_NONE:
-                case ACHIEVEMENT_CRITERIA_DATA_TYPE_CREATURE:
-                case ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_CLASS_RACE:
-                case ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_LESS_HEALTH:
-                    break;
-                default:
-                    sLog.outErrorDb( "Table `achievement_criteria_data` for criteria (Entry: %u Type: %u) have wrong data type (%u), ignore.", criteria->ID, criteria->requiredType,dataType);
-                    return false;
-            }
+        case ACHIEVEMENT_CRITERIA_TYPE_DO_EMOTE:
             break;
         default:
             sLog.outErrorDb( "Table `achievement_criteria_data` have data for not supported criteria type (Entry: %u Type: %u), ignore.", criteria->ID, criteria->requiredType);
@@ -100,7 +90,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
     {
         case ACHIEVEMENT_CRITERIA_DATA_TYPE_NONE:
             return true;
-        case ACHIEVEMENT_CRITERIA_DATA_TYPE_CREATURE:
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_CREATURE:
             if(!creature.id || !objmgr.GetCreatureTemplate(creature.id))
             {
                 sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_CREATURE (%u) have not existed creature id in value1 (%u), ignore.",
@@ -108,7 +98,7 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
                 return false;
             }
             return true;
-        case ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_CLASS_RACE:
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_CLASS_RACE:
             if(!classRace.class_id && !classRace.race_id)
             {
                 sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_CLASS_RACE (%u) must have not 0 in one from value fields, ignore.",
@@ -128,11 +118,45 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
                 return false;
             }
             return true;
-        case ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_LESS_HEALTH:
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_LESS_HEALTH:
             if(health.percent < 1 || health.percent > 100)
             {
-                sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_LESS_HEALTH (%u) have prong percent value in value1 (%u), ignore.",
+                sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_LESS_HEALTH (%u) have wrong percent value in value1 (%u), ignore.",
                     criteria->ID, criteria->requiredType,dataType,health.percent);
+                return false;
+            }
+            return true;
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_DEAD:
+            return true;
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA:
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_AURA:
+        {
+            SpellEntry const* spellEntry = sSpellStore.LookupEntry(aura.spell_id);
+            if(!spellEntry)
+            {
+                sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type %s (%u) have wrong spell id in value1 (%u), ignore.",
+                    criteria->ID, criteria->requiredType,(dataType==ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA?"ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA":"ACHIEVEMENT_CRITERIA_DATA_TYPE_T_AURA"),dataType,aura.spell_id);
+                return false;
+            }
+            if(aura.effect_idx >= 3)
+            {
+                sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type %s (%u) have wrong spell effect index in value2 (%u), ignore.",
+                    criteria->ID, criteria->requiredType,(dataType==ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA?"ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA":"ACHIEVEMENT_CRITERIA_DATA_TYPE_T_AURA"),dataType,aura.effect_idx);
+                return false;
+            }
+            if(!spellEntry->EffectApplyAuraName[aura.effect_idx])
+            {
+                sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type %s (%u) have non-aura spell effect (ID: %u Effect: %u), ignore.",
+                    criteria->ID, criteria->requiredType,(dataType==ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA?"ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA":"ACHIEVEMENT_CRITERIA_DATA_TYPE_T_AURA"),dataType,aura.spell_id,aura.effect_idx);
+                return false;
+            }
+            return true;
+        }
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AREA:
+            if(!GetAreaEntryByAreaID(area.id))
+            {
+                sLog.outErrorDb( "Table `achievement_criteria_data` (Entry: %u Type: %u) for data type ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AREA (%u) have wrong area id in value1 (%u), ignore.",
+                    criteria->ID, criteria->requiredType,dataType,area.id);
                 return false;
             }
             return true;
@@ -143,36 +167,54 @@ bool AchievementCriteriaData::IsValid(AchievementCriteriaEntry const* criteria)
     return false;
 }
 
-bool AchievementCriteriaData::Meets( Unit const* target ) const
+bool AchievementCriteriaData::Meets(Player const* source, Unit const* target) const
 {
-    if (!target)
-        return false;
-
     switch(dataType)
     {
         case ACHIEVEMENT_CRITERIA_DATA_TYPE_NONE:
             return true;
-        case ACHIEVEMENT_CRITERIA_DATA_TYPE_CREATURE:
-            if (target->GetTypeId()!=TYPEID_UNIT)
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_CREATURE:
+            if (!target || target->GetTypeId()!=TYPEID_UNIT)
                 return false;
             if (target->GetEntry() != creature.id)
                 return false;
             return true;
-        case ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_CLASS_RACE:
-            if (target->GetTypeId()!=TYPEID_PLAYER)
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_CLASS_RACE:
+            if (!target || target->GetTypeId()!=TYPEID_PLAYER)
                 return false;
             if(classRace.class_id && classRace.class_id != ((Player*)target)->getClass())
                 return false;
             if(classRace.race_id && classRace.race_id != ((Player*)target)->getRace())
                 return false;
             return true;
-        case ACHIEVEMENT_CRITERIA_DATA_TYPE_PLAYER_LESS_HEALTH:
-            if (target->GetTypeId()!=TYPEID_PLAYER)
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_LESS_HEALTH:
+            if (!target || target->GetTypeId()!=TYPEID_PLAYER)
                 return false;
             return target->GetHealth()*100 <= health.percent*target->GetMaxHealth();
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_PLAYER_DEAD:
+            return target && target->GetTypeId() == TYPEID_PLAYER && !target->isAlive() && ((Player*)target)->GetDeathTimer() != 0;
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AURA:
+            return source->HasAura(aura.spell_id,aura.effect_idx);
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_S_AREA:
+        {
+            uint32 zone_id,area_id;
+            source->GetZoneAndAreaId(zone_id,area_id);
+            return area.id==zone_id || area.id==area_id;
+        }
+        case ACHIEVEMENT_CRITERIA_DATA_TYPE_T_AURA:
+            return target && target->HasAura(aura.spell_id,aura.effect_idx);
     }
 
     return false;
+}
+
+bool AchievementCriteriaDataSet::Meets(Player const* source, Unit const* target) const
+{
+    for(Storage::const_iterator itr = storage.begin(); itr != storage.end(); ++itr)
+        if(!itr->Meets(source,target))
+            return false;
+
+    return true;
 }
 
 AchievementMgr::AchievementMgr(Player *player)
@@ -600,6 +642,10 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
             }
             case ACHIEVEMENT_CRITERIA_TYPE_COMPLETE_QUESTS_IN_ZONE:
             {
+                // speedup for non-login case
+                if(miscvalue1 && miscvalue1 != achievementCriteria->complete_quests_in_zone.zoneID)
+                    continue;
+
                 uint32 counter =0;
                 for(QuestStatusMap::iterator itr = GetPlayer()->getQuestStatusMap().begin(); itr!=GetPlayer()->getQuestStatusMap().end(); itr++)
                 {
@@ -631,14 +677,14 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                 // AchievementMgr::UpdateAchievementCriteria might also be called on login - skip in this case
                 if(!miscvalue1)
                     continue;
-                // skip wrong arena achievements, if not achievIdByArenaSlot then normal totla death counter
+                // skip wrong arena achievements, if not achievIdByArenaSlot then normal total death counter
                 bool notfit = false;
                 for(int i = 0; i < MAX_ARENA_SLOT; ++i)
                 {
                     if(achievIdByArenaSlot[i] == achievement->ID)
                     {
                         BattleGround* bg = GetPlayer()->GetBattleGround();
-                        if(!bg || ArenaTeam::GetSlotByType(bg->GetArenaType())!=i)
+                        if(!bg || !bg->isArena() || ArenaTeam::GetSlotByType(bg->GetArenaType()) != i)
                             notfit = true;
 
                         break;
@@ -863,22 +909,18 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
             case ACHIEVEMENT_CRITERIA_TYPE_DO_EMOTE:
             {
                 // miscvalue1 = emote
-                // miscvalue2 = achievement->ID for special requirement
                 if(!miscvalue1)
                     continue;
                 if(miscvalue1 != achievementCriteria->do_emote.emoteID)
                     continue;
                 if(achievementCriteria->do_emote.count)
                 {
-                    // harcoded case
-                    if(achievement->ID==247)
-                    {
-                        if (!unit || unit->GetTypeId() != TYPEID_PLAYER ||
-                            unit->isAlive() || ((Player*)unit)->GetDeathTimer() == 0)
-                            continue;
-                    }
-                    // expected as scripted case
-                    else if(!miscvalue2 || !achievement->ID != miscvalue2)
+                    // those requirements couldn't be found in the dbc
+                    AchievementCriteriaDataSet const* data = achievementmgr.GetCriteriaDataSet(achievementCriteria);
+                    if(!data)
+                        continue;
+
+                    if(!data->Meets(GetPlayer(),unit))
                         continue;
                 }
 
@@ -949,11 +991,11 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
                     continue;
 
                 // those requirements couldn't be found in the dbc
-                AchievementCriteriaData const* data = achievementmgr.GetCriteriaData(achievementCriteria);
+                AchievementCriteriaDataSet const* data = achievementmgr.GetCriteriaDataSet(achievementCriteria);
                 if(!data)
                     continue;
 
-                if(!data->Meets(unit))
+                if(!data->Meets(GetPlayer(),unit))
                     continue;
 
                 SetCriteriaProgress(achievementCriteria, 1, PROGRESS_ACCUMULATE);
@@ -1019,6 +1061,13 @@ void AchievementMgr::UpdateAchievementCriteria(AchievementCriteriaTypes type, ui
         if(IsCompletedCriteria(achievementCriteria,achievement))
             CompletedCriteria(achievementCriteria,achievement);
 
+        // check again the completeness for SUMM and REQ COUNT achievements, 
+        // as they don't depend on the completed criteria but on the sum of the progress of each individual criteria
+        if (achievement->flags & ACHIEVEMENT_FLAG_SUMM)
+        {
+            if (IsCompletedAchievement(achievement))
+                CompletedAchievement(achievement);
+        }
 
         if(AchievementEntryList const* achRefList = achievementmgr.GetAchievementByReferencedId(achievement->ID))
         {
@@ -1164,9 +1213,12 @@ void AchievementMgr::CompletedCriteria(AchievementCriteriaEntry const* criteria,
         CompletedAchievement(achievement);
 }
 
-// TODO: achievement 705 requires 4 criteria to be fulfilled
 bool AchievementMgr::IsCompletedAchievement(AchievementEntry const* entry)
 {
+    // counter can never complete
+    if(entry->flags & ACHIEVEMENT_FLAG_COUNTER)
+        return false;
+
     // for achievement with referenced achievement criterias get from referenced and counter from self
     uint32 achievmentForTestId = entry->refAchievement ? entry->refAchievement : entry->ID;
     uint32 achievmentForTestCount = entry->count;
@@ -1174,10 +1226,32 @@ bool AchievementMgr::IsCompletedAchievement(AchievementEntry const* entry)
     AchievementCriteriaEntryList const* cList = achievementmgr.GetAchievementCriteriaByAchievement(achievmentForTestId);
     if(!cList)
         return false;
-
     uint32 count = 0;
-    bool completed_all = true;
 
+    // For SUMM achievements, we have to count the progress of each criteria of the achievement.
+    // Oddly, the target count is NOT countained in the achievement, but in each individual criteria
+    if (entry->flags & ACHIEVEMENT_FLAG_SUMM)
+    {
+        for(AchievementCriteriaEntryList::const_iterator itr = cList->begin(); itr != cList->end(); ++itr)
+        {
+            AchievementCriteriaEntry const* criteria = *itr;
+
+            CriteriaProgressMap::const_iterator itrProgress = m_criteriaProgress.find(criteria->ID);
+            if(itrProgress == m_criteriaProgress.end())
+                continue;
+
+            CriteriaProgress const* progress = &itrProgress->second;
+            count += progress->counter;
+
+            // for counters, field4 contains the main count requirement
+            if (count >= criteria->raw.count)
+                return true;
+        }
+        return false;
+    }
+
+    // Default case - need complete all or 
+    bool completed_all = true;
     for(AchievementCriteriaEntryList::const_iterator itr = cList->begin(); itr != cList->end(); ++itr)
     {
         AchievementCriteriaEntry const* criteria = *itr;
@@ -1478,7 +1552,14 @@ void AchievementGlobalMgr::LoadAchievementCriteriaData()
         if(!data.IsValid(criteria))
             continue;
 
-        m_criteriaDataMap[criteria_id] = data;
+        // this will allocate empty data set storage
+        AchievementCriteriaDataSet& dataSet = m_criteriaDataMap[criteria_id];
+
+        // add real data only for not NONE data types
+        if(data.dataType!=ACHIEVEMENT_CRITERIA_DATA_TYPE_NONE)
+            dataSet.Add(data);
+
+        // counting data by and data types
         ++count;
     } while(result->NextRow());
 
@@ -1494,7 +1575,11 @@ void AchievementGlobalMgr::LoadAchievementCriteriaData()
         switch(criteria->requiredType)
         {
             case ACHIEVEMENT_CRITERIA_TYPE_CAST_SPELL2:
-                if(!GetCriteriaData(criteria))
+                if(!GetCriteriaDataSet(criteria))
+                    sLog.outErrorDb( "Table `achievement_criteria_data` not have expected data for for criteria (Entry: %u Type: %u).", criteria->ID, criteria->requiredType);
+                break;
+            case ACHIEVEMENT_CRITERIA_TYPE_DO_EMOTE:        // need skip generic cases
+                if(criteria->do_emote.count && !GetCriteriaDataSet(criteria))
                     sLog.outErrorDb( "Table `achievement_criteria_data` not have expected data for for criteria (Entry: %u Type: %u).", criteria->ID, criteria->requiredType);
                 break;
             default:                                        // unexpected case processed in IsValid check
