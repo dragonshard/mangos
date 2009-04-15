@@ -7681,11 +7681,20 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
     }
 
     // Custom scripted damage
-    // Ice Lance
-    if (spellProto->SpellFamilyName == SPELLFAMILY_MAGE && spellProto->SpellIconID == 186)
+    if (spellProto->SpellFamilyName == SPELLFAMILY_MAGE)
     {
-        if (pVictim->isFrozen())
-            DoneTotalMod *= 3.0f;
+        // Ice Lance
+        if (spellProto->SpellIconID == 186 && pVictim->isFrozen())
+                DoneTotalMod *= 3.0f;
+
+        // Torment the Weak
+        if (spellProto->SpellFamilyFlags & 0x0000900020200021LL && pVictim->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED))
+        {
+                Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
+                for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
+                    if ((*i)->GetMiscValue() == 11)
+                        DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
+        }
     }
 
     // ..taken
