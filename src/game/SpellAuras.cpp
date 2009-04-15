@@ -3337,18 +3337,21 @@ void Aura::HandleModFear(bool apply, bool Real)
     if (!Real)
         return;
 
-    Unit::AuraList const& mDummyAuras = pTarget->GetAurasByType(SPELL_AURA_DUMMY);
-    for(Unit::AuraList::const_iterator i = mDummyAuras.begin();i != mDummyAuras.end(); ++i)
+    if (!apply)
     {
-        //Improved Fear
-        switch ((*i)->GetId())
+        Unit::AuraList const& mDummyAuras = pTarget->GetAurasByType(SPELL_AURA_DUMMY);
+        for(Unit::AuraList::const_iterator i = mDummyAuras.begin();i != mDummyAuras.end(); ++i)
         {
-            case 53754:                                          //Rank1
-                caster->CastSpell(m_target,60946,true,NULL,this); break;
-            case 53759:                                          //Rank2
-                caster->CastSpell(m_target,60947,true,NULL,this); break;
-            default:
-                break;
+            //Improved Fear
+            switch ((*i)->GetId())
+            {
+                case 53754:                                          //Rank1
+                    caster->CastSpell(m_target,60946,true,NULL,this); break;
+                case 53759:                                          //Rank2
+                    caster->CastSpell(m_target,60947,true,NULL,this); break;
+                default:
+                    break;
+            }
         }
     }
 
