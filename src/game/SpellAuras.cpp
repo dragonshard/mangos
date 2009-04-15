@@ -2161,10 +2161,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 caster->CastSpell(m_target,47833,true,NULL,this); return;
             case 47836:                                     // Seed of Corruption Rank3
                 caster->CastSpell(m_target,47834,true,NULL,this); return;
-            case 53754:                                     //Improved Fear Rank1
-                caster->CastSpell(m_target,60946,true,NULL,this); return;
-            case 53759:                                     //Improved Fear Rank2
-                caster->CastSpell(m_target,60947,true,NULL,this); return;
         }
 
         if (caster && m_removeMode == AURA_REMOVE_BY_DEATH)
@@ -3340,6 +3336,21 @@ void Aura::HandleModFear(bool apply, bool Real)
 {
     if (!Real)
         return;
+
+    Unit::AuraList const& mDummyAuras = pTarget->GetAurasByType(SPELL_AURA_DUMMY);
+    for(Unit::AuraList::const_iterator i = mDummyAuras.begin();i != mDummyAuras.end(); ++i)
+    {
+        //Improved Fear
+        switch ((*i)->GetId())
+        {
+            case 53754:                                          //Rank1
+                caster->CastSpell(m_target,60946,true,NULL,this); break;
+            case 53759:                                          //Rank2
+                caster->CastSpell(m_target,60947,true,NULL,this); break;
+            default:
+                break;
+        }
+    }
 
     // check if there are no other fear auras
     Unit::AuraList const& fearAuras = m_target->GetAurasByType(SPELL_AURA_MOD_FEAR);
