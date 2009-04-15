@@ -2161,6 +2161,10 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 caster->CastSpell(m_target,47833,true,NULL,this); return;
             case 47836:                                     // Seed of Corruption Rank3
                 caster->CastSpell(m_target,47834,true,NULL,this); return;
+            case 53754:                                     //Improved Fear Rank1
+                caster->CastSpell(m_target,60946,true,NULL,this); return;
+            case 53759:                                     //Improved Fear Rank2
+                caster->CastSpell(m_target,60947,true,NULL,this); return;
         }
 
         if (caster && m_removeMode == AURA_REMOVE_BY_DEATH)
