@@ -2495,6 +2495,14 @@ void Spell::cast(bool skipCheck)
                 m_preCastSpell = 57723;                                // Exhaustion
             break;
         }
+        case SPELLFAMILY_WARLOCK:
+        {
+            if (m_spellInfo->Id == 47897)                              // Shadowflame DD (Rank 1)
+                m_preCastSpell = 47960;                                // Shadowflame DOT
+            else if(m_spellInfo->Id == 61290)                          // Shadowflame DD (Rank 2)
+                m_preCastSpell = 61291;                                // Shadowflame DOT
+            break;
+        }
         default:
             break;
     }
