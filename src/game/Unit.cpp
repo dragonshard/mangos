@@ -7690,10 +7690,26 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
         // Torment the Weak
         if (spellProto->SpellFamilyFlags & 0x0000900020200021LL && pVictim->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED))
         {
-                Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
-                for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
-                    if ((*i)->GetMiscValue() == 11)
-                        DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
+            Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
+            for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
+                if ((*i)->GetMiscValue() == 11)
+                    DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
+        }
+    }
+    else if (spellProto->SpellFamilyName == SPELLFAMILY_DRUID)
+    {
+        Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
+        for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
+        {
+            // Rend and Tear
+            if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
+                (spellProto->SpellFamilyFlags & (uint64)(*i)->getAuraSpellClassMask()) &&
+                (*i)->GetMiscValue() == 7 &&
+                pVictim->isBleeding())
+            {
+                DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
+                break;
+            }
         }
     }
 
@@ -7979,6 +7995,23 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                             }
                             break;
                         }
+                    case SPELLFAMILY_DRUID:
+                    {
+                        // Rend and Tear bonus
+                        Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
+                        for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
+                        {
+                            if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
+                                (spellProto->SpellFamilyFlags & (uint64)(*i)->getAuraSpellClassMask()) &&
+                                (*i)->GetMiscValue() == 7 &&
+                                pVictim->isBleeding())
+                            {
+                                crit_chance += crit_chance * (*i)->GetSpellProto()->EffectBasePoints[(*i)->GetEffIndex()+1] / 200;
+                                break;
+                            }
+                        }
+                        break;
+                    }
                     break;
 
                 }
@@ -10380,6 +10413,15 @@ void CharmInfo::SetPetNumber(uint32 petnumber, bool statwindow)
 bool Unit::isFrozen() const
 {
     return HasAuraState(AURA_STATE_FROZEN);
+}
+
+bool Unit::isBleeding() const
+{
+    Unit::AuraList const &periodic_damage = GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+    for(Unit::AuraList::const_iterator i = periodic_damage.begin(); i != periodic_damage.end(); i++)
+        if ((*i)->GetSpellProto()->EffectMechanic[(*i)->GetEffIndex()] == MECHANIC_BLEED)
+            return true;
+    return false;
 }
 
 struct ProcTriggeredData
