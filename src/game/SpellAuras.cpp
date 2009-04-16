@@ -3339,7 +3339,8 @@ void Aura::HandleModFear(bool apply, bool Real)
 
     if (!apply)
     {
-        Unit::AuraList const& mDummyAuras = pTarget->GetAurasByType(SPELL_AURA_DUMMY);
+        Unit* caster = GetCaster();
+        Unit::AuraList const& mDummyAuras = caster->GetAurasByType(SPELL_AURA_DUMMY);
         for(Unit::AuraList::const_iterator i = mDummyAuras.begin();i != mDummyAuras.end(); ++i)
         {
             //Improved Fear
@@ -5812,16 +5813,23 @@ void Aura::PeriodicTick()
 
                 pdamage = pCaster->SpellDamageBonus(m_target, GetSpellProto(), pdamage, DOT, GetStackAmount());
 
-                // Curse of Agony damage-per-tick calculation
-                if (GetSpellProto()->SpellFamilyName==SPELLFAMILY_WARLOCK && (GetSpellProto()->SpellFamilyFlags & 0x0000000000000400LL) && GetSpellProto()->SpellIconID==544)
+                if (GetSpellProto()->SpellFamilyName==SPELLFAMILY_WARLOCK)
                 {
-                    // 1..4 ticks, 1/2 from normal tick damage
-                    if (m_duration>=((m_maxduration-m_modifier.periodictime)*2/3))
-                        pdamage = pdamage/2;
-                    // 9..12 ticks, 3/2 from normal tick damage
-                    else if(m_duration<((m_maxduration-m_modifier.periodictime)/3))
-                        pdamage += (pdamage+1)/2;           // +1 prevent 0.5 damage possible lost at 1..4 ticks
-                    // 5..8 ticks have normal tick damage
+                    // Curse of Agony damage-per-tick calculation
+                    if((GetSpellProto()->SpellFamilyFlags & 0x0000000000000400LL) && GetSpellProto()->SpellIconID==544)
+                    {
+                        // 1..4 ticks, 1/2 from normal tick damage
+                        if (m_duration>=((m_maxduration-m_modifier.periodictime)*2/3))
+                            pdamage = pdamage/2;
+                        // 9..12 ticks, 3/2 from normal tick damage
+                        else if(m_duration<((m_maxduration-m_modifier.periodictime)/3))
+                            pdamage += (pdamage+1)/2;           // +1 prevent 0.5 damage possible lost at 1..4 ticks
+                        // 5..8 ticks have normal tick damage
+                    }
+                    // Drain Soul
+                    // If the target is at or below 25% health, Drain Soul causes four times the normal damage
+                    else if (m_spellProto->SpellFamilyFlags & 0x0000000000004000LL && (m_target->GetHealth() <= m_target->GetMaxHealth() * 0.25f))
+                        pdamage *= 4;
                 }
             }
             else
