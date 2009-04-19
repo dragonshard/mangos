@@ -658,6 +658,7 @@ void Spell::FillTargetMap()
                 case SPELL_EFFECT_FEED_PET:
                 case SPELL_EFFECT_DESTROY_ALL_TOTEMS:
                 case SPELL_EFFECT_SKILL:
+                case SPELL_EFFECT_SUMMON_OBJECT_SLOT1:
                     tmpUnitMap.push_back(m_caster);
                     break;
                 case SPELL_EFFECT_LEARN_PET_SPELL:

@@ -2420,10 +2420,10 @@ void Spell::EffectPowerBurn(uint32 i)
     SkillLineAbilityMap::const_iterator const skillLine = spellmgr.GetBeginSkillLineAbilityMap(m_spellInfo->Id);
     if(skillLine->second->skillId == SKILL_DISCIPLINE)
     {
-       power = unitTarget->GetMaxPower(powertype) * damage /100;
+       power = unitTarget->GetMaxPower(powertype) * m_spellInfo->EffectBasePoints[i] /100;
 
-       if(power > GetCaster()->GetMaxPower(powertype) * damage / 50)
-          power = GetCaster()->GetMaxPower(powertype) * damage / 50;
+       if(power > GetCaster()->GetMaxPower(powertype) * m_spellInfo->EffectBasePoints[i] / 50)
+          power = GetCaster()->GetMaxPower(powertype) * m_spellInfo->EffectBasePoints[i] / 50;
     }
 
     // resilience reduce mana draining effect at spell crit damage reduction (added in 2.4)
