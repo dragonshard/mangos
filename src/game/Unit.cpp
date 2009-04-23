@@ -497,16 +497,25 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         }
     }
 
-    if(pVictim->GetTypeId() == TYPEID_PLAYER && GetTypeId() == TYPEID_PLAYER)
+    if (GetTypeId() == TYPEID_PLAYER && this != pVictim)
     {
-        if(((Player*)pVictim)->InBattleGround())
+        Player *killer = ((Player*)this);
+
+        // in bg, count dmg if victim is also a player
+        if (pVictim->GetTypeId()==TYPEID_PLAYER)
         {
-            Player *killer = ((Player*)this);
-            if(killer != ((Player*)pVictim))
-                if(BattleGround *bg = killer->GetBattleGround())
-                    bg->UpdatePlayerScore(killer, SCORE_DAMAGE_DONE, damage);
+            if (BattleGround *bg = killer->GetBattleGround())
+            {
+                // FIXME: kept by compatibility. don't know in BG if the restriction apply.
+                bg->UpdatePlayerScore(killer, SCORE_DAMAGE_DONE, damage);
+            }
         }
+
+        killer->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HIT_DEALT, damage);
     }
+
+    if (pVictim->GetTypeId() == TYPEID_PLAYER)
+        ((Player*)pVictim)->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HIT_RECEIVED, damage);
 
     if (pVictim->GetTypeId() == TYPEID_UNIT && !((Creature*)pVictim)->isPet() && !((Creature*)pVictim)->hasLootRecipient())
         ((Creature*)pVictim)->SetLootRecipient(this);
@@ -514,6 +523,10 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
     if (health <= damage)
     {
         DEBUG_LOG("DealDamage: victim just died");
+
+        if (pVictim->GetTypeId() == TYPEID_PLAYER)
+            ((Player*)pVictim)->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_DAMAGE_RECEIVED, health);
+
 
         // find player: owner of controlled `this` or `this` itself maybe
         Player *player = GetCharmerOrOwnerPlayerOrPlayerItself();
@@ -679,6 +692,9 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
     else                                                    // if (health <= damage)
     {
         DEBUG_LOG("DealDamageAlive");
+
+        if (pVictim->GetTypeId() == TYPEID_PLAYER)
+            ((Player*)pVictim)->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_DAMAGE_RECEIVED, damage);
 
         pVictim->ModifyHealth(- (int32)damage);
 
@@ -7498,6 +7514,36 @@ void Unit::UnsummonAllTotems()
         if (OldTotem && OldTotem->isTotem())
             ((Totem*)OldTotem)->UnSummon();
     }
+}
+
+int32 Unit::DealHeal(Unit *pVictim, uint32 addhealth, SpellEntry const *spellProto, bool critical)
+{
+    int32 gain = pVictim->ModifyHealth(int32(addhealth));
+
+    if (GetTypeId()==TYPEID_PLAYER)
+    {
+        SendHealSpellLog(pVictim, spellProto->Id, addhealth, critical);
+
+        if (BattleGround *bg = ((Player*)this)->GetBattleGround())
+            bg->UpdatePlayerScore((Player*)this, SCORE_HEALING_DONE, gain);
+
+        // healing done is count ONLY if the target is a player.
+        if (pVictim->GetTypeId()==TYPEID_PLAYER)
+        {
+            // use the actual gain, as the overheal shall not be counted.
+            ((Player*)this)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HEALING_DONE, gain);
+        }
+
+        ((Player*)this)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEAL_CASTED, addhealth);
+    }
+
+    if (pVictim->GetTypeId()==TYPEID_PLAYER)
+    {
+        ((Player*)pVictim)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_TOTAL_HEALING_RECEIVED, gain);
+        ((Player*)pVictim)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEALING_RECEIVED, addhealth);
+    }
+
+    return gain;
 }
 
 Unit* Unit::SelectMagnetTarget(Unit *victim, SpellEntry const *spellInfo)
