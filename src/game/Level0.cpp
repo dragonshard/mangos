@@ -204,7 +204,7 @@ bool ChatHandler::HandleGMListIngameCommand(const char* /*args*/)
     return true;
 }
 
-bool ChatHandler::HandlePasswordCommand(const char* args)
+bool ChatHandler::HandleAccountPasswordCommand(const char* args)
 {
     if(!*args)
         return false;
@@ -255,7 +255,7 @@ bool ChatHandler::HandlePasswordCommand(const char* args)
     return true;
 }
 
-bool ChatHandler::HandleLockAccountCommand(const char* args)
+bool ChatHandler::HandleAccountLockCommand(const char* args)
 {
     if (!*args)
     {

@@ -511,6 +511,7 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
             }
         }
 
+        killer->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_DAMAGE_DONE, damage, 0, pVictim);
         killer->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HIT_DEALT, damage);
     }
 
@@ -1999,11 +2000,6 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
                     --m_extraAttacks;
             }
         }
-
-        // if damage pVictim call AI reaction
-        if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->AI())
-            ((Creature*)pVictim)->AI()->AttackedBy(this);
-
         return;
     }
 
@@ -2024,6 +2020,10 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
         DEBUG_LOG("AttackerStateUpdate: (NPC)    %u attacked %u (TypeId: %u) for %u dmg, absorbed %u, blocked %u, resisted %u.",
             GetGUIDLow(), pVictim->GetGUIDLow(), pVictim->GetTypeId(), damageInfo.damage, damageInfo.absorb, damageInfo.blocked_amount, damageInfo.resist);
 
+    // if damage pVictim call AI reaction
+    if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->AI())
+        ((Creature*)pVictim)->AI()->AttackedBy(this);
+
     // extra attack only at any non extra attack (normal case)
     if(!extra && extraAttacks)
     {
@@ -2034,10 +2034,6 @@ void Unit::AttackerStateUpdate (Unit *pVictim, WeaponAttackType attType, bool ex
                 --m_extraAttacks;
         }
     }
-
-    // if damage pVictim call AI reaction
-    if(pVictim->GetTypeId()==TYPEID_UNIT && ((Creature*)pVictim)->AI())
-        ((Creature*)pVictim)->AI()->AttackedBy(this);
 }
 
 MeleeHitOutcome Unit::RollMeleeOutcomeAgainst(const Unit *pVictim, WeaponAttackType attType) const
@@ -7527,12 +7523,9 @@ int32 Unit::DealHeal(Unit *pVictim, uint32 addhealth, SpellEntry const *spellPro
         if (BattleGround *bg = ((Player*)this)->GetBattleGround())
             bg->UpdatePlayerScore((Player*)this, SCORE_HEALING_DONE, gain);
 
-        // healing done is count ONLY if the target is a player.
-        if (pVictim->GetTypeId()==TYPEID_PLAYER)
-        {
-            // use the actual gain, as the overheal shall not be counted.
-            ((Player*)this)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HEALING_DONE, gain);
-        }
+        // use the actual gain, as the overheal shall not be counted, skip gain 0 (it ignored anyway in to criteria)
+        if (gain)
+            ((Player*)this)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HEALING_DONE, gain, 0, pVictim);
 
         ((Player*)this)->GetAchievementMgr().UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_HIGHEST_HEAL_CASTED, addhealth);
     }
