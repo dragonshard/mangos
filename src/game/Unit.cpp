@@ -1614,6 +1614,8 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
     // Reflect damage spells (not cast any damage spell in aura lookup)
     uint32 reflectSpell = 0;
     int32  reflectDamage = 0;
+    // Guardian Spirit Aura
+    Aura* guardianSpirit = 0;
     // Need remove expired auras after
     bool existExpired = false;
     // absorb without mana cost
@@ -1720,6 +1722,14 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
             }
             case SPELLFAMILY_PRIEST:
             {
+                // Guardian Spirit
+                if (spellProto->SpellFamilyFlags == 0xC0000000LL)
+                {
+                    guardianSpirit = (*i);
+                    currentAbsorb = 0;
+                    break;
+                }
+
                 if (pVictim == this)
                     break;
                 Unit* caster = (*i)->GetCaster();
@@ -1867,6 +1877,15 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
     // Cast back reflect damage spell
     if (reflectSpell)
         pVictim->CastCustomSpell(this,  reflectSpell, &reflectDamage, NULL, NULL, true);
+
+    // Guardian Spirit Heal
+    if (guardianSpirit && RemainingDamage >= pVictim->GetHealth())
+    {
+        int32 healAmount = pVictim->GetMaxHealth() * guardianSpirit->GetBasePoints() / 100;
+        pVictim->CastCustomSpell(pVictim, 48153, &healAmount, NULL, NULL, true);
+        pVictim->RemoveAurasDueToSpell(guardianSpirit->GetId());
+        RemainingDamage = 0;
+    }
 
     // absorb by mana cost
     AuraList const& vManaShield = pVictim->GetAurasByType(SPELL_AURA_MANA_SHIELD);
