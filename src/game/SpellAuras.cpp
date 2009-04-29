@@ -2777,18 +2777,16 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
             case FORM_BEAR:
             case FORM_DIREBEAR:
             case FORM_CAT:
-            {
                 if(Aura* dummy = m_target->GetDummyAura(37315) )
                     m_target->CastSpell(m_target,37316,true,NULL,dummy);
                 break;
-            }
             // Nordrassil Regalia - bonus
             case FORM_MOONKIN:
-            {
                 if(Aura* dummy = m_target->GetDummyAura(37324) )
                     m_target->CastSpell(m_target,37325,true,NULL,dummy);
                 break;
-            }
+            default:
+                break;
         }
     }
 
@@ -3615,7 +3613,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
                     else if ((*i)->GetId() == 58426 && GetSpellProto()->SpellFamilyFlags & 0x0000000000400000LL)
                     {
                         pTarget->RemoveAurasDueToSpell(58428);
-                        pTarget->CastSpell(m_target, 58427, true);
+                        pTarget->CastSpell(pTarget, 58427, true);
                     }
                 }
             }
@@ -3653,7 +3651,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
                     pTarget->CastSpell(pTarget,31666,true);
                 // Overkill
                 else if ((*i)->GetId() == 58426 && GetSpellProto()->SpellFamilyFlags & 0x0000000000400000LL)
-                    pTarget->CastSpell(m_target, 58428, true);
+                    pTarget->CastSpell(pTarget, 58428, true);
             }
         }
     }
