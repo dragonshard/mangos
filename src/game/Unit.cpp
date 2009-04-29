@@ -8061,7 +8061,7 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                                 // Consume shock aura if not have Glyph of Flame Shock
                                 if (!GetAura(55447, 0))
                                     pVictim->RemoveAurasByCasterSpell(flameShock->GetId(), GetGUID());
-                                return true;
+                                crit_chance = 100.0f;
                             }
                             break;
                         }
@@ -8108,7 +8108,12 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
 
     crit_chance = crit_chance > 0.0f ? crit_chance : 0.0f;
     if (roll_chance_f(crit_chance))
+    {
+        //Focus Magic
+        if (HasAura(54646))
+            CastSpell(GetAura(54646, 0)->GetCaster(),54648,true);
         return true;
+    }
     return false;
 }
 
