@@ -121,7 +121,8 @@ enum TrainerSpellState
 {
     TRAINER_SPELL_GREEN = 0,
     TRAINER_SPELL_RED   = 1,
-    TRAINER_SPELL_GRAY  = 2
+    TRAINER_SPELL_GRAY  = 2,
+    TRAINER_SPELL_GREEN_DISABLED = 10                       // custom value, not send to client: formally green but learn not allowed
 };
 
 enum ActionButtonUpdateState
@@ -457,20 +458,7 @@ enum ActivateTaxiReplies
     ERR_TAXINOTSTANDING             = 12
 };
 
-enum LootType
-{
-    LOOT_CORPSE                 = 1,
-    LOOT_PICKPOCKETING          = 2,
-    LOOT_FISHING                = 3,
-    LOOT_DISENCHANTING          = 4,
-                                                            // ignored always by client
-    LOOT_SKINNING               = 6,
-    LOOT_PROSPECTING            = 7,
-    LOOT_MILLING                = 8,
 
-    LOOT_FISHINGHOLE            = 20,                       // unsupported by client, sending LOOT_FISHING instead
-    LOOT_INSIGNIA               = 21                        // unsupported by client, sending LOOT_CORPSE instead
-};
 
 enum MirrorTimerType
 {
