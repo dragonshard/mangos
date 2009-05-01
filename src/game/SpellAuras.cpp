@@ -4301,7 +4301,22 @@ void Aura::HandleAuraPeriodicDummy(bool apply, bool Real)
     {
         case SPELLFAMILY_ROGUE:
         {
-            if(!apply)
+            if(apply)
+            {
+                switch(spell->Id)
+                {
+                    // Killing Spree
+                    case 51690:
+                    {
+                        m_target->CastSpell(m_target, 61851, true);
+                        m_target->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        m_target->SendUpdateObjectToAllExcept(NULL);
+                        m_target->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NOT_SELECTABLE);
+                        break;
+                    }
+                }
+            }
+            else
             {
                 switch(spell->Id)
                 {
@@ -6586,17 +6601,30 @@ void Aura::PeriodicDummyTick()
         }
         case SPELLFAMILY_ROGUE:
         {
-//            switch (spell->Id)
-//            {
+            switch (spell->Id)
+            {
                 // Master of Subtlety
 //                case 31666: break;
                 // Killing Spree
-//                case 51690: break;
+                case 51690:
+                {
+                    Spell* spellTarget = new Spell(GetCaster(), GetSpellProto(), true);
+                    std::list<Unit*> listTarget;
+                    spellTarget->SetTargetMap(0, TARGET_RANDOM_ENEMY_CHAIN_IN_AREA, listTarget);
+
+                    if (listTarget.size() == 0)
+                        return;
+
+                    GetCaster()->CastSpell((*listTarget.begin()), 57840, true);
+                    GetCaster()->CastSpell((*listTarget.begin()), 57841, true);
+                    delete spellTarget;
+                    return;
+                }
                 // Overkill
 //                case 58428: break;
-//                default:
-//                    break;
-//            }
+                default:
+                    break;
+            }
             break;
         }
         case SPELLFAMILY_HUNTER:
