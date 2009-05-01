@@ -3488,6 +3488,30 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
             else
                 delete pObj;
         }
+        // Glyph of Ice Block
+        else if (GetId() == 45438 && m_target->HasAura(56372, 0))
+        {
+            // immediately finishes the cooldown on Frost Nova spells
+            const PlayerSpellMap& sp_list = ((Player *)m_caster)->GetSpellMap();
+            for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
+            {
+                if (itr->second->state == PLAYERSPELL_REMOVED)
+                    continue;
+
+                uint32 ClassSpell = itr->first;
+                SpellEntry const *SpellInfo = sSpellStore.LookupEntry(ClassSpell);
+
+                if (SpellInfo->SpellIconID == 193)
+                {
+                    ((Player*)m_caster)->RemoveSpellCooldown(ClassSpell);
+
+                    WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
+                    data << uint32(ClassSpell);
+                    data << uint64(m_caster->GetGUID());
+                    ((Player*)m_caster)->GetSession()->SendPacket(&data);
+                }
+            }
+        }
     }
     else
     {
