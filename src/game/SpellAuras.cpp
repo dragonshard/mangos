@@ -3524,7 +3524,7 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
         else if (GetId() == 45438 && m_target->HasAura(56372, 0))
         {
             // immediately finishes the cooldown on Frost Nova spells
-            const PlayerSpellMap& sp_list = ((Player *)m_caster)->GetSpellMap();
+            const PlayerSpellMap& sp_list = ((Player *)m_target)->GetSpellMap();
             for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
             {
                 if (itr->second->state == PLAYERSPELL_REMOVED)
@@ -3535,12 +3535,12 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
 
                 if (SpellInfo->SpellIconID == 193)
                 {
-                    ((Player*)m_caster)->RemoveSpellCooldown(ClassSpell);
+                    ((Player*)m_target)->RemoveSpellCooldown(ClassSpell);
 
                     WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
                     data << uint32(ClassSpell);
-                    data << uint64(m_caster->GetGUID());
-                    ((Player*)m_caster)->GetSession()->SendPacket(&data);
+                    data << uint64(m_target->GetGUID());
+                    ((Player*)m_target)->GetSession()->SendPacket(&data);
                 }
             }
         }
