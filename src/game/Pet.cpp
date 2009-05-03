@@ -1278,6 +1278,9 @@ bool Pet::addSpell(uint32 spell_id, uint16 active, PetSpellState state, PetSpell
         {
             // can be in case spell loading but learned at some previous spell loading
             itr->second->state = PETSPELL_UNCHANGED;
+            // restore previous autocast state, applicable only for ActiveStates with castable (0x8000) bit
+            if (active & 0x8000)
+                ToggleAutocast(spell_id, active & 0x4000); // true if auto cast flag (0x4000) is set
             return false;
         }
         else
