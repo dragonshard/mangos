@@ -196,10 +196,13 @@ void WorldSession::HandleGroupAcceptOpcode( WorldPacket & /*recv_data*/ )
     if(!group->AddMember(GetPlayer()->GetGUID(), GetPlayer()->GetName()))
         return;
 
+<<<<<<< HEAD:src/game/GroupHandler.cpp
     uint8 subgroup = group->GetMemberGroup(GetPlayer()->GetGUID());
 
     GetPlayer()->SetGroup(group, subgroup);
     group->BroadcastGroupUpdate();
+=======
+>>>>>>> 6ff7c46b1f4506fa2c4fe5caeacb604ff4a0ccca:src/game/GroupHandler.cpp
 }
 
 void WorldSession::HandleGroupDeclineOpcode( WorldPacket & /*recv_data*/ )

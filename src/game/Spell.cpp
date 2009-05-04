@@ -2920,6 +2920,8 @@ void Spell::SendCastResult(SpellCastResult result)
             data << uint32(m_spellInfo->EquippedItemSubClassMask);
             //data << uint32(m_spellInfo->EquippedItemInventoryTypeMask);
             break;
+        default:
+            break;
     }
     ((Player*)m_caster)->GetSession()->SendPacket(&data);
 }
@@ -2937,8 +2939,6 @@ void Spell::SendSpellStart()
 
     if(m_spellInfo->runeCostID)
         castFlags |= CAST_FLAG_UNKNOWN10;
-
-    Unit *target = m_targets.getUnitTarget() ? m_targets.getUnitTarget() : m_caster;
 
     WorldPacket data(SMSG_SPELL_START, (8+8+4+4+2));
     if(m_CastItem)
@@ -2985,8 +2985,6 @@ void Spell::SendSpellGo()
         return;
 
     sLog.outDebug("Sending SMSG_SPELL_GO id=%u", m_spellInfo->Id);
-
-    Unit *target = m_targets.getUnitTarget() ? m_targets.getUnitTarget() : m_caster;
 
     uint32 castFlags = CAST_FLAG_UNKNOWN3;
     if(IsRangedSpell())
