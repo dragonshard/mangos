@@ -3366,22 +3366,17 @@ void Aura::HandleModFear(bool apply, bool Real)
     if (!Real)
         return;
 
-    if (!apply)
+    if (!apply && m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK)
     {
         Unit* caster = GetCaster();
-        Unit::AuraList const& mDummyAuras = caster->GetAurasByType(SPELL_AURA_DUMMY);
-        for(Unit::AuraList::const_iterator i = mDummyAuras.begin();i != mDummyAuras.end(); ++i)
+        if (!caster || caster->GetTypeId() != TYPEID_PLAYER)
+            return;
+        else
         {
-            //Improved Fear
-            switch ((*i)->GetId())
-            {
-                case 53754:                                          //Rank1
-                    m_target->CastSpell(m_target,60946,true,NULL,this); break;
-                case 53759:                                          //Rank2
-                    m_target->CastSpell(m_target,60947,true,NULL,this); break;
-                default:
-                    break;
-            }
+            if (caster->HasAura(53754, 0))
+                m_target->CastSpell(m_target,60946,true,NULL,this);
+            else if(caster->HasAura(53759, 0))
+                m_target->CastSpell(m_target,60947,true,NULL,this);
         }
     }
 
