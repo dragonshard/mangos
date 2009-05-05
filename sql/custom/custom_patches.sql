@@ -1,3 +1,11 @@
+/* CUSTOM MANGOS STRINGS */
+-------------------------------------------------------------------------------------------------
+
+DELETE FROM mangos_string WHERE entry IN (3, 2000);
+INSERT INTO mangos_string VALUES
+(3, '|cffffff00[|c1f40af20<|cffff6633GM|c1f40af20>Announce|cffffff00]: %s|r', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+(2000, '|cffffff00[|c1f40af20<|cffff6633GM|c1f40af20>Announce by|r |cffff0000%s|cffffff00]:|r %s|r', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+
 /* CUSTOM GM TELES */
 -------------------------------------------------------------------------------------------------
 
