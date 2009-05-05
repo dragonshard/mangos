@@ -1614,8 +1614,8 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
     // Reflect damage spells (not cast any damage spell in aura lookup)
     uint32 reflectSpell = 0;
     int32  reflectDamage = 0;
-    // Guardian Spirit Aura
-    Aura* guardianSpirit = 0;
+    // Death Prevention Aura
+    Aura*  preventDeath = 0;
     // Need remove expired auras after
     bool existExpired = false;
     // absorb without mana cost
@@ -1705,17 +1705,7 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
                 // Cheat Death
                 if(spellProto->SpellIconID == 2109)
                 {
-                    if (pVictim->GetTypeId()==TYPEID_PLAYER &&            // Only players
-                        pVictim->GetHealth() <= RemainingDamage &&        // Only if damage kill
-                        !((Player*)pVictim)->HasSpellCooldown(31231) &&   // Only if no cooldown
-                        roll_chance_i(currentAbsorb))                     // Only if roll
-                    {
-                        pVictim->CastSpell(pVictim,31231,true);
-                        ((Player*)pVictim)->AddSpellCooldown(31231,0,time(NULL)+60);
-                        // with health > 10% lost health until health==10%, in other case no losses
-                        uint32 health10 = pVictim->GetMaxHealth()/10;
-                        RemainingDamage = pVictim->GetHealth() > health10 ? pVictim->GetHealth() - health10 : 0;
-                    }
+                    preventDeath = (*i);
                     continue;
                 }
                 break;
@@ -1725,7 +1715,7 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
                 // Guardian Spirit
                 if (spellProto->SpellFamilyFlags == 0xC0000000LL)
                 {
-                    guardianSpirit = (*i);
+                    preventDeath = (*i);
                     continue;
                 }
 
@@ -1877,13 +1867,38 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
     if (reflectSpell)
         pVictim->CastCustomSpell(this,  reflectSpell, &reflectDamage, NULL, NULL, true);
 
-    // Guardian Spirit Heal
-    if (guardianSpirit && RemainingDamage >= pVictim->GetHealth())
+    // Apply death prevention spells effects
+    if (preventDeath && RemainingDamage >= pVictim->GetHealth())
     {
-        int32 healAmount = pVictim->GetMaxHealth() * guardianSpirit->GetBasePoints() / 100;
-        pVictim->CastCustomSpell(pVictim, 48153, &healAmount, NULL, NULL, true);
-        pVictim->RemoveAurasDueToSpell(guardianSpirit->GetId());
-        RemainingDamage = 0;
+        int32 modifier_amount = preventDeath->GetModifier()->m_amount;
+
+        switch(preventDeath->GetSpellProto()->SpellFamilyName)
+        {
+            // Cheat Death
+            case SPELLFAMILY_ROGUE:
+            {
+                if (pVictim->GetTypeId()==TYPEID_PLAYER &&            // Only players
+                    !((Player*)pVictim)->HasSpellCooldown(31231) &&   // Only if no cooldown
+                    roll_chance_i(modifier_amount))                   // Only if roll
+                {
+                    pVictim->CastSpell(pVictim,31231,true);
+                    ((Player*)pVictim)->AddSpellCooldown(31231,0,time(NULL)+60);
+                    // with health > 10% lost health until health==10%, in other case no losses
+                    uint32 health10 = pVictim->GetMaxHealth()/10;
+                    RemainingDamage = pVictim->GetHealth() > health10 ? pVictim->GetHealth() - health10 : 0;
+                }
+                break;
+            }
+            // Guardian Spirit
+            case SPELLFAMILY_PRIEST:
+            {
+                int32 healAmount = pVictim->GetMaxHealth() * modifier_amount / 100;
+                pVictim->CastCustomSpell(pVictim, 48153, &healAmount, NULL, NULL, true);
+                pVictim->RemoveAurasDueToSpell(preventDeath->GetId());
+                RemainingDamage = 0;
+                break;
+            }
+        }
     }
 
     // absorb by mana cost
