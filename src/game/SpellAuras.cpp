@@ -3368,8 +3368,7 @@ void Aura::HandleModFear(bool apply, bool Real)
 
     if (!apply && m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && m_spellProto->SpellFamilyFlags == 0x40000000000LL)
     {
-        Unit* caster = GetCaster();
-        if (caster)
+        if (Unit* caster = GetCaster())
         {
             if (caster->HasAura(53754, 0))
                 m_target->CastSpell(m_target,60946,true,NULL,this,GetCasterGUID());
