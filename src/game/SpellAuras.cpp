@@ -3366,15 +3366,15 @@ void Aura::HandleModFear(bool apply, bool Real)
     if (!Real)
         return;
 
-    if (!apply && m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK)
+    if (!apply && m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && m_spellProto->SpellFamilyFlags == 0x40000000000LL)
     {
         Unit* caster = GetCaster();
-        if (caster || caster->GetTypeId() == TYPEID_PLAYER)
+        if (caster)
         {
             if (caster->HasAura(53754, 0))
-                m_target->CastSpell(m_target,60946,true,NULL,this);
+                m_target->CastSpell(m_target,60946,true,NULL,this,GetCasterGUID());
             else if(caster->HasAura(53759, 0))
-                m_target->CastSpell(m_target,60947,true,NULL,this);
+                m_target->CastSpell(m_target,60947,true,NULL,this,GetCasterGUID());
         }
     }
 
