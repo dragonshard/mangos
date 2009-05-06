@@ -6053,11 +6053,24 @@ void Player::UpdateZone(uint32 newZone, uint32 newArea)
         }
     }
 
-    pvpInfo.inHostileArea =
-        GetTeam() == ALLIANCE && zone->team == AREATEAM_HORDE ||
-        GetTeam() == HORDE    && zone->team == AREATEAM_ALLY  ||
-        sWorld.IsPvPRealm()   && zone->team == AREATEAM_NONE  ||
-        InBattleGround();                                   // overwrite for battlegrounds, maybe batter some zone flags but current known not 100% fit to this
+    // in PvP, any not controlled zone (except zone->team == 6, default case)
+    // in PvE, only opposition team capital
+    switch(zone->team)
+    {
+        case AREATEAM_ALLY:
+            pvpInfo.inHostileArea = GetTeam() != ALLIANCE && (sWorld.IsPvPRealm() || zone->flags & AREA_FLAG_CAPITAL);
+            break;
+        case AREATEAM_HORDE:
+            pvpInfo.inHostileArea = GetTeam() != HORDE && (sWorld.IsPvPRealm() || zone->flags & AREA_FLAG_CAPITAL);
+            break;
+        case AREATEAM_NONE:
+            // overwrite for battlegrounds, maybe batter some zone flags but current known not 100% fit to this
+            pvpInfo.inHostileArea = sWorld.IsPvPRealm() || InBattleGround();
+            break;
+        default:                                            // 6 in fact
+            pvpInfo.inHostileArea = false;
+            break;
+    }
 
     if(pvpInfo.inHostileArea)                               // in hostile area
     {
@@ -16194,8 +16207,11 @@ bool Player::HasGuardianWithEntry(uint32 entry)
     // pet guid middle part is entry (and creature also)
     // and in guardian list must be guardians with same entry _always_
     for(GuardianPetList::const_iterator itr = m_guardianPets.begin(); itr != m_guardianPets.end(); ++itr)
-        if(GUID_ENPART(*itr)==entry)
-            return true;
+    {
+        if(Pet* pet = ObjectAccessor::GetPet(*itr))
+            if (pet->GetEntry() == entry)
+                return true;
+    }
 
     return false;
 }
@@ -16733,11 +16749,31 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, uint32 mount_i
 
     // starting node too far away (cheat?)
     TaxiNodesEntry const* node = sTaxiNodesStore.LookupEntry(sourcenode);
-    if( !node || node->map_id != GetMapId() ||
-        (node->x - GetPositionX())*(node->x - GetPositionX())+
-        (node->y - GetPositionY())*(node->y - GetPositionY())+
-        (node->z - GetPositionZ())*(node->z - GetPositionZ()) >
-        (2*INTERACTION_DISTANCE)*(2*INTERACTION_DISTANCE)*(2*INTERACTION_DISTANCE) )
+    if (!node)
+    {
+        WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
+        data << uint32(ERR_TAXINOSUCHPATH);
+        GetSession()->SendPacket(&data);
+        return false;
+    }
+
+    // check node starting pos data set case if provided
+    if (node->x != 0.0f || node->y != 0.0f || node->z != 0.0f)
+    {
+        if (node->map_id != GetMapId() ||
+            (node->x - GetPositionX())*(node->x - GetPositionX())+
+            (node->y - GetPositionY())*(node->y - GetPositionY())+
+            (node->z - GetPositionZ())*(node->z - GetPositionZ()) >
+            (2*INTERACTION_DISTANCE)*(2*INTERACTION_DISTANCE)*(2*INTERACTION_DISTANCE))
+        {
+            WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
+            data << uint32(ERR_TAXITOOFARAWAY);
+            GetSession()->SendPacket(&data);
+            return false;
+        }
+    }
+    // node must have pos if not spell case (npc!=0)
+    else if(npc)
     {
         WorldPacket data(SMSG_ACTIVATETAXIREPLY, 4);
         data << uint32(ERR_TAXIUNSPECIFIEDSERVERERROR);
@@ -16803,10 +16839,8 @@ bool Player::ActivateTaxiPathTo(std::vector<uint32> const& nodes, uint32 mount_i
 
     uint32 money = GetMoney();
 
-    if(npc)
-    {
+    if (npc)
         totalcost = (uint32)ceil(totalcost*GetReputationPriceDiscount(npc));
-    }
 
     if(money < totalcost)
     {
