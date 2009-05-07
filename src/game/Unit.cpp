@@ -1878,40 +1878,6 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
     if (reflectSpell)
         pVictim->CastCustomSpell(this,  reflectSpell, &reflectDamage, NULL, NULL, true);
 
-    // Apply death prevention spells effects
-    if (preventDeath && RemainingDamage >= pVictim->GetHealth())
-    {
-        int32 modifier_amount = preventDeath->GetModifier()->m_amount;
-
-        switch(preventDeath->GetSpellProto()->SpellFamilyName)
-        {
-            // Cheat Death
-            case SPELLFAMILY_ROGUE:
-            {
-                if (pVictim->GetTypeId()==TYPEID_PLAYER &&            // Only players
-                    !((Player*)pVictim)->HasSpellCooldown(31231) &&   // Only if no cooldown
-                    roll_chance_i(modifier_amount))                   // Only if roll
-                {
-                    pVictim->CastSpell(pVictim,31231,true);
-                    ((Player*)pVictim)->AddSpellCooldown(31231,0,time(NULL)+60);
-                    // with health > 10% lost health until health==10%, in other case no losses
-                    uint32 health10 = pVictim->GetMaxHealth()/10;
-                    RemainingDamage = pVictim->GetHealth() > health10 ? pVictim->GetHealth() - health10 : 0;
-                }
-                break;
-            }
-            // Guardian Spirit
-            case SPELLFAMILY_PRIEST:
-            {
-                int32 healAmount = pVictim->GetMaxHealth() * modifier_amount / 100;
-                pVictim->CastCustomSpell(pVictim, 48153, &healAmount, NULL, NULL, true);
-                pVictim->RemoveAurasDueToSpell(preventDeath->GetId());
-                RemainingDamage = 0;
-                break;
-            }
-        }
-    }
-
     // absorb by mana cost
     AuraList const& vManaShield = pVictim->GetAurasByType(SPELL_AURA_MANA_SHIELD);
     for(AuraList::const_iterator i = vManaShield.begin(), next; i != vManaShield.end() && RemainingDamage > 0; i = next)
