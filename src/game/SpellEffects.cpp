@@ -279,8 +279,7 @@ void Spell::EffectInstaKill(uint32 /*i*/)
     if(m_caster==unitTarget)                                // prevent interrupt message
         finish();
 
-    uint32 health = unitTarget->GetHealth();
-    m_caster->DealDamage(unitTarget, health, NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
+    m_caster->DealDamage(unitTarget, unitTarget->GetHealth(), NULL, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, NULL, false);
 }
 
 void Spell::EffectEnvirinmentalDMG(uint32 i)
@@ -1209,12 +1208,7 @@ void Spell::EffectDummy(uint32 i)
                             (GetSpellSchoolMask(spellInfo) & SPELL_SCHOOL_MASK_FROST) &&
                             spellInfo->Id != 11958 && GetSpellRecoveryTime(spellInfo) > 0 )
                         {
-                            ((Player*)m_caster)->RemoveSpellCooldown(classspell);
-
-                            WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
-                            data << uint32(classspell);
-                            data << uint64(m_caster->GetGUID());
-                            ((Player*)m_caster)->GetSession()->SendPacket(&data);
+                            ((Player*)m_caster)->RemoveSpellCooldown(classspell,true);
                         }
                     }
                     return;
@@ -1457,14 +1451,7 @@ void Spell::EffectDummy(uint32 i)
                         SpellEntry const *spellInfo = sSpellStore.LookupEntry(classspell);
 
                         if (spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE && (spellInfo->SpellFamilyFlags & 0x0000024000000860LL))
-                        {
-                            ((Player*)m_caster)->RemoveSpellCooldown(classspell);
-
-                            WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
-                            data << uint32(classspell);
-                            data << uint64(m_caster->GetGUID());
-                            ((Player*)m_caster)->GetSession()->SendPacket(&data);
-                        }
+                            ((Player*)m_caster)->RemoveSpellCooldown(classspell,true);
                     }
                     return;
                 }
@@ -1515,14 +1502,7 @@ void Spell::EffectDummy(uint32 i)
                         SpellEntry const *spellInfo = sSpellStore.LookupEntry(classspell);
 
                         if (spellInfo->SpellFamilyName == SPELLFAMILY_HUNTER && spellInfo->Id != 23989 && GetSpellRecoveryTime(spellInfo) > 0 )
-                        {
-                            ((Player*)m_caster)->RemoveSpellCooldown(classspell);
-
-                            WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
-                            data << uint32(classspell);
-                            data << uint64(m_caster->GetGUID());
-                            ((Player*)m_caster)->GetSession()->SendPacket(&data);
-                        }
+                            ((Player*)m_caster)->RemoveSpellCooldown(classspell,true);
                     }
                     return;
                 }
@@ -1641,17 +1621,8 @@ void Spell::EffectDummy(uint32 i)
                     // non-standard cast requirement check
                     if (!unitTarget || unitTarget->getAttackers().empty())
                     {
-                        // clear cooldown at fail
                         if(m_caster->GetTypeId()==TYPEID_PLAYER)
-                        {
-                            ((Player*)m_caster)->RemoveSpellCooldown(m_spellInfo->Id);
-
-                            WorldPacket data(SMSG_CLEAR_COOLDOWN, (4+8));
-                            data << uint32(m_spellInfo->Id);
-                            data << uint64(m_caster->GetGUID());
-                            ((Player*)m_caster)->GetSession()->SendPacket(&data);
-                        }
-
+                            ((Player*)m_caster)->RemoveSpellCooldown(m_spellInfo->Id,true);
                         SendCastResult(SPELL_FAILED_TARGET_AFFECTING_COMBAT);
                         return;
                     }
@@ -6136,18 +6107,7 @@ void Spell::EffectSendTaxi(uint32 i)
     if(!unitTarget || unitTarget->GetTypeId() != TYPEID_PLAYER)
         return;
 
-    TaxiPathEntry const* entry = sTaxiPathStore.LookupEntry(m_spellInfo->EffectMiscValue[i]);
-    if(!entry)
-        return;
-
-    std::vector<uint32> nodes;
-
-    nodes.resize(2);
-    nodes[0] = entry->from;
-    nodes[1] = entry->to;
-
-    ((Player*)unitTarget)->ActivateTaxiPathTo(nodes);
-
+    ((Player*)unitTarget)->ActivateTaxiPathTo(m_spellInfo->EffectMiscValue[i],m_spellInfo->Id);
 }
 
 void Spell::EffectPlayerPull(uint32 i)
