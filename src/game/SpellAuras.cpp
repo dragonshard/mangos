@@ -6612,8 +6612,7 @@ void Aura::PeriodicDummyTick()
                 // Killing Spree
                 case 51690:
                 {
-                    SpellEntry* spellTarget = sSpellStore.LookupEntry(GetId());
-                    Unit* target = caster->SelectNearbyTarget(GetSpellRadius(sSpellRadiusStore.LookupEntry(spellTarget->EffectRadiusIndex[1])));
+                    Unit* target = caster->SelectNearbyTarget(GetSpellRadius(sSpellRadiusStore.LookupEntry(GetSpellProto()->EffectRadiusIndex[1])));
 
                     if (target)
                     {
