@@ -858,7 +858,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         Unit* getVictim() const { return m_attacking; }
         void CombatStop(bool includingCast = false);
         void CombatStopWithPets(bool includingCast = false);
-        Unit* SelectNearbyTarget() const;
+        Unit* SelectNearbyTarget(float dist = ATTACK_DISTANCE) const;
         bool hasNegativeAuraWithInterruptFlag(uint32 flag);
 
         void addUnitState(uint32 f) { m_state |= f; }
