@@ -161,7 +161,7 @@ class Pet : public Creature
         HappinessState GetHappinessState();
         void GivePetXP(uint32 xp);
         void GivePetLevel(uint32 level);
-        bool InitStatsForLevel(uint32 level);
+        bool InitStatsForLevel(uint32 level, uint32 levelupspells_mode = 0);
         bool HaveInDiet(ItemPrototype const* item) const;
         uint32 GetCurrentFoodBenefitLevel(uint32 itemlevel);
         void SetDuration(int32 dur) { m_duration = dur; }
@@ -199,6 +199,10 @@ class Pet : public Creature
         bool learnSpell(uint32 spell_id);
         void learnSpellHighRank(uint32 spellid);
         void learnLevelupSpells();
+        bool CheckAutocast(uint32 spell_id);
+        void learnWarlockLevelupSpells();
+        bool IsLowOrEqualRankOfSpell(uint32 spell_id);
+        bool IsAddSpell(uint32 spell_id);
         bool unlearnSpell(uint32 spell_id);
         bool removeSpell(uint32 spell_id);
         bool _removeSpell(uint32 spell_id);
