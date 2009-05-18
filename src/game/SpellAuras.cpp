@@ -6612,15 +6612,16 @@ void Aura::PeriodicDummyTick()
                 // Killing Spree
                 case 51690:
                 {
-                    SpellEntry* spellTarget = sSpellStore.LookupEntry(GetId());
-                    Unit* target = caster->SelectNearbyTarget(GetSpellRadius(sSpellRadiusStore.LookupEntry(spellTarget->EffectRadiusIndex[1])));
+                    Spell* spellTarget = new Spell(GetCaster(), GetSpellProto(), true);
+                    std::list<Unit*> listTarget;
+                    spellTarget->SetTargetMap(0, TARGET_RANDOM_ENEMY_CHAIN_IN_AREA, listTarget);
 
-                    if (target)
-                    {
-                        caster->CastSpell(target, 57840, true);
-                        caster->CastSpell(target, 57841, true);
-                    }
+                    if (listTarget.size() == 0)
+                        return;
 
+                    GetCaster()->CastSpell((*listTarget.begin()), 57840, true);
+                    GetCaster()->CastSpell((*listTarget.begin()), 57841, true);
+                    delete spellTarget;
                     return;
                 }
                 // Overkill
