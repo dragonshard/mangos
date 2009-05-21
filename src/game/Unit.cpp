@@ -359,7 +359,7 @@ bool Unit::HasAuraType(AuraType auraType) const
 }
 
 /* Called by DealDamage for auras that have a chance to be dispelled on damage taken. */
-void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, uint32 mechanic, Unit *pCaster)
+void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, Unit *pCaster, uint32 mechanic)
 {
     if(!HasAuraType(auraType))
         return;
@@ -753,11 +753,11 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
             if (IsAuraAddedBySpell(SPELL_AURA_MOD_CONFUSE, morphspell))
                 pVictim->RemoveAurasDueToSpell(morphspell);
             else if (IsAuraAddedBySpell(SPELL_AURA_MOD_PACIFY_SILENCE, morphspell))
-                pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_PACIFY_SILENCE, damage);
+                pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_PACIFY_SILENCE, damage, this);
 
         // Knockout Mechanic
         if (pVictim->hasUnitState(UNIT_STAT_STUNNED))
-            pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_STUN, damage, MECHANIC_KNOCKOUT);
+            pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_STUN, damage, this, MECHANIC_KNOCKOUT);
 
         if(damagetype == DIRECT_DAMAGE || damagetype == SPELL_DIRECT_DAMAGE)
         {
