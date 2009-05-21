@@ -1043,7 +1043,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool isFrozen() const;
         bool isBleeding() const;
 
-        void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, uint32 mechanic = 0);
+        void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, uint32 mechanic = 0, Unit *pCaster);
 
         bool isTargetableForAttack() const;
         virtual bool IsInWater() const;
