@@ -330,7 +330,7 @@ bool Unit::canReachWithAttack(Unit *pVictim) const
     return IsWithinDistInMap(pVictim, reach);
 }
 
-void Unit::RemoveSpellsCausingAura(AuraType auraType)
+void Unit::RemoveSpellsCausingAura(AuraType auraType, uint32 mechanic)
 {
     if (auraType >= TOTAL_AURAS) return;
     AuraList::const_iterator iter, next;
@@ -341,6 +341,9 @@ void Unit::RemoveSpellsCausingAura(AuraType auraType)
 
         if (*iter)
         {
+            if (mechanic && mechanic != (*iter)->GetSpellProto()->Mechanic && mechanic != (*iter)->GetSpellProto()->EffectMechanic[(*iter)->GetEffIndex()])
+                continue;
+
             RemoveAurasDueToSpell((*iter)->GetId());
             if (!m_modAuras[auraType].empty())
                 next = m_modAuras[auraType].begin();
@@ -356,7 +359,7 @@ bool Unit::HasAuraType(AuraType auraType) const
 }
 
 /* Called by DealDamage for auras that have a chance to be dispelled on damage taken. */
-void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage)
+void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, uint32 mechanic)
 {
     if(!HasAuraType(auraType))
         return;
@@ -365,7 +368,7 @@ void Unit::RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage)
     uint32 max_dmg = getLevel() > 8 ? 25 * getLevel() - 150 : 50;
     float chance = float(damage) / max_dmg * 100.0f;
     if (roll_chance_f(chance))
-        RemoveSpellsCausingAura(auraType);
+        RemoveSpellsCausingAura(auraType, mechanic);
 }
 
 void Unit::DealDamageMods(Unit *pVictim, uint32 &damage, uint32* absorb)
@@ -731,11 +734,15 @@ uint32 Unit::DealDamage(Unit *pVictim, uint32 damage, CleanDamage const* cleanDa
         }
 
         // polymorphed, hex and other negative transformed cases
-        if(uint32 morphspell = pVictim->getTransForm())
+        if (uint32 morphspell = pVictim->getTransForm())
             if (IsAuraAddedBySpell(SPELL_AURA_MOD_CONFUSE, morphspell))
                 pVictim->RemoveAurasDueToSpell(morphspell);
             else if (IsAuraAddedBySpell(SPELL_AURA_MOD_PACIFY_SILENCE, morphspell))
                 pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_PACIFY_SILENCE, damage);
+
+        // Knockout Mechanic
+        if (pVictim->hasUnitState(UNIT_STAT_STUNNED))
+            pVictim->RemoveSpellbyDamageTaken(SPELL_AURA_MOD_STUN, damage, MECHANIC_KNOCKOUT);
 
         if(damagetype == DIRECT_DAMAGE || damagetype == SPELL_DIRECT_DAMAGE)
         {

@@ -1043,7 +1043,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool isFrozen() const;
         bool isBleeding() const;
 
-        void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage);
+        void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, uint32 mechanic = 0);
 
         bool isTargetableForAttack() const;
         virtual bool IsInWater() const;
@@ -1144,7 +1144,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void RemoveAurasAtChanneledTarget(SpellEntry const* spellInfo);
         void RemoveNotOwnSingleTargetAuras();
 
-        void RemoveSpellsCausingAura(AuraType auraType);
+        void RemoveSpellsCausingAura(AuraType auraType, uint32 mechanic = 0);
         void RemoveRankAurasDueToSpell(uint32 spellId);
         bool RemoveNoStackAurasDueToAura(Aura *Aur);
         void RemoveAurasWithInterruptFlags(uint32 flags);
