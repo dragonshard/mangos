@@ -1159,6 +1159,11 @@ void Spell::EffectDummy(uint32 i)
                     m_caster->CastCustomSpell(unitTarget, 52752, &damage, NULL, NULL, true);
                     return;
                 }
+                case 55004:                                 // Nitro Boosts
+                {
+                    m_caster->CastSpell(m_caster, 54861, true);
+                    return;
+                }
             }
 
             //All IconID Check in there

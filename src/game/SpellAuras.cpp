@@ -2411,6 +2411,16 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                 ((Player*)m_target)->UpdateAttackPowerAndDamage();
                 return;
             }
+
+            // Savage Roar
+            if (GetSpellProto()->SpellFamilyFlags == 0x1000000000000000LL)
+            {
+                if (apply)
+                    m_target->CastSpell(m_target, 62071, true);
+                else
+                    m_target->RemoveAurasDueToSpell(62071);
+                return;
+            }
             break;
         }
         case SPELLFAMILY_HUNTER:
