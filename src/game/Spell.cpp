@@ -1740,7 +1740,7 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,UnitList& TagUnitMap)
                             TagUnitMap.push_back(pet);
                 }
             }
-            if (m_spellInfo->Id==52759)                     //Ancestral Awakening (special target selection)
+            else if (m_spellInfo->Id==52759)                     //Ancestral Awakening (special target selection)
             {
                 float lowestPerc   = (float)m_caster->GetHealth() / (float)m_caster->GetMaxHealth();
                 Unit* lowestTarget = m_caster;
@@ -2187,40 +2187,28 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,UnitList& TagUnitMap)
             break;
     }
 
-    if (unMaxTargets && TagUnitMap.size() > unMaxTargets)
+    if (unMaxTargets)
     {
-        // make sure one unit is always removed per iteration
-        uint32 removed_utarget = 0;
-        for (UnitList::iterator itr = TagUnitMap.begin(), next; itr != TagUnitMap.end(); itr = next)
+        --unMaxTargets;
+        while(TagUnitMap.size() > unMaxTargets)
         {
-            next = itr;
-            ++next;
-            if (!*itr) continue;
-            if ((*itr) == m_targets.getUnitTarget())
-            {
-                TagUnitMap.erase(itr);
-                removed_utarget = 1;
-                //        break;
-            }
-        }
-        // remove random units from the map
-        while (TagUnitMap.size() > unMaxTargets - removed_utarget)
-        {
-            uint32 poz = urand(0, TagUnitMap.size()-1);
-            for (UnitList::iterator itr = TagUnitMap.begin(); itr != TagUnitMap.end(); ++itr, --poz)
-            {
-                if (!*itr) continue;
+            uint32 remove_unit = urand(0, TagUnitMap.size()-1);
 
-                if (!poz)
+            uint32 counter = 0;
+            for(UnitList::iterator itr = TagUnitMap.begin(); itr != TagUnitMap.end(); ++itr)
+            {
+                if ((*itr) == m_targets.getUnitTarget())
+                    continue;
+
+                if (counter == remove_unit)
                 {
                     TagUnitMap.erase(itr);
                     break;
                 }
+                else
+                    ++counter;
             }
         }
-        // the player's target will always be added to the map
-        if (removed_utarget && m_targets.getUnitTarget())
-            TagUnitMap.push_back(m_targets.getUnitTarget());
     }
 }
 
