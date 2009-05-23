@@ -1740,37 +1740,32 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,UnitList& TagUnitMap)
                             TagUnitMap.push_back(pet);
                 }
             }
-            else if(m_spellInfo->Id==52759)                  //Ancestral Awakening (special target selection)
+            if (m_spellInfo->Id==52759)                     //Ancestral Awakening (special target selection)
             {
-                double lowest = m_caster->GetHealth() / m_caster->GetMaxHealth();
-                Unit *ulowest = m_caster;
-                Unit *tmp;
+                float lowestPerc   = (float)m_caster->GetHealth() / (float)m_caster->GetMaxHealth();
+                Unit* lowestTarget = m_caster;
 
-                if(pGroup)
+                if (pGroup)
                 {
-                   Group::MemberSlotList slots = pGroup->GetMemberSlots();
-                   for(Group::MemberSlotList::const_iterator itr = slots.begin(); itr != slots.end(); itr++)
-                   {
-                       if(tmp = ObjectAccessor::GetObjectInWorld((*itr).guid, m_caster))
-                       {
-                          if(lowest > tmp->GetHealth() / tmp->GetMaxHealth() &&
-                             (m_caster->IsWithinDistInMap(tmp, radius) || tmp == m_caster) &&
-                             m_caster->IsFriendlyTo(tmp) &&
-                             !tmp->isDead())
-                          {
-                             lowest = tmp->GetHealth() / tmp->GetMaxHealth();
-                             ulowest = tmp;
-                          }
-                       }
-                       else
-                          if(!ulowest)
-                             tmp = m_caster;
-                   }
+                    Group::MemberSlotList const& members = pGroup->GetMemberSlots();
+                    Group::MemberSlotList::const_iterator itr = members.begin();
+                    for(; itr != members.end(); ++itr)
+                    {
+                        if (Unit* member = ObjectAccessor::GetPlayer(*m_caster, (*itr).guid))
+                        {
+                            if (member == m_caster || member->isDead() || m_caster->IsHostileTo(member) || !m_caster->IsWithinDistInMap(member, radius))
+                                continue;
 
-                   TagUnitMap.push_back(ulowest);
+                            float perc = (float)member->GetHealth() / (float)member->GetMaxHealth();
+                            if (perc <= lowestPerc)
+                            {
+                                lowestPerc = perc;
+                                lowestTarget = member;
+                            }
+                        }
+                    }
                 }
-                else
-                   TagUnitMap.push_back(m_caster);
+                TagUnitMap.push_back(lowestTarget);
             }
             else
             {
@@ -3091,7 +3086,40 @@ void Spell::WriteAmmoToPacket( WorldPacket * data )
             }
         }
     }
-    // TODO: implement selection ammo data based at ranged weapon stored in equipmodel/equipinfo/equipslot fields
+    else
+    {
+        for (uint8 i = 0; i < 3; ++i)
+        {
+            if(uint32 item_id = m_caster->GetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + i))
+            {
+                if(ItemEntry const * itemEntry = sItemStore.LookupEntry(item_id))
+                {
+                    if(itemEntry->Class==ITEM_CLASS_WEAPON)
+                    {
+                        switch(itemEntry->SubClass)
+                        {
+                            case ITEM_SUBCLASS_WEAPON_THROWN:
+                                ammoDisplayID = itemEntry->DisplayId;
+                                ammoInventoryType = itemEntry->InventoryType;
+                                break;
+                            case ITEM_SUBCLASS_WEAPON_BOW:
+                            case ITEM_SUBCLASS_WEAPON_CROSSBOW:
+                                ammoDisplayID = 5996;       // is this need fixing?
+                                ammoInventoryType = INVTYPE_AMMO;
+                                break;
+                            case ITEM_SUBCLASS_WEAPON_GUN:
+                                ammoDisplayID = 5998;       // is this need fixing?
+                                ammoInventoryType = INVTYPE_AMMO;
+                                break;
+                        }
+
+                        if(ammoDisplayID)
+                            break;
+                    }
+                }
+            }
+        }
+    }
 
     *data << uint32(ammoDisplayID);
     *data << uint32(ammoInventoryType);
