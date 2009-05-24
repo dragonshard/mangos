@@ -1156,14 +1156,6 @@ void Spell::EffectDummy(uint32 i)
                 case 58418:                                 // Portal to Orgrimmar
                 case 58420:                                 // Portal to Stormwind
                     return;                                 // implemented in EffectScript[0]
-                case 52759:                                 // Ancestral Awakening
-                {
-                    if(!unitTarget)
-                        return;
-
-                    m_caster->CastCustomSpell(unitTarget, 52752, &damage, NULL, NULL, true);
-                    return;
-                }
                 case 55004:                                 // Nitro Boosts
                 {
                     m_caster->CastSpell(m_caster, 54861, true);
