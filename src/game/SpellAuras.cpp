@@ -2819,6 +2819,8 @@ void Aura::HandleAuraModShapeshift(bool apply, bool Real)
     // add/remove the shapeshift aura's boosts
     HandleShapeshiftBoosts(apply);
 
+    m_target->UpdateSpeed(MOVE_RUN, true);
+
     if(m_target->GetTypeId()==TYPEID_PLAYER)
         ((Player*)m_target)->InitDataForForm();
 }
@@ -5763,6 +5765,10 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
          DoneActualBenefit *= LvlPenalty;
 
          m_modifier.m_amount += (int32)DoneActualBenefit;
+
+         // Glyph of Power Word: Shield
+         if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_PRIEST && GetSpellProto()->SpellFamilyFlags == 0x1LL && caster->HasAura(55672))
+             caster->CastCustomSpell(GetTarget(), 56160, &m_modifier.m_amount, NULL, NULL, true);
         }
     }
 }
