@@ -23,7 +23,7 @@ DROP TABLE IF EXISTS `db_version`;
 CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
-  `required_7893_01_mangos_command` bit(1) default NULL
+  `required_7904_01_mangos_creature_template` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 
 --
@@ -813,6 +813,7 @@ CREATE TABLE `creature_template` (
   `maxdmg` float NOT NULL default '0',
   `dmgschool` tinyint(4) NOT NULL default '0',
   `attackpower` int(10) unsigned NOT NULL default '0',
+  `dmg_multiplier` float NOT NULL default '1',
   `baseattacktime` int(10) unsigned NOT NULL default '0',
   `rangeattacktime` int(10) unsigned NOT NULL default '0',
   `unit_flags` int(10) unsigned NOT NULL default '0',
@@ -820,8 +821,8 @@ CREATE TABLE `creature_template` (
   `family` tinyint(4) NOT NULL default '0',
   `trainer_type` tinyint(4) NOT NULL default '0',
   `trainer_spell` mediumint(8) unsigned NOT NULL default '0',
-  `class` tinyint(3) unsigned NOT NULL default '0',
-  `race` tinyint(3) unsigned NOT NULL default '0',
+  `trainer_class` tinyint(3) unsigned NOT NULL default '0',
+  `trainer_race` tinyint(3) unsigned NOT NULL default '0',
   `minrangedmg` float NOT NULL default '0',
   `maxrangedmg` float NOT NULL default '0',
   `rangedattackpower` smallint(5) unsigned NOT NULL default '0',
@@ -12938,7 +12939,8 @@ CREATE TABLE `pool_creature` (
   `pool_entry` mediumint(8) unsigned NOT NULL default '0',
   `chance` float unsigned NOT NULL default '0',
   `description` varchar(255) NOT NULL,
-  PRIMARY KEY  (`pool_entry`,`guid`)
+  PRIMARY KEY  (`pool_entry`,`guid`),
+  INDEX `idx_guid`(`guid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 
@@ -12961,7 +12963,8 @@ CREATE TABLE `pool_gameobject` (
   `pool_entry` mediumint(8) unsigned NOT NULL default '0',
   `chance` float unsigned NOT NULL default '0',
   `description` varchar(255) NOT NULL,
-  PRIMARY KEY  (`guid`,`pool_entry`)
+  PRIMARY KEY  (`guid`,`pool_entry`),
+  INDEX `idx_guid`(`guid`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 --
