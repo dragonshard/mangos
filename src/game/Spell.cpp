@@ -2187,28 +2187,40 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,UnitList& TagUnitMap)
             break;
     }
 
-    if (unMaxTargets)
+    if (unMaxTargets && TagUnitMap.size() > unMaxTargets)
     {
-        --unMaxTargets;
-        while(TagUnitMap.size() > unMaxTargets)
+        // make sure one unit is always removed per iteration
+        uint32 removed_utarget = 0;
+        for (UnitList::iterator itr = TagUnitMap.begin(), next; itr != TagUnitMap.end(); itr = next)
         {
-            uint32 remove_unit = urand(0, TagUnitMap.size()-1);
-
-            uint32 counter = 0;
-            for(UnitList::iterator itr = TagUnitMap.begin(); itr != TagUnitMap.end(); ++itr)
+            next = itr;
+            ++next;
+            if (!*itr) continue;
+            if ((*itr) == m_targets.getUnitTarget())
             {
-                if ((*itr) == m_targets.getUnitTarget())
-                    continue;
+                TagUnitMap.erase(itr);
+                removed_utarget = 1;
+                //        break;
+            }
+        }
+        // remove random units from the map
+        while (TagUnitMap.size() > unMaxTargets - removed_utarget)
+        {
+            uint32 poz = urand(0, TagUnitMap.size()-1);
+            for (UnitList::iterator itr = TagUnitMap.begin(); itr != TagUnitMap.end(); ++itr, --poz)
+            {
+                if (!*itr) continue;
 
-                if (counter == remove_unit)
+                if (!poz)
                 {
                     TagUnitMap.erase(itr);
                     break;
                 }
-                else
-                    ++counter;
             }
         }
+        // the player's target will always be added to the map
+        if (removed_utarget && m_targets.getUnitTarget())
+            TagUnitMap.push_back(m_targets.getUnitTarget());
     }
 }
 
@@ -3852,8 +3864,11 @@ SpellCastResult Spell::CheckCast(bool strict)
         //Must be behind the target.
         if( m_spellInfo->AttributesEx2 == 0x100000 && (m_spellInfo->AttributesEx & 0x200) == 0x200 && target->HasInArc(M_PI, m_caster) )
         {
-            //Exclusion for Pounce: Facing Limitation was removed in 2.0.1, but it still uses the same, old Ex-Flags
-            if((m_spellInfo->SpellFamilyName != SPELLFAMILY_DRUID || m_spellInfo->SpellFamilyFlags != 0x0000000000020000LL) && !(m_spellInfo->SpellFamilyName == SPELLFAMILY_ROGUE && m_spellInfo->SpellFamilyFlags == 0x0020000000000000LL))
+            //Exclusion for Pounce:  Facing Limitation was removed in 2.0.1, but it still uses the same, old Ex-Flags
+            //Exclusion for Mutilate:Facing Limitation was removed in 2.0.1 and 3.0.3, but they still use the same, old Ex-Flags
+            if( (m_spellInfo->SpellFamilyName != SPELLFAMILY_DRUID || m_spellInfo->SpellFamilyFlags != 0x0000000000020000LL) &&
+                (m_spellInfo->SpellFamilyName != SPELLFAMILY_ROGUE || m_spellInfo->SpellFamilyFlags != 0x0020000000000000LL)
+              )
             {
                 SendInterrupted(2);
                 return SPELL_FAILED_NOT_BEHIND;
