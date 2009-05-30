@@ -6845,6 +6845,10 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
             // Need Interrupt or Silenced mechanic
             if (!(GetAllSpellMechanicMask(procSpell) & ((1<<MECHANIC_INTERRUPT)|(1<<MECHANIC_SILENCE))))
                 return false;
+            // Proc at last silence aura apply only
+            for(int i = 0; i < 3; ++i)
+                if (SpellEffects(procSpell->Effect[i]) == SPELL_EFFECT_TRIGGER_SPELL && Mechanics(procSpell->EffectMechanic[i]) == MECHANIC_SILENCE)
+                    return false;
             break;
         }
         // Lock and Load
