@@ -2741,13 +2741,6 @@ DiminishingGroup GetDiminishingReturnsGroupForSpell(SpellEntry const* spellproto
                 return DIMINISHING_LIMITONLY;
             break;
         }
-        case SPELLFAMILY_HUNTER:
-        {
-            // Freezing trap - limit duration to 10s in PvP
-            if (spellproto->SpellFamilyFlags & 0x00000000008LL)
-                return DIMINISHING_LIMITONLY;
-            break;
-        }
         default:
             break;
     }
