@@ -197,7 +197,7 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
             break;
         case HUNTER_PET:
             SetUInt32Value(UNIT_FIELD_BYTES_0, 0x02020100);
-            SetByteValue(UNIT_FIELD_BYTES_2, 0, SHEATH_STATE_MELEE);
+            SetSheath(SHEATH_STATE_MELEE);
             SetByteValue(UNIT_FIELD_BYTES_2, 2, fields[9].GetBool() ? UNIT_RENAME_NOT_ALLOWED : UNIT_RENAME_ALLOWED);
 
             SetUInt32Value(UNIT_FIELD_FLAGS, UNIT_FLAG_PVP_ATTACKABLE);
@@ -239,14 +239,9 @@ bool Pet::LoadPetFromDB( Player* owner, uint32 petentry, uint32 petnumber, bool 
         CharacterDatabase.CommitTransaction();
     }
 
+    // load action bar, if data broken will fill later by default spells.
     if (!is_temporary_summoned)
-    {
-        if(!m_charmInfo->LoadActionBar(fields[13].GetCppString()))
-        {
-            delete result;
-            return false;
-        }
-    }
+        m_charmInfo->LoadPetActionBar(fields[13].GetCppString());
 
     // since last save (in seconds)
     uint32 timediff = (time(NULL) - fields[14].GetUInt32());
@@ -411,7 +406,8 @@ void Pet::SavePetToDB(PetSaveMode mode)
             << curmana << ", "
             << GetPower(POWER_HAPPINESS) << ", '";
 
-        for(uint32 i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
+        // save only spell slots from action bar
+        for(uint32 i = ACTION_BAR_INDEX_PET_SPELL_START; i < ACTION_BAR_INDEX_PET_SPELL_END; ++i)
         {
             ss << uint32(m_charmInfo->GetActionBarEntry(i)->Type) << " "
                << uint32(m_charmInfo->GetActionBarEntry(i)->SpellOrAction) << " ";
@@ -783,7 +779,7 @@ bool Pet::CreateBaseAtCreature(Creature* creature)
     if(cinfo->type == CREATURE_TYPE_BEAST)
     {
         SetUInt32Value(UNIT_FIELD_BYTES_0, 0x02020100);
-        SetByteValue(UNIT_FIELD_BYTES_2, 0, SHEATH_STATE_MELEE );
+        SetSheath(SHEATH_STATE_MELEE);
         SetByteValue(UNIT_FIELD_BYTES_2, 2, UNIT_RENAME_ALLOWED);
         SetUInt32Value(UNIT_MOD_CAST_SPEED, creature->GetUInt32Value(UNIT_MOD_CAST_SPEED));
     }
@@ -1077,7 +1073,7 @@ void Pet::_SaveSpellCooldowns()
             m_CreatureSpellCooldowns.erase(itr++);
         else
         {
-            CharacterDatabase.PExecute("INSERT INTO pet_spell_cooldown (guid,spell,time) VALUES ('%u', '%u', '" I64FMTD "')", m_charmInfo->GetPetNumber(), itr->first, uint64(itr->second));
+            CharacterDatabase.PExecute("INSERT INTO pet_spell_cooldown (guid,spell,time) VALUES ('%u', '%u', '" UI64FMTD "')", m_charmInfo->GetPetNumber(), itr->first, uint64(itr->second));
             ++itr;
         }
     }
@@ -1250,7 +1246,7 @@ void Pet::_SaveAuras()
                     if (i == 3)
                     {
                         CharacterDatabase.PExecute("INSERT INTO pet_aura (guid,caster_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges) "
-                            "VALUES ('%u', '" I64FMTD "', '%u', '%u', '%u', '%d', '%d', '%d', '%d')",
+                            "VALUES ('%u', '" UI64FMTD "', '%u', '%u', '%u', '%d', '%d', '%d', '%d')",
                             m_charmInfo->GetPetNumber(), itr2->second->GetCasterGUID(),(uint32)itr2->second->GetId(), (uint32)itr2->second->GetEffIndex(), stackCounter, itr2->second->GetModifier()->m_amount,int(itr2->second->GetAuraMaxDuration()),int(itr2->second->GetAuraDuration()),int(itr2->second->GetAuraCharges()));
                     }
                 }
@@ -1756,7 +1752,7 @@ bool Pet::Create(uint32 guidlow, Map *map, uint32 phaseMask, uint32 Entry, uint3
     if(!InitEntry(Entry))
         return false;
 
-    SetByteValue(UNIT_FIELD_BYTES_2, 0, SHEATH_STATE_MELEE);
+    SetSheath(SHEATH_STATE_MELEE);
 
     if(getPetType() == MINI_PET)                            // always non-attackable
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE);
