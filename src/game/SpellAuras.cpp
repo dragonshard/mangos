@@ -6598,12 +6598,13 @@ void Aura::PeriodicDummyTick()
                     std::list<Unit*> listTarget;
                     spellTarget->SetTargetMap(0, TARGET_RANDOM_ENEMY_CHAIN_IN_AREA, listTarget);
 
-                    if (listTarget.size() == 0)
+                    if (listTarget.empty())
                         return;
 
                     GetCaster()->CastSpell((*listTarget.begin()), 57840, true);
                     GetCaster()->CastSpell((*listTarget.begin()), 57841, true);
                     delete spellTarget;
+                    listTarget.clear();
                     return;
                 }
                 // Overkill
