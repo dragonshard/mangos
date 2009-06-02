@@ -3416,23 +3416,7 @@ void Spell::EffectDispel(uint32 i)
             SpellEntry const* spellInfo = aur->GetSpellProto();
             // Base dispel chance
             // TODO: possible chance depend from spell level??
-            /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(aur->GetCaster())
-            {
-               Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
-               for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
-               {
-                   for(int j=0; j<3; ++j)
-                   {
-                       if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
-                       {
-                          miss_chance += (*a)->GetModifier()->m_amount;
-                          break;
-                       }
-                   }
-               }
-            }
 
             // Apply dispel mod from aura caster
             if (Unit *caster = aur->GetCaster())
@@ -6590,25 +6574,16 @@ void Spell::EffectStealBeneficialBuff(uint32 i)
         {
             // Random select buff for dispel
             Aura *aur = steal_list[urand(0, list_size-1)];
+            SpellEntry const* spellInfo = aur->GetSpellProto();
 
-            /* FIX ME - DISPEL RESISTANCE HACK */
             int32 miss_chance = 0;
-            if(aur->GetCaster())
-            {
-               Unit::AuraList const& Auras = aur->GetCaster()->GetAurasByType(SPELL_AURA_ADD_FLAT_MODIFIER);
-               for(Unit::AuraList::const_iterator a = Auras.begin(); a != Auras.end(); ++a)
-               {
-                   for(int j=0; j<3; ++j)
-                   {
-                       if((*a)->GetSpellProto()->EffectMiscValue[j] == SPELLMOD_RESIST_DISPEL_CHANCE)
-                       {
-                          miss_chance += (*a)->GetModifier()->m_amount;
-                          break;
-                       }
-                   }
-               }
-            }
 
+            // Apply dispel mod from aura caster
+            if (Unit *caster = aur->GetCaster())
+            {
+                if (Player* modOwner = caster->GetSpellModOwner())
+                    modOwner->ApplySpellMod(spellInfo->Id, SPELLMOD_RESIST_DISPEL_CHANCE, miss_chance, this);
+            }
             // TODO possible need do it
             if (!roll_chance_i(miss_chance))
                 success_list.push_back( std::pair<uint32,uint64>(aur->GetId(),aur->GetCasterGUID()));

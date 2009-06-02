@@ -1436,7 +1436,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void ApplySpellDispelImmunity(const SpellEntry * spellProto, DispelType type, bool apply);
         virtual bool IsImmunedToSpell(SpellEntry const* spellInfo);
                                                             // redefined in Creature
-        bool IsImmunedToDamage(SpellSchoolMask meleeSchoolMask);
+        bool IsImmunedToDamage(SpellSchoolMask meleeSchoolMask, SpellEntry const *spellInfo = 0);
         virtual bool IsImmunedToSpellEffect(SpellEntry const* spellInfo, uint32 index) const;
                                                             // redefined in Creature
 

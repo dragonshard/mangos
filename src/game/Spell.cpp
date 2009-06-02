@@ -1124,7 +1124,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
 
     // Recheck immune (only for delayed spells)
     if( m_spellInfo->speed && (
-        unit->IsImmunedToDamage(GetSpellSchoolMask(m_spellInfo)) ||
+        unit->IsImmunedToDamage(GetSpellSchoolMask(m_spellInfo), m_spellInfo) ||
         unit->IsImmunedToSpell(m_spellInfo)))
     {
         m_caster->SendSpellMiss(unit, m_spellInfo->Id, SPELL_MISS_IMMUNE);
@@ -1162,9 +1162,9 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
                 return;
             }
 
-            /* FIXMEPLZ - THIS IS AN HACK */
-            if(m_spellInfo->Id != 1725 && m_spellInfo->Id != 32375)
-               unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
+            // Check if spell can break other's stealth
+            if (!(m_spellInfo->AttributesEx2 & SPELL_ATTR_EX2_DONT_BREAK_STEALTH))
+                unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
             if( !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) )
             {
@@ -2408,6 +2408,8 @@ void Spell::cast(bool skipCheck)
                 m_preCastSpell = 6788;                                 // Weakened Soul
             if (m_spellInfo->Id == 47585)                              // Dispersion (transform)
                 m_preCastSpell = 60069;                                // Dispersion (mana regen)
+            if (m_spellInfo->Id == 33206)                              // Pain Suppression (Damage modifier)
+                m_preCastSpell = 44416;                                // Pain Suppression (Threat modifier)
             break;
         }
         case SPELLFAMILY_PALADIN:

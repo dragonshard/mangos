@@ -2710,8 +2710,8 @@ SpellMissInfo Unit::SpellHitResult(Unit *pVictim, SpellEntry const *spell, bool 
     if (IsPositiveSpell(spell->Id))
         return SPELL_MISS_NONE;
 
-    // Check for immune
-    if (pVictim->IsImmunedToDamage(GetSpellSchoolMask(spell)))
+    // Check for immune                                                 Fix me: Hack check for Mass dispel.
+    if (pVictim->IsImmunedToDamage(GetSpellSchoolMask(spell), spell) && spell->Id != 32592)
         return SPELL_MISS_IMMUNE;
 
     // Try victim reflect spell
@@ -8551,8 +8551,12 @@ int32 Unit::SpellBaseHealingBonusForVictim(SpellSchoolMask schoolMask, Unit *pVi
     return AdvertisedBenefit;
 }
 
-bool Unit::IsImmunedToDamage(SpellSchoolMask shoolMask)
+bool Unit::IsImmunedToDamage(SpellSchoolMask shoolMask, SpellEntry const *spellInfo)
 {
+    // Check if spell isn't affected by invulnerability or school immunity
+    if (spellInfo && (spellInfo->Attributes & SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY || spellInfo->AttributesEx & SPELL_ATTR_EX_UNAFFECTED_BY_SCHOOL_IMMUNE))
+        return false;
+
     //If m_immuneToSchool type contain this school type, IMMUNE damage.
     SpellImmuneList const& schoolList = m_spellImmune[IMMUNITY_SCHOOL];
     for (SpellImmuneList::const_iterator itr = schoolList.begin(); itr != schoolList.end(); ++itr)
@@ -8574,7 +8578,10 @@ bool Unit::IsImmunedToSpell(SpellEntry const* spellInfo)
         return false;
 
     //TODO add spellEffect immunity checks!, player with flag in bg is imune to imunity buffs from other friendly players!
-    //SpellImmuneList const& dispelList = m_spellImmune[IMMUNITY_EFFECT];
+    //SpellImmuneList const dispelList = m_spellImmune[IMMUNITY_EFFECT];
+                                                                            // Fix me: Hack check for Mass dispel.
+    if (spellInfo->Attributes & SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY || spellInfo->Id == 32592)                 // unaffected by invulnerability
+        return false;
 
     SpellImmuneList const& dispelList = m_spellImmune[IMMUNITY_DISPEL];
     for(SpellImmuneList::const_iterator itr = dispelList.begin(); itr != dispelList.end(); ++itr)
@@ -8605,6 +8612,9 @@ bool Unit::IsImmunedToSpell(SpellEntry const* spellInfo)
 
 bool Unit::IsImmunedToSpellEffect(SpellEntry const* spellInfo, uint32 index) const
 {
+    if (spellInfo->Attributes & SPELL_ATTR_UNAFFECTED_BY_INVULNERABILITY)                 // unaffected by invulnerability
+        return false;
+
     //If m_immuneToEffect type contain this effect type, IMMUNE effect.
     uint32 effect = spellInfo->Effect[index];
     SpellImmuneList const& effectList = m_spellImmune[IMMUNITY_EFFECT];
