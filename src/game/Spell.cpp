@@ -1163,7 +1163,7 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
             }
 
             // Check if spell can break other's stealth
-            if (!(m_spellInfo->AttributesEx2 & SPELL_ATTR_EX2_DONT_BREAK_STEALTH))
+            if (isSpellBreakOthersStealth(m_spellInfo))
                 unit->RemoveSpellsCausingAura(SPELL_AURA_MOD_STEALTH);
 
             if( !(m_spellInfo->AttributesEx & SPELL_ATTR_EX_NO_INITIAL_AGGRO) )
