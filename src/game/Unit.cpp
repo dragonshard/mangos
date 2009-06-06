@@ -5694,13 +5694,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 // Light's Beacon
                 case 53651:
                 {
-                    if(!pVictim)
+                    if (!pVictim)
                         return false;
 
-                    if(Unit* caster = triggeredByAura->GetCaster())
+                    if (Unit* caster = triggeredByAura->GetCaster())
                     {
+                        if (caster->GetGUID() == GetGUID())
+                            return false;
+
                         Aura * dummy = caster->GetDummyAura(53563);
-                        if(dummy && dummy->GetCasterGUID() == pVictim->GetGUID())
+                        if (dummy && dummy->GetCasterGUID() == pVictim->GetGUID())
                         {
                             triggered_spell_id = 53652;
                             basepoints0 = triggeredByAura->GetModifier()->m_amount*damage/100;
