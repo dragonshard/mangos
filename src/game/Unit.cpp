@@ -5606,6 +5606,29 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     }
                     break;
                 }
+                // Blessing of Sanctuary
+                case 20911:
+                {
+                    if (target->GetTypeId() != TYPEID_PLAYER)
+                        return false;
+
+                    target = this;
+                    switch (target->getPowerType())
+                    {
+                        case POWER_MANA:
+                            triggered_spell_id = 57319;
+                            break;
+                        case POWER_RAGE:
+                            triggered_spell_id = 57320;
+                            break;
+                        case POWER_RUNIC_POWER:
+                            triggered_spell_id = 57321;
+                            break;
+                        default:
+                            return false;
+                    }
+                    break;
+                }
                 // Seal of Vengeance (damage calc on apply aura)
                 case 31801:
                 {
@@ -10976,6 +10999,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                 break;
             }
             case SPELL_AURA_ADD_FLAT_MODIFIER:
+            case SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN:
             case SPELL_AURA_MANA_SHIELD:
             case SPELL_AURA_OBS_MOD_MANA:
             case SPELL_AURA_DUMMY:
