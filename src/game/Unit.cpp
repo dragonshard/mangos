@@ -5909,7 +5909,8 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 // Tidal Force
                 case 55166:
                 {
-                    if (procEx & PROC_EX_CRITICAL_HIT)
+                    uint32 const *ptr = triggeredByAura->getAuraSpellClassMask();
+                    if (procEx & PROC_EX_CRITICAL_HIT && procSpell->SpellFamilyFlags & ((uint64*)ptr)[0])
                     {
                         if (triggeredByAura->modStackAmount(-1))
                             RemoveAurasDueToSpell(55166);
