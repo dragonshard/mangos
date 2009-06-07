@@ -2514,7 +2514,7 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell)
     }
     // Roll chance
     tmp += resist_mech;
-    if (roll < tmp)
+    if (roll < tmp && this != pVictim)
         return SPELL_MISS_RESIST;
 
     bool canDodge = true;
@@ -2532,7 +2532,7 @@ SpellMissInfo Unit::MeleeSpellHitResult(Unit *pVictim, SpellEntry const *spell)
         {
             int32 deflect_chance = pVictim->GetTotalAuraModifier(SPELL_AURA_DEFLECT_SPELLS)*100;
             tmp+=deflect_chance;
-            if (roll < tmp)
+            if (roll < tmp && this != pVictim)
                 return SPELL_MISS_DEFLECT;
         }
         return SPELL_MISS_NONE;
@@ -2672,7 +2672,7 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit *pVictim, SpellEntry const *spell)
 
     uint32 rand = urand(0,10000);
 
-    if (rand < tmp)
+    if (rand < tmp && this != pVictim)
         return SPELL_MISS_RESIST;
 
     // cast by caster in front of victim
@@ -2680,7 +2680,7 @@ SpellMissInfo Unit::MagicSpellHitResult(Unit *pVictim, SpellEntry const *spell)
     {
         int32 deflect_chance = pVictim->GetTotalAuraModifier(SPELL_AURA_DEFLECT_SPELLS)*100;
         tmp+=deflect_chance;
-        if (rand < tmp)
+        if (rand < tmp && this != pVictim)
             return SPELL_MISS_DEFLECT;
     }
 
@@ -5049,6 +5049,18 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
 
                     CastSpell(this, 28682, true, castItem, triggeredByAura);
                     return (procEx & PROC_EX_CRITICAL_HIT);// charge update only at crit hits, no hidden cooldowns
+                }
+                // Arcane Blast
+                case 36032:
+                {
+                    uint32 const *ptr = triggeredByAura->getAuraSpellClassMask();
+                    if (procSpell->SchoolMask & SPELL_SCHOOL_MASK_ARCANE && !(procSpell->SpellFamilyFlags & ((uint64*)ptr)[0]))
+                    {
+                        RemoveAurasDueToSpell(36032);
+                        return true;
+                    }
+
+                    return false;
                 }
             }
             break;
@@ -10811,6 +10823,7 @@ bool InitTriggerAuraData()
     isTriggerAura[SPELL_AURA_MOD_DAMAGE_FROM_CASTER] = true;
     isTriggerAura[SPELL_AURA_MOD_SPELL_CRIT_CHANCE] = true;
     isTriggerAura[SPELL_AURA_ADD_FLAT_MODIFIER] = true;
+    isTriggerAura[SPELL_AURA_MOD_DAMAGE_PERCENT_DONE] = true;
 
     isNonTriggerAura[SPELL_AURA_MOD_POWER_REGEN]=true;
     isNonTriggerAura[SPELL_AURA_REDUCE_PUSHBACK]=true;
@@ -11000,6 +11013,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                 break;
             }
             case SPELL_AURA_ADD_FLAT_MODIFIER:
+            case SPELL_AURA_MOD_DAMAGE_PERCENT_DONE:
             case SPELL_AURA_MOD_DAMAGE_PERCENT_TAKEN:
             case SPELL_AURA_MANA_SHIELD:
             case SPELL_AURA_OBS_MOD_MANA:

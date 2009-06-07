@@ -355,20 +355,6 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                 }
                 break;
             }
-
-            case SPELLFAMILY_MAGE:
-            {
-                // Arcane Blast
-                if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x20000000))
-                {
-                    m_caster->CastSpell(m_caster, 36032, true);
-                }
-                else if(m_spellInfo->SchoolMask & SPELL_SCHOOL_MASK_ARCANE)
-                {
-                    m_caster->RemoveAurasDueToSpell(36032);
-                }
-                break;
-            }
             case SPELLFAMILY_WARRIOR:
             {
                 // Bloodthirst

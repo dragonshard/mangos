@@ -1260,6 +1260,7 @@ void Aura::HandleAddModifier(bool apply, bool Real)
                 SetAuraCharges(1);
                 break;
             case 55166:    // Tidal Force
+            case 36032:    // Arcane Blast
                 SetAuraCharges(0);
                 break;
         }
