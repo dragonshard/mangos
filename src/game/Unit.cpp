@@ -5236,6 +5236,19 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
             if (dummySpell->SpellIconID == 2820 && procSpell->Id != 56160)
             {
                 basepoints0 = damage * triggerAmount/100;
+
+                // if aura already present, stack up to 125 * targetlevel
+                if (Aura *divineAegis = pVictim->GetAura(47753, 0))
+                {
+                    if (divineAegis->GetModifier()->m_amount + basepoints0 < 125 * pVictim->getLevel())
+                        divineAegis->GetModifier()->m_amount += basepoints0;
+                    else
+                        divineAegis->GetModifier()->m_amount = 125 * pVictim->getLevel();
+
+                    divineAegis->RefreshAura();
+                    return true;
+                }
+
                 triggered_spell_id = 47753;
                 break;
             }
