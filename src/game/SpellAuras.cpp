@@ -5748,55 +5748,109 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
     if(!Real)
         return;
 
+    Unit* caster = GetCaster();
+    if (!caster)
+        return;
+
     // prevent double apply bonuses
     if(apply && (m_target->GetTypeId()!=TYPEID_PLAYER || !((Player*)m_target)->GetSession()->PlayerLoading()))
     {
-        if(Unit* caster = GetCaster())
+        float DoneActualBenefit = 0.0f;
+        switch(m_spellProto->SpellFamilyName)
         {
-            float DoneActualBenefit = 0.0f;
-            switch(m_spellProto->SpellFamilyName)
+            case SPELLFAMILY_PRIEST:
+                if(m_spellProto->SpellFamilyFlags == 0x1) //PW:S
+                {
+                    //+30% from +healing bonus
+                    DoneActualBenefit = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * 0.3f;
+                    break;
+                }
+                break;
+            case SPELLFAMILY_MAGE:
+                if (m_spellProto->SpellFamilyFlags == UI64LIT(0x80100) ||
+                    m_spellProto->SpellFamilyFlags == UI64LIT(0x8) ||
+                    m_spellProto->SpellFamilyFlags == UI64LIT(0x100000000))
+                {
+                    //frost ward, fire ward, ice barrier
+                    //+10% from +spd bonus
+                    DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.1f;
+                    break;
+                }
+                break;
+            case SPELLFAMILY_WARLOCK:
+                if(m_spellProto->SpellFamilyFlags == 0x00)
+                {
+                    //shadow ward
+                    //+10% from +spd bonus
+                    DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.1f;
+                    break;
+                }
+                break;
+            default:
+                break;
+        }
+
+        DoneActualBenefit *= caster->CalculateLevelPenalty(GetSpellProto());
+
+        m_modifier.m_amount += (int32)DoneActualBenefit;
+
+        // Glyph of Power Word: Shield
+        if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_PRIEST && GetSpellProto()->SpellFamilyFlags == 0x1LL && caster->HasAura(55672))
+        {
+            int32 healamount = m_modifier.m_amount * caster->GetAura(55672, 0)->GetModifier()->m_amount / 100;
+            caster->CastCustomSpell(GetTarget(), 56160, &healamount, NULL, NULL, true);
+        }
+    }
+
+    // Rapture
+    if (!apply && m_duration > 0 && (m_removeMode == AURA_REMOVE_BY_DEFAULT || m_removeMode == AURA_REMOVE_BY_DISPEL))
+    {
+        Unit::AuraList const& vOverRideCS = caster->GetAurasByType(SPELL_AURA_DUMMY);
+        for(Unit::AuraList::const_iterator k = vOverRideCS.begin(); k != vOverRideCS.end(); ++k)
+        {                    
+            uint32 const *ptr = (*k)->getAuraSpellClassMask();
+            if (!(m_spellProto->SpellFamilyFlags & ((uint64*)ptr)[0]))
+                continue;
+
+            if ((*k)->GetSpellProto()->SpellIconID == 2894)
             {
-                case SPELLFAMILY_PRIEST:
-                    if(m_spellProto->SpellFamilyFlags == 0x1) //PW:S
-                    {
-                        //+30% from +healing bonus
-                        DoneActualBenefit = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * 0.3f;
-                        break;
-                    }
-                    break;
-                case SPELLFAMILY_MAGE:
-                    if (m_spellProto->SpellFamilyFlags == UI64LIT(0x80100) ||
-                        m_spellProto->SpellFamilyFlags == UI64LIT(0x8) ||
-                        m_spellProto->SpellFamilyFlags == UI64LIT(0x100000000))
-                    {
-                        //frost ward, fire ward, ice barrier
-                        //+10% from +spd bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.1f;
-                        break;
-                    }
-                    break;
-                case SPELLFAMILY_WARLOCK:
-                    if(m_spellProto->SpellFamilyFlags == 0x00)
-                    {
-                        //shadow ward
-                        //+10% from +spd bonus
-                        DoneActualBenefit = caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellProto)) * 0.1f;
-                        break;
-                    }
-                    break;
-                default:
-                    break;
-            }
 
-            DoneActualBenefit *= caster->CalculateLevelPenalty(GetSpellProto());
+                float manapct = 0.01f;
+                manapct += 0.005f * (GetTalentSpellPos((*k)->GetId())->rank + 1);
 
-            m_modifier.m_amount += (int32)DoneActualBenefit;
+                // Energize caster
+                int32 basepoints0 = caster->GetMaxPower(POWER_MANA) * manapct;
+                caster->CastCustomSpell(caster, 47755, &basepoints0, NULL, NULL, true);
 
-            // Glyph of Power Word: Shield
-            if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_PRIEST && GetSpellProto()->SpellFamilyFlags == 0x1LL && caster->HasAura(55672))
-            {
-                int32 healamount = m_modifier.m_amount * caster->GetAura(55672, 0)->GetModifier()->m_amount / 100;
-                caster->CastCustomSpell(GetTarget(), 56160, &healamount, NULL, NULL, true);
+                if (!roll_chance_i((*k)->GetModifier()->m_amount) || caster->HasAura(63853))
+                    return;
+
+                uint32 triggerspell = 0;
+                switch(m_target->getPowerType())
+                {
+                    case POWER_RUNIC_POWER:
+                        triggerspell = 63652;
+                        break;
+                    case POWER_RAGE:
+                        triggerspell = 63653;
+                        break;
+                    case POWER_MANA:
+                        basepoints0 = m_target->GetMaxPower(POWER_MANA) * 0.02f;
+                        m_target->CastCustomSpell(m_target, 63654, &basepoints0, NULL, NULL, true);
+                        break;
+                    case POWER_ENERGY:
+                        triggerspell = 63655;
+                        break;
+                    default:
+                        break;
+                }
+
+                // Energize target
+                if (triggerspell)
+                    m_target->CastSpell(m_target, triggerspell, true);
+
+                caster->CastSpell(caster, 63853, true);
+                break;
             }
         }
     }

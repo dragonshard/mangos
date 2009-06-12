@@ -1781,32 +1781,6 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
                 if (!caster)
                     break;
 
-                // Rapture
-                int32 gainMana = 0;
-                AuraList const& lOverRideCS = caster->GetAurasByType(SPELL_AURA_OVERRIDE_CLASS_SCRIPTS);
-                for(AuraList::const_iterator k = lOverRideCS.begin(); k != lOverRideCS.end(); ++k)
-                {
-                    switch((*k)->GetModifier()->m_miscvalue)
-                    {
-                            case 7556:                          // Rank 1
-                            case 7555:                          // Rank 2
-                            case 7554:                          // Rank 3
-                            case 7553:                          // Rank 4
-                            case 7552:                          // Rank 5
-                            {
-                                 gainMana =  ((caster->getLevel() * (-0.2) + 18) / 1000000) * damage * caster->GetMaxPower(POWER_MANA);
-                                 if(gainMana > (caster->GetMaxPower(POWER_MANA) / 100) * ((*k)->GetModifier()->m_amount / 10))
-                                    gainMana = caster->GetMaxPower(POWER_MANA) / 100 * ((*k)->GetModifier()->m_amount / 10);
-                            } break;
-                            default: break;
-                    }
-                    if(gainMana)
-                    {
-                       caster->CastCustomSpell(caster, 47755, &gainMana, NULL, NULL, true, NULL, *k, caster->GetGUID());
-                       break;
-                    }
-                }
-
                 // Reflective Shield
                 if (spellProto->SpellFamilyFlags == 0x1)
                 {
@@ -7022,25 +6996,6 @@ bool Unit::HandleOverrideClassScriptAuraProc(Unit *pVictim, uint32 damage, Aura 
             int32 cost = procSpell->manaCost + procSpell->ManaCostPercentage * GetCreateMana() / 100;
             int32 basepoints0 = cost * triggeredByAura->GetModifier()->m_amount/100;
             CastCustomSpell(this, 47762, &basepoints0, NULL, NULL, true, NULL, triggeredByAura);
-            return true;
-        }
-        if(procSpell->SpellFamilyName == SPELLFAMILY_PRIEST && (procSpell->SpellFamilyFlags & 0x1000000001800LL))
-        {
-            // Rapture
-            case 7556:                          // Rank 1
-            case 7555:                          // Rank 2
-            case 7554:                          // Rank 3
-            case 7553:                          // Rank 4
-            case 7552:                          // Rank 5
-            {
-                gainMana = ((getLevel() * (-0.2) + 18) / 1000000) * damage * GetMaxPower(POWER_MANA);
-                if(gainMana > (GetMaxPower(POWER_MANA) / 100) * (triggeredByAura->GetModifier()->m_amount / 10))
-                   gainMana = (GetMaxPower(POWER_MANA) / 100) * (triggeredByAura->GetModifier()->m_amount / 10);
-            }
-        }
-        if(gainMana)
-        {
-            CastCustomSpell(this, 47755, &gainMana, NULL, NULL, true, NULL, triggeredByAura, GetGUID());
             return true;
         }
     }
