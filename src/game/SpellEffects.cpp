@@ -54,6 +54,8 @@
 #include "ScriptCalls.h"
 #include "SkillDiscovery.h"
 #include "Formulas.h"
+#include "GridNotifiersImpl.h"
+#include "CellImpl.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -4986,6 +4988,46 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                     if(uint32 discoveredSpell = GetExplicitDiscoverySpell(m_spellInfo->Id, (Player*)m_caster))
                         ((Player*)m_caster)->learnSpell(discoveredSpell, false);
                     return;
+                }
+                // Gluth's Decimate
+                case 28374:
+                {
+                    const SpellEntry *spell = sSpellStore.LookupEntry(28374);
+                    std::list<Unit*> targets;
+                    {
+                        float radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(spell->rangeIndex));
+
+                        CellPair p(MaNGOS::ComputeCellPair(m_caster->GetPositionX(),m_caster->GetPositionY()));
+                        Cell cell(p);
+                        cell.data.Part.reserved = ALL_DISTRICT;
+
+                        MaNGOS::AnyUnitInObjectRangeCheck u_check(m_caster, radius);
+                        MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck> checker(m_caster, targets, u_check);
+
+                        TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck>, GridTypeMapContainer > grid_object_checker(checker);
+                        TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_object_checker(checker);
+
+                        CellLock<GridReadGuard> cell_lock(cell, p);
+
+                        cell_lock->Visit(cell_lock, grid_object_checker,  *m_caster->GetMap());
+                        cell_lock->Visit(cell_lock, world_object_checker, *m_caster->GetMap());
+                    }
+
+                    if (targets.empty())
+                        return;
+
+                    for(std::list<Unit*>::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
+                    {
+                        float fivepct = (*itr)->GetHealth() / (*itr)->GetMaxHealth();
+
+                        if (!(*itr) || fivepct < 0.05f)
+                            continue;
+
+                        (*itr)->SetHealth(fivepct);
+
+                        if ((*itr)->GetTypeId() == TYPEID_UNIT)
+                            (*itr)->SetFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FORCE_MOVE);
+                    }
                 }
             }
             break;
