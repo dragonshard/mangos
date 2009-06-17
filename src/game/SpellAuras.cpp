@@ -6418,7 +6418,7 @@ void Aura::PeriodicDummyTick()
             case 43706:
             case 46755:
             case 49472: // Drink Coffee
-            case 58648:
+            case 57073:
             case 61830:
             {
                 if (m_target->GetTypeId() != TYPEID_PLAYER)
