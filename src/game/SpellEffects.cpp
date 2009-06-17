@@ -5013,12 +5013,12 @@ void Spell::EffectScriptEffect(uint32 effIndex)
 
                     for(std::list<Unit*>::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
                     {
-                        float fivepct = (*itr)->GetHealth() / (*itr)->GetMaxHealth();
+                        float pct = (*itr)->GetHealth() / (*itr)->GetMaxHealth();
 
-                        if (!(*itr) || fivepct < 0.05f)
+                        if (!(*itr) || pct < 0.05f)
                             continue;
 
-                        (*itr)->SetHealth(fivepct);
+                        (*itr)->SetHealth((*itr)->GetMaxHealth() * 0.05f);
 
                         if ((*itr)->GetTypeId() == TYPEID_UNIT)
                             (*itr)->SetFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FORCE_MOVE);
