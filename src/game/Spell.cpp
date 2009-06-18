@@ -2293,6 +2293,8 @@ void Spell::cast(bool skipCheck)
                 m_preCastSpell = 11196;                                // Recently Bandaged
             else if(m_spellInfo->SpellIconID == 1662 && m_spellInfo->AttributesEx & 0x20) // Blood Fury (Racial)
                 m_preCastSpell = 23230;                                // Blood Fury - Healing Reduction
+            else if(m_spellInfo->Id == 20594)                          // Stoneform
+                m_preCastSpell = 65116;                                // Stoneform (Armor increased)
             break;
         }
         case SPELLFAMILY_MAGE:

@@ -2414,6 +2414,8 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     {
                         int32 amount = m_modifier.m_amount / m_stackAmount;
                         m_target->CastCustomSpell(m_target, 33778, &amount, NULL, NULL, true, NULL, this, GetCasterGUID());
+                        int32 managain = GetSpellProto()->manaCost / 2;
+                        GetCaster()->CastCustomSpell(GetCaster(), 64372, &managain, NULL, NULL, true);
                     }
                 }
                 return;

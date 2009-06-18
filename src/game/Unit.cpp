@@ -1782,7 +1782,7 @@ void Unit::CalcAbsorbResist(Unit *pVictim,SpellSchoolMask schoolMask, DamageEffe
                     break;
 
                 // Reflective Shield
-                if (spellProto->SpellFamilyFlags == 0x1)
+                if (spellProto->SpellFamilyFlags == 0x1 && pVictim == caster)
                 {
                     AuraList const& vOverRideCS = caster->GetAurasByType(SPELL_AURA_DUMMY);
                     for(AuraList::const_iterator k = vOverRideCS.begin(); k != vOverRideCS.end(); ++k)
