@@ -220,8 +220,8 @@ pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
     &Spell::EffectMilling,                                  //158 SPELL_EFFECT_MILLING                  milling
     &Spell::EffectRenamePet,                                //159 SPELL_EFFECT_ALLOW_RENAME_PET         allow rename pet once again
     &Spell::EffectNULL,                                     //160 SPELL_EFFECT_160                      unused
-    &Spell::EffectNULL,                                     //161 SPELL_EFFECT_161                      second talent spec (learn/revert)
-    &Spell::EffectNULL                                      //162 SPELL_EFFECT_162                      activate primary/secondary spec
+    &Spell::EffectNULL,                                     //161 SPELL_EFFECT_TALENT_SPEC_COUNT        second talent spec (learn/revert)
+    &Spell::EffectNULL,                                     //162 SPELL_EFFECT_TALENT_SPEC_SELECT       activate primary/secondary spec
 };
 
 void Spell::EffectNULL(uint32 /*i*/)
@@ -727,9 +727,8 @@ void Spell::EffectDummy(uint32 i)
                         return;
 
                     Creature* creatureTarget = (Creature*)unitTarget;
-                    creatureTarget->setDeathState(JUST_DIED);
-                    creatureTarget->RemoveCorpse();
-                    creatureTarget->SetHealth(0);           // just for nice GM-mode view
+
+                    creatureTarget->ForcedDespawn();
                     return;
                 }
                 case 16589:                                 // Noggenfogger Elixir
@@ -802,9 +801,7 @@ void Spell::EffectDummy(uint32 i)
                     pGameObj->SetUInt32Value(GAMEOBJECT_LEVEL, m_caster->getLevel() );
                     pGameObj->SetSpellId(m_spellInfo->Id);
 
-                    creatureTarget->setDeathState(JUST_DIED);
-                    creatureTarget->RemoveCorpse();
-                    creatureTarget->SetHealth(0);                   // just for nice GM-mode view
+                    creatureTarget->ForcedDespawn();
 
                     DEBUG_LOG("AddObject at SpellEfects.cpp EffectDummy");
                     map->Add(pGameObj);
@@ -1018,9 +1015,7 @@ void Spell::EffectDummy(uint32 i)
 
                     Creature* creatureTarget = (Creature*)unitTarget;
 
-                    creatureTarget->setDeathState(JUST_DIED);
-                    creatureTarget->RemoveCorpse();
-                    creatureTarget->SetHealth(0);           // just for nice GM-mode view
+                    creatureTarget->ForcedDespawn();
 
                     //cast spell Raptor Capture Credit
                     m_caster->CastSpell(m_caster, 42337, true, NULL);
@@ -1109,9 +1104,7 @@ void Spell::EffectDummy(uint32 i)
 
                     Creature* creatureTarget = (Creature*)unitTarget;
 
-                    creatureTarget->setDeathState(JUST_DIED);
-                    creatureTarget->RemoveCorpse();
-                    creatureTarget->SetHealth(0);           // just for nice GM-mode view
+                    creatureTarget->ForcedDespawn();
                     return;
 
                 }
@@ -4072,10 +4065,8 @@ void Spell::EffectTameCreature(uint32 /*i*/)
     if(!pet)                                                // in versy specific state like near world end/etc.
         return;
 
-    // kill original creature
-    creatureTarget->setDeathState(JUST_DIED);
-    creatureTarget->RemoveCorpse();
-    creatureTarget->SetHealth(0);                       // just for nice GM-mode view
+    // "kill" original creature
+    creatureTarget->ForcedDespawn();
 
     uint32 level = (creatureTarget->getLevel() < (m_caster->getLevel() - 5)) ? (m_caster->getLevel() - 5) : creatureTarget->getLevel();
 

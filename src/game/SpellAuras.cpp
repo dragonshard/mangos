@@ -1567,9 +1567,7 @@ void Aura::TriggerSpell()
 
                             player->AutoStoreLoot(creature->GetCreatureInfo()->SkinLootId,LootTemplates_Skinning,true);
 
-                            creature->setDeathState(JUST_DIED);
-                            creature->RemoveCorpse();
-                            creature->SetHealth(0);         // just for nice GM-mode view
+                            creature->ForcedDespawn();
                         }
                         return;
                     }
@@ -1718,9 +1716,7 @@ void Aura::TriggerSpell()
 
                         Creature* creatureTarget = (Creature*)m_target;
 
-                        creatureTarget->setDeathState(JUST_DIED);
-                        creatureTarget->RemoveCorpse();
-                        creatureTarget->SetHealth(0);       // just for nice GM-mode view
+                        creatureTarget->ForcedDespawn();
                         return;
                     }
 //                    // Magic Sucker Device timer
@@ -2414,8 +2410,12 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     {
                         int32 amount = m_modifier.m_amount / m_stackAmount;
                         m_target->CastCustomSpell(m_target, 33778, &amount, NULL, NULL, true, NULL, this, GetCasterGUID());
-                        int32 managain = GetSpellProto()->manaCost / 2;
-                        GetCaster()->CastCustomSpell(GetCaster(), 64372, &managain, NULL, NULL, true);
+
+                        if (caster)
+                        {
+                            int32 returnmana = (GetSpellProto()->ManaCostPercentage * caster->GetCreateMana() / 100) * m_stackAmount / 2;
+                            caster->CastCustomSpell(caster, 64372, &returnmana, NULL, NULL, true, NULL, this, GetCasterGUID());
+                        }
                     }
                 }
                 return;
