@@ -2289,45 +2289,48 @@ void Spell::cast(bool skipCheck)
     {
         case SPELLFAMILY_GENERIC:
         {
-            if (m_spellInfo->Mechanic == MECHANIC_BANDAGE)             // Bandages
-                m_preCastSpell = 11196;                                // Recently Bandaged
+            if (m_spellInfo->Mechanic == MECHANIC_BANDAGE)                                // Bandages
+                m_preCastSpell = 11196;                                                   // Recently Bandaged
             else if(m_spellInfo->SpellIconID == 1662 && m_spellInfo->AttributesEx & 0x20) // Blood Fury (Racial)
-                m_preCastSpell = 23230;                                // Blood Fury - Healing Reduction
-            else if(m_spellInfo->Id == 20594)                          // Stoneform
-                m_preCastSpell = 65116;                                // Stoneform (Armor increased)
+                m_preCastSpell = 23230;                                                   // Blood Fury - Healing Reduction
+            else if(m_spellInfo->Id == 20594)                                             // Stoneform
+                m_preCastSpell = 65116;                                                   // Stoneform (Armor increased)
             break;
         }
         case SPELLFAMILY_MAGE:
         {
             // Ice Block
             if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000008000000000))
-                m_preCastSpell = 41425;                                // Hypothermia
+                m_preCastSpell = 41425;                     // Hypothermia
             break;
         }
         case SPELLFAMILY_PRIEST:
         {
+            // Power Word: Shield
             if (m_spellInfo->Mechanic == MECHANIC_SHIELD &&
-                m_spellInfo->SpellIconID == 566)                       // Power Word: Shield
-                m_preCastSpell = 6788;                                 // Weakened Soul
-            if (m_spellInfo->Id == 47585)                              // Dispersion (transform)
-                m_preCastSpell = 60069;                                // Dispersion (mana regen)
-            if (m_spellInfo->Id == 33206)                              // Pain Suppression (Damage modifier)
-                m_preCastSpell = 44416;                                // Pain Suppression (Threat modifier)
+                (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000001))) // Power Word: Shield
+                m_preCastSpell = 6788;                                         // Weakened Soul
+            if (m_spellInfo->Id == 47585)                                      // Dispersion (transform)
+                m_preCastSpell = 60069;                                        // Dispersion (mana regen)
+            if (m_spellInfo->Id == 33206)                                      // Pain Suppression (Damage modifier)
+                m_preCastSpell = 44416;                                        // Pain Suppression (Threat modifier)
             break;
         }
         case SPELLFAMILY_PALADIN:
         {
             // Divine Shield, Divine Protection or Hand of Protection
             if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000400080))
-                m_preCastSpell = 25771;                                // Forbearance
+                m_preCastSpell = 25771;                     // Forbearance
             break;
         }
         case SPELLFAMILY_SHAMAN:
         {
-            if (m_spellInfo->Id == 2825)                               // Bloodlust
-                m_preCastSpell = 57724;                                // Sated
-            else if (m_spellInfo->Id == 32182)                         // Heroism
-                m_preCastSpell = 57723;                                // Exhaustion
+            // Bloodlust
+            if (m_spellInfo->Id == 2825)
+                m_preCastSpell = 57724;                     // Sated
+            // Heroism
+            else if (m_spellInfo->Id == 32182)
+                m_preCastSpell = 57723;                     // Exhaustion
             break;
         }
         case SPELLFAMILY_WARLOCK:
@@ -4179,7 +4182,6 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 break;
             }
-            case SPELL_EFFECT_OPEN_LOCK_ITEM:
             case SPELL_EFFECT_OPEN_LOCK:
             {
                 if( m_spellInfo->EffectImplicitTargetA[i] != TARGET_GAMEOBJECT &&
@@ -4251,6 +4253,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     case SUMMON_TYPE_POSESSED2:
                     case SUMMON_TYPE_DEMON:
                     case SUMMON_TYPE_SUMMON:
+                    case SUMMON_TYPE_ELEMENTAL:
                     {
                         if(m_caster->GetPetGUID())
                             return SPELL_FAILED_ALREADY_HAVE_SUMMON;
