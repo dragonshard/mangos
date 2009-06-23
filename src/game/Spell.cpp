@@ -2310,9 +2310,9 @@ void Spell::cast(bool skipCheck)
             if (m_spellInfo->Mechanic == MECHANIC_SHIELD &&
                 (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000001))) // Power Word: Shield
                 m_preCastSpell = 6788;                                         // Weakened Soul
-            if (m_spellInfo->Id == 47585)                                      // Dispersion (transform)
+            else if (m_spellInfo->Id == 47585)                                 // Dispersion (transform)
                 m_preCastSpell = 60069;                                        // Dispersion (mana regen)
-            if (m_spellInfo->Id == 33206)                                      // Pain Suppression (Damage modifier)
+            else if (m_spellInfo->Id == 33206)                                 // Pain Suppression (Damage modifier)
                 m_preCastSpell = 44416;                                        // Pain Suppression (Threat modifier)
             break;
         }
