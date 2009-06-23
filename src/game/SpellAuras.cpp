@@ -984,8 +984,8 @@ void Aura::_AddAura()
             if (IsSealSpell(m_spellProto))
                 m_target->ModifyAuraState(AURA_STATE_JUDGEMENT, true);
 
-            // Conflagrate aura state on Immolate
-            if (m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && m_spellProto->SpellFamilyFlags & 4)
+            // Conflagrate aura state on Immolate and Shadowflame
+            if (m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK && (m_spellProto->SpellFamilyFlags & 4 || m_spellProto->SpellFamilyFlags2 & 2))
                 m_target->ModifyAuraState(AURA_STATE_IMMOLATE, true);
 
             // Faerie Fire (druid versions)
@@ -1089,8 +1089,24 @@ void Aura::_RemoveAura()
                     removeState = AURA_STATE_JUDGEMENT;     // Update Seals information
                 break;
             case SPELLFAMILY_WARLOCK:
-                if(m_spellProto->SpellFamilyFlags & UI64LIT(0x4))
-                    removeState = AURA_STATE_IMMOLATE;      // Conflagrate aura state
+                if (m_spellProto->SpellFamilyFlags & UI64LIT(0x4) || m_spellProto->SpellFamilyFlags2 & UI64LIT(0x2))
+                {
+                    bool remove = true;
+                    Unit::AuraList const &mPeriodic = m_target->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
+                    for(Unit::AuraList::const_iterator i = mPeriodic.begin(); i != mPeriodic.end(); ++i)
+                    {
+                        if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARLOCK &&
+                            ((*i)->GetSpellProto()->SpellFamilyFlags & UI64LIT(0x4) || (*i)->GetSpellProto()->SpellFamilyFlags2 & UI64LIT(0x2)) &&
+                            (*i)->GetId() != m_spellProto->Id)
+                        {
+                            remove = false;
+                            break;
+                        }
+                    }
+
+                    if (remove)
+                        removeState = AURA_STATE_IMMOLATE;      // Conflagrate aura state
+                }
                 break;
             case SPELLFAMILY_DRUID:
                 if(m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000400))
