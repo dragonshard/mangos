@@ -2219,6 +2219,12 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
         {
             switch(GetId())
             {
+                // Recently Bandaged
+                case 11196:
+                {
+                    m_target->ApplySpellImmune(GetId(), IMMUNITY_MECHANIC, GetMiscValue(), apply);
+                    return;
+                }
                 // Unstable Power
                 case 24658:
                 {
@@ -4266,6 +4272,24 @@ void Aura::HandleAuraProcTriggerSpell(bool apply, bool Real)
             case 28200:                                     // Ascendance (Talisman of Ascendance trinket)
                 SetAuraCharges(6);
                 break;
+            case 61846:                                     // Aspect of the Dragonhawk
+            case 61847:
+                if (!GetCaster())
+                    break;
+                GetCaster()->CastSpell(GetCaster(), 61848, true);
+                break;
+            default: break;
+        }
+    }
+    else
+    {
+        switch (GetId())
+        {
+            case 61846:                                     // Aspect of the Dragonhawk
+            case 61847:
+                if (!GetCaster())
+                    break;
+                GetCaster()->RemoveAurasDueToSpell(61848);
             default: break;
         }
     }
