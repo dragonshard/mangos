@@ -965,7 +965,7 @@ void Group::SendUpdate()
 
 void Group::UpdatePlayerOutOfRange(Player* pPlayer)
 {
-    if(!pPlayer)
+    if(!pPlayer || !pPlayer->IsInWorld())
         return;
 
     Player *player;
