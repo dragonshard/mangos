@@ -6798,11 +6798,18 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
             break;
         }
         // Decimation
+        case 63156:
         case 63158:
         {
-            // Proc only if target is at or below 35% health
-            if (!pVictim->HasAuraState(AURA_STATE_HEALTHLESS_35_PERCENT))
+             // Looking for dummy effect
+            Aura *aur = GetAura(auraSpellInfo->Id, 1);
+            if (!aur)
                 return false;
+
+            // If target's health is not below equal certain value (35%) not proc
+            if ((pVictim->GetHealth() * 100 / pVictim->GetMaxHealth()) > aur->GetModifier()->m_amount)
+                return false;
+
             break;
         }
     }
@@ -7655,9 +7662,6 @@ void Unit::SetPet(Pet* pet)
 void Unit::SetCharm(Unit* pet)
 {
     SetUInt64Value(UNIT_FIELD_CHARM, pet ? pet->GetGUID() : 0);
-
-    if(GetTypeId() == TYPEID_PLAYER)
-        ((Player*)this)->m_mover = pet ? pet : this;
 }
 
 
