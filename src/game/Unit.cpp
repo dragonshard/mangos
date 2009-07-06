@@ -9389,22 +9389,28 @@ bool Unit::isVisibleForOrDetect(Unit const* u, bool detect, bool inVisibleList, 
     if(!u->HasAuraType(SPELL_AURA_DETECT_STEALTH))
     {
         //Calculation if target is in front
+        //Base visible distance for every unit in stealth.
+        float visibleDistance = 10.0f;
 
-        //Visible distance based on stealth value (stealth rank 4 300MOD, 10.5 - 3 = 7.5)
-        float visibleDistance = 10.5f - (GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH)/100.0f);
+        //Stealth Level is calculated from stealth skill lvl 70 and stealtk rank 4 = 350 skill so 5 skill point = 1 level
+        float stealthLevel = (GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH)/5.0f);
+        float enemyLevel   = float(u->getLevelForTarget(this)); 
 
-        //Visible distance is modified by
-        //-Level Diff (every level diff = 1.0f in visible distance)
-        visibleDistance += int32(u->getLevelForTarget(this)) - int32(getLevelForTarget(u));
+        //Skill for detection of the unit that is try to detect.
+        int32 enemyDetection = u->GetTotalAuraModifier(SPELL_AURA_MOD_DETECT);
+        if (enemyDetection<0)
+            enemyDetection = 0;
 
         //This allows to check talent tree and will add addition stealth dependent on used points)
         int32 stealthMod = GetTotalAuraModifier(SPELL_AURA_MOD_STEALTH_LEVEL);
         if(stealthMod < 0)
             stealthMod = 0;
 
-        //-Stealth Mod(positive like Master of Deception) and Stealth Detection(negative like paranoia)
-        //based on wowwiki every 5 mod we have 1 more level diff in calculation
-        visibleDistance += (int32(u->GetTotalAuraModifier(SPELL_AURA_MOD_DETECT)) - stealthMod)/5.0f;
+        //Visible distance is mod by enemyDetection and stealth mod (5 skill point = 1 level )
+        visibleDistance += (enemyDetection-stealthMod)/5.0f;
+
+        //Visibile distance is mod by level diff
+        visibleDistance += (enemyLevel - stealthLevel);
 
         if(!IsWithinDist(u,visibleDistance))
             return false;

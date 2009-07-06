@@ -3704,6 +3704,8 @@ void Aura::HandleModStealth(bool apply, bool Real)
 
     if (apply)
     {
+        pTarget->RemoveAllAttackers();
+
         // drop flag at stealth in bg
          pTarget->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_IMMUNE_OR_LOST_SELECTION);
 
@@ -3787,9 +3789,10 @@ void Aura::HandleInvisibility(bool apply, bool Real)
 {
     if(apply)
     {
+        m_target->RemoveAllAttackers();
         m_target->m_invisibilityMask |= (1 << m_modifier.m_miscvalue);
 
-         m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_IMMUNE_OR_LOST_SELECTION);
+        m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_IMMUNE_OR_LOST_SELECTION);
 
         if(Real && m_target->GetTypeId()==TYPEID_PLAYER)
         {
