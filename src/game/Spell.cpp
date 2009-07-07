@@ -405,7 +405,7 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
     focusObject = NULL;
     m_cast_count = 0;
     m_glyphIndex = 0;
-    m_preCastSpell = 0;
+    m_preCastSpells = NULL;
     m_triggeredByAuraSpell  = NULL;
 
     //Auto Shot & Shoot (wand)
@@ -445,6 +445,7 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
 
 Spell::~Spell()
 {
+    delete m_preCastSpells;
 }
 
 template<typename T>
@@ -550,7 +551,7 @@ void Spell::FillTargetMap()
                         if(m_targets.getUnitTarget())
                             tmpUnitMap.push_back(m_targets.getUnitTarget());
                         else
-                            tmpUnitMap.push_back(m_caster); 
+                            tmpUnitMap.push_back(m_caster);
                         break;
                     case TARGET_AREAEFFECT_INSTANT:         // All 17/7 pairs used for dest teleportation, A processed in effect code
                         SetTargetMap(i, m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
@@ -1244,8 +1245,13 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
         unit->IncrDiminishing(m_diminishGroup);
 
     // Apply additional spell effects to target
-    if (m_preCastSpell)
-        m_caster->CastSpell(unit, m_preCastSpell, true, m_CastItem);
+    if (m_preCastSpells)
+    {
+        for (SpellPrecasts::const_iterator i = m_preCastSpells->begin(); i != m_preCastSpells->end(); ++i)
+            m_caster->CastSpell(unit, *i, true, m_CastItem);
+        delete m_preCastSpells;
+        m_preCastSpells = NULL;
+    }
 
     for(uint32 effectNumber = 0; effectNumber < 3; ++effectNumber)
     {
@@ -2295,18 +2301,18 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_GENERIC:
         {
             if (m_spellInfo->Mechanic == MECHANIC_BANDAGE)                                // Bandages
-                m_preCastSpell = 11196;                                                   // Recently Bandaged
+                AddPrecastSpell(11196);                                                   // Recently Bandaged
             else if(m_spellInfo->SpellIconID == 1662 && m_spellInfo->AttributesEx & 0x20) // Blood Fury (Racial)
-                m_preCastSpell = 23230;                                                   // Blood Fury - Healing Reduction
+                AddPrecastSpell(23230);                                                   // Blood Fury - Healing Reduction
             else if(m_spellInfo->Id == 20594)                                             // Stoneform
-                m_preCastSpell = 65116;                                                   // Stoneform (Armor increased)
+                AddPrecastSpell(65116);                                                   // Stoneform (Armor increased)
             break;
         }
         case SPELLFAMILY_MAGE:
         {
             // Ice Block
             if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000008000000000))
-                m_preCastSpell = 41425;                     // Hypothermia
+                AddPrecastSpell(41425);                     // Hypothermia
             break;
         }
         case SPELLFAMILY_PRIEST:
@@ -2314,28 +2320,33 @@ void Spell::cast(bool skipCheck)
             // Power Word: Shield
             if (m_spellInfo->Mechanic == MECHANIC_SHIELD &&
                 (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000000001))) // Power Word: Shield
-                m_preCastSpell = 6788;                                         // Weakened Soul
+                AddPrecastSpell(6788);                                         // Weakened Soul
             else if (m_spellInfo->Id == 47585)                                 // Dispersion (transform)
-                m_preCastSpell = 60069;                                        // Dispersion (mana regen)
+                AddPrecastSpell(60069);                                        // Dispersion (mana regen)
             else if (m_spellInfo->Id == 33206)                                 // Pain Suppression (Damage modifier)
-                m_preCastSpell = 44416;                                        // Pain Suppression (Threat modifier)
+                AddPrecastSpell(44416);                                        // Pain Suppression (Threat modifier)
             break;
         }
         case SPELLFAMILY_PALADIN:
         {
             // Divine Shield, Divine Protection or Hand of Protection
             if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000400080))
-                m_preCastSpell = 25771;                     // Forbearance
+            {
+                AddPrecastSpell(25771);                     // Forbearance
+                AddPrecastSpell(61987);                     // Avenging Wrath Marker
+            }
+            else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x200000000000))
+                AddPrecastSpell(61987);                     // Avenging Wrath Marker
             break;
         }
         case SPELLFAMILY_SHAMAN:
         {
             // Bloodlust
             if (m_spellInfo->Id == 2825)
-                m_preCastSpell = 57724;                     // Sated
+                AddPrecastSpell(57724);                     // Sated
             // Heroism
             else if (m_spellInfo->Id == 32182)
-                m_preCastSpell = 57723;                     // Exhaustion
+                AddPrecastSpell(57723);                     // Exhaustion
             break;
         }
         case SPELLFAMILY_WARLOCK:
@@ -3703,8 +3714,17 @@ SpellCastResult Spell::CheckCast(bool strict)
         sSpellStore.LookupEntry(m_spellInfo->casterAuraSpell) &&
         !m_caster->HasAura(m_spellInfo->casterAuraSpell))
         return SPELL_FAILED_CASTER_AURASTATE;
-    if(m_spellInfo->excludeCasterAuraSpell && m_caster->HasAura(m_spellInfo->excludeCasterAuraSpell))
-        return SPELL_FAILED_CASTER_AURASTATE;
+    if(m_spellInfo->excludeCasterAuraSpell)
+    {
+        // Special cases of non existing auras handling
+        if(m_spellInfo->excludeCasterAuraSpell == 61988)
+        {
+            if(m_caster->HasAura(61987))
+                return SPELL_FAILED_CASTER_AURASTATE;
+        }
+        else if(m_caster->HasAura(m_spellInfo->excludeCasterAuraSpell))
+            return SPELL_FAILED_CASTER_AURASTATE;
+    }
 
     // cancel autorepeat spells if cast start when moving
     // (not wand currently autorepeat cast delayed to moving stop anyway in spell update code)
