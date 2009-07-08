@@ -395,6 +395,7 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
 
     m_castPositionX = m_castPositionY = m_castPositionZ = 0;
     m_TriggerSpells.clear();
+    m_preCastSpells.clear();
     m_IsTriggeredSpell = triggered;
     //m_AreaAura = false;
     m_CastItem = NULL;
@@ -405,7 +406,6 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
     focusObject = NULL;
     m_cast_count = 0;
     m_glyphIndex = 0;
-    m_preCastSpells = NULL;
     m_triggeredByAuraSpell  = NULL;
 
     //Auto Shot & Shoot (wand)
@@ -445,7 +445,6 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
 
 Spell::~Spell()
 {
-    delete m_preCastSpells;
 }
 
 template<typename T>
@@ -1245,12 +1244,11 @@ void Spell::DoSpellHitOnUnit(Unit *unit, const uint32 effectMask)
         unit->IncrDiminishing(m_diminishGroup);
 
     // Apply additional spell effects to target
-    if (m_preCastSpells)
+    while (!m_preCastSpells.empty())
     {
-        for (SpellPrecasts::const_iterator i = m_preCastSpells->begin(); i != m_preCastSpells->end(); ++i)
-            m_caster->CastSpell(unit, *i, true, m_CastItem);
-        delete m_preCastSpells;
-        m_preCastSpells = NULL;
+        uint32 spellId = *m_preCastSpells.begin();
+        m_caster->CastSpell(unit, spellId, true, m_CastItem);
+        m_preCastSpells.erase(m_preCastSpells.begin());
     }
 
     for(uint32 effectNumber = 0; effectNumber < 3; ++effectNumber)
@@ -4456,8 +4454,38 @@ SpellCastResult Spell::CheckCast(bool strict)
                 break;
             }
             case SPELL_AURA_MOD_POSSESS:
+            {
+                if(m_caster->GetTypeId() != TYPEID_PLAYER)
+                    return SPELL_FAILED_UNKNOWN;
+
+                if(m_targets.getUnitTarget() == m_caster)
+                    return SPELL_FAILED_BAD_TARGETS;
+
+                if(m_caster->GetPetGUID())
+                    return SPELL_FAILED_ALREADY_HAVE_SUMMON;
+
+                if(m_caster->GetCharmGUID())
+                    return SPELL_FAILED_ALREADY_HAVE_CHARM;
+
+                if(m_caster->GetCharmerGUID())
+                    return SPELL_FAILED_CHARMED;
+
+                if(!m_targets.getUnitTarget())
+                    return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
+
+                if(m_targets.getUnitTarget()->GetCharmerGUID())
+                    return SPELL_FAILED_CHARMED;
+
+                if(int32(m_targets.getUnitTarget()->getLevel()) > CalculateDamage(i,m_targets.getUnitTarget()))
+                    return SPELL_FAILED_HIGHLEVEL;
+
+                break;
+            }
             case SPELL_AURA_MOD_CHARM:
             {
+                if(m_targets.getUnitTarget() == m_caster)
+                    return SPELL_FAILED_BAD_TARGETS;
+
                 if(m_caster->GetPetGUID())
                     return SPELL_FAILED_ALREADY_HAVE_SUMMON;
 
@@ -4480,6 +4508,9 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
             case SPELL_AURA_MOD_POSSESS_PET:
             {
+                if(m_caster->GetTypeId() != TYPEID_PLAYER)
+                    return SPELL_FAILED_UNKNOWN;
+
                 if(m_caster->GetCharmGUID())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 
