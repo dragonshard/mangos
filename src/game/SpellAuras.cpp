@@ -5985,68 +5985,72 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
         }
     }
 
-    if (!apply && caster &&
-        // Power Word: Shield
-        m_spellProto->SpellFamilyName == SPELLFAMILY_PRIEST && m_spellProto->Mechanic == MECHANIC_SHIELD &&
-        (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000001)) &&
-        // completely absorbed or dispelled
-        ((m_removeMode == AURA_REMOVE_BY_DEFAULT && !m_modifier.m_amount) || m_removeMode == AURA_REMOVE_BY_DISPEL))
+    if (!apply && caster)
     {
-        Unit::AuraList const& vDummyAuras = caster->GetAurasByType(SPELL_AURA_DUMMY);
-        for(Unit::AuraList::const_iterator itr = vDummyAuras.begin(); itr != vDummyAuras.end(); itr++)
+        // Power Word: Shield
+        if (m_spellProto->SpellFamilyName == SPELLFAMILY_PRIEST && m_spellProto->Mechanic == MECHANIC_SHIELD &&
+            (m_spellProto->SpellFamilyFlags & UI64LIT(0x0000000000000001)) &&
+            // completely absorbed or dispelled
+            ((m_removeMode == AURA_REMOVE_BY_DEFAULT && !m_modifier.m_amount) || m_removeMode == AURA_REMOVE_BY_DISPEL))
         {
-            SpellEntry const* vSpell = (*itr)->GetSpellProto();
-
-            // Rapture (main spell)
-            if(vSpell->SpellFamilyName == SPELLFAMILY_PRIEST && vSpell->SpellIconID == 2894 && vSpell->Effect[1])
+            Unit::AuraList const& vDummyAuras = caster->GetAurasByType(SPELL_AURA_DUMMY);
+            for(Unit::AuraList::const_iterator itr = vDummyAuras.begin(); itr != vDummyAuras.end(); itr++)
             {
-                switch((*itr)->GetEffIndex())
+                SpellEntry const* vSpell = (*itr)->GetSpellProto();
+
+                // Rapture (main spell)
+                if(vSpell->SpellFamilyName == SPELLFAMILY_PRIEST && vSpell->SpellIconID == 2894 && vSpell->Effect[1])
                 {
-                    case 0:
+                    switch((*itr)->GetEffIndex())
                     {
-                        // energize caster
-                        int32 manapct1000 = 5 * ((*itr)->GetModifier()->m_amount + spellmgr.GetSpellRank(vSpell->Id));
-                        int32 basepoints0 = caster->GetMaxPower(POWER_MANA) * manapct1000 / 1000;
-                        caster->CastCustomSpell(caster, 47755, &basepoints0, NULL, NULL, true);
-                        break;
-                    }
-                    case 1:
-                    {
-                        // energize target
-                        if (!roll_chance_i((*itr)->GetModifier()->m_amount) || caster->HasAura(63853))
-                            break;
-
-                        switch(m_target->getPowerType())
+                        case 0:
                         {
-                            case POWER_RUNIC_POWER:
-                                m_target->CastSpell(m_target, 63652, true, NULL, NULL, m_caster_guid);
-                                break;
-                            case POWER_RAGE:
-                                m_target->CastSpell(m_target, 63653, true, NULL, NULL, m_caster_guid);
-                                break;
-                            case POWER_MANA:
-                            {
-                                int32 basepoints0 = m_target->GetMaxPower(POWER_MANA) * 2 / 100;
-                                m_target->CastCustomSpell(m_target, 63654, &basepoints0, NULL, NULL, true);
-                                break;
-                            }
-                            case POWER_ENERGY:
-                                m_target->CastSpell(m_target, 63655, true, NULL, NULL, m_caster_guid);
-                                break;
-                            default:
-                                break;
+                            // energize caster
+                            int32 manapct1000 = 5 * ((*itr)->GetModifier()->m_amount + spellmgr.GetSpellRank(vSpell->Id));
+                            int32 basepoints0 = caster->GetMaxPower(POWER_MANA) * manapct1000 / 1000;
+                            caster->CastCustomSpell(caster, 47755, &basepoints0, NULL, NULL, true);
+                            break;
                         }
+                        case 1:
+                        {
+                            // energize target
+                            if (!roll_chance_i((*itr)->GetModifier()->m_amount) || caster->HasAura(63853))
+                                break;
 
-                        //cooldwon aura
-                        caster->CastSpell(caster, 63853, true);
-                        break;
+                            switch(m_target->getPowerType())
+                            {
+                                case POWER_RUNIC_POWER:
+                                    m_target->CastSpell(m_target, 63652, true, NULL, NULL, m_caster_guid);
+                                    break;
+                                case POWER_RAGE:
+                                    m_target->CastSpell(m_target, 63653, true, NULL, NULL, m_caster_guid);
+                                    break;
+                                case POWER_MANA:
+                                {
+                                    int32 basepoints0 = m_target->GetMaxPower(POWER_MANA) * 2 / 100;
+                                    m_target->CastCustomSpell(m_target, 63654, &basepoints0, NULL, NULL, true);
+                                    break;
+                                }
+                                case POWER_ENERGY:
+                                    m_target->CastSpell(m_target, 63655, true, NULL, NULL, m_caster_guid);
+                                    break;
+                                default:
+                                    break;
+                            }
+
+                            //cooldwon aura
+                            caster->CastSpell(caster, 63853, true);
+                            break;
+                        }
+                        default:
+                            sLog.outError("Changes in R-dummy spell???: effect 3");
+                            break;
                     }
-                    default:
-                        sLog.outError("Changes in R-dummy spell???: effect 3");
-                        break;
                 }
             }
         }
+        else if(GetSpellProto()->Id == 57350)
+            caster->CastSpell(caster, 60242, true, NULL, this);
     }
 }
 
