@@ -2352,9 +2352,9 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_WARLOCK:
         {
             if (m_spellInfo->Id == 47897)                              // Shadowflame DD (Rank 1)
-                m_preCastSpell = 47960;                                // Shadowflame DOT
+                AddPrecastSpell(47960);                                // Shadowflame DOT
             else if(m_spellInfo->Id == 61290)                          // Shadowflame DD (Rank 2)
-                m_preCastSpell = 61291;                                // Shadowflame DOT
+                AddPrecastSpell(61291);                                // Shadowflame DOT
             break;
         }
         default:

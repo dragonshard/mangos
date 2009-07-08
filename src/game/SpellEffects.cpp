@@ -406,6 +406,9 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     if(unitTarget->HasAuraState(AURA_STATE_IMMOLATE))
                         damage += int32(damage*0.25f);
                 }
+                // Haunt
+                else if(m_spellInfo->SpellFamilyFlags & UI64LIT(0x4000000000000))
+                    m_caster->CastCustomSpell(unitTarget, 50091, &damage, NULL, NULL, true);
                 break;
             }
             case SPELLFAMILY_PRIEST:
@@ -1070,6 +1073,12 @@ void Spell::EffectDummy(uint32 i)
                 {
                     // Emissary of Hate Credit
                     m_caster->CastSpell(m_caster, 45088, true);
+                    return;
+                }
+                case 50091:                                 // Haunt
+                {
+                    if (Aura *haunt = unitTarget->GetAura(SPELL_AURA_DUMMY, SPELLFAMILY_WARLOCK, UI64LIT(0x4000000000000), 0, m_caster->GetGUID()))
+                        haunt->GetModifier()->m_amount = damage;
                     return;
                 }
                 case 50243:                                 // Teach Language

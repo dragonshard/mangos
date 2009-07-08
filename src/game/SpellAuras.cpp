@@ -2264,6 +2264,11 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             }
             return;
         }
+
+        // Haunt
+        if (caster && m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK &&
+            m_spellProto->SpellFamilyFlags & UI64LIT(0x4000000000000))
+            caster->CastCustomSpell(caster, 48210, &GetModifier()->m_amount, NULL, NULL, true, NULL, this);
     }
 
     // AT APPLY & REMOVE
