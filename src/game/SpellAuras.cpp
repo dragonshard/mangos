@@ -2057,6 +2057,45 @@ void Aura::TriggerSpell()
                 caster->CastCustomSpell(target, trigger_spell_id, &m_modifier.m_amount, NULL, NULL, true, NULL, this);
                 return;
             }
+            // Intense Cold
+            case 48094:
+            {
+                if (!caster)
+                    return;
+
+                std::list<Unit*> targets;
+                {
+                    float radius = 50.00f;
+
+                    CellPair p(MaNGOS::ComputeCellPair(caster->GetPositionX(),caster->GetPositionY()));
+                    Cell cell(p);
+                    cell.data.Part.reserved = ALL_DISTRICT;
+
+                    MaNGOS::AnyUnfriendlyVisibleUnitInObjectRangeCheck u_check(caster, caster, radius);
+                    MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyVisibleUnitInObjectRangeCheck> checker(caster,targets, u_check);
+
+                    TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyVisibleUnitInObjectRangeCheck>, GridTypeMapContainer > grid_object_checker(checker);
+                    TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnfriendlyVisibleUnitInObjectRangeCheck>, WorldTypeMapContainer > world_object_checker(checker);
+
+                    CellLock<GridReadGuard> cell_lock(cell, p);
+
+                    cell_lock->Visit(cell_lock, grid_object_checker,  *caster->GetMap());
+                    cell_lock->Visit(cell_lock, world_object_checker, *caster->GetMap());
+                }
+
+                if(targets.empty())
+                    return;
+
+                for(std::list<Unit*>::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
+                {
+                    if (!(*itr))
+                        continue;
+
+                    (*itr)->CastSpell((*itr), triggeredSpellInfo, true, 0, this);
+                }
+
+                return;
+            }
         }
     }
 
