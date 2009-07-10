@@ -2350,9 +2350,9 @@ void Spell::cast(bool skipCheck)
         case SPELLFAMILY_WARLOCK:
         {
             if (m_spellInfo->Id == 47897)                              // Shadowflame DD (Rank 1)
-                m_preCastSpell = 47960;                                // Shadowflame DOT
+                AddPrecastSpell(47960);                                // Shadowflame DOT
             else if(m_spellInfo->Id == 61290)                          // Shadowflame DD (Rank 2)
-                m_preCastSpell = 61291;                                // Shadowflame DOT
+                AddPrecastSpell(61291);                                // Shadowflame DOT
             break;
         }
         default:
@@ -2393,6 +2393,19 @@ void Spell::cast(bool skipCheck)
 
             m_currentBasePoints[0] = basepnts;
         }
+    }
+    // King of the jungle (Tiger's fury energize)
+    else if(m_spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && m_spellInfo->SpellIconID == 1181)
+    {
+        Unit::AuraList const &dummy = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
+        for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
+            if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
+                (*i)->GetMiscValue() == 126)
+            {
+                int32 basepoints = (*i)->GetSpellProto()->EffectBasePoints[(*i)->GetEffIndex()+1];
+                m_caster->CastCustomSpell(m_caster, 51178, &basepoints, NULL, NULL, true);
+                break;
+            }
     }
 
     // traded items have trade slot instead of guid in m_itemTargetGUID
@@ -4441,8 +4454,38 @@ SpellCastResult Spell::CheckCast(bool strict)
                 break;
             }
             case SPELL_AURA_MOD_POSSESS:
+            {
+                if(m_caster->GetTypeId() != TYPEID_PLAYER)
+                    return SPELL_FAILED_UNKNOWN;
+
+                if(m_targets.getUnitTarget() == m_caster)
+                    return SPELL_FAILED_BAD_TARGETS;
+
+                if(m_caster->GetPetGUID())
+                    return SPELL_FAILED_ALREADY_HAVE_SUMMON;
+
+                if(m_caster->GetCharmGUID())
+                    return SPELL_FAILED_ALREADY_HAVE_CHARM;
+
+                if(m_caster->GetCharmerGUID())
+                    return SPELL_FAILED_CHARMED;
+
+                if(!m_targets.getUnitTarget())
+                    return SPELL_FAILED_BAD_IMPLICIT_TARGETS;
+
+                if(m_targets.getUnitTarget()->GetCharmerGUID())
+                    return SPELL_FAILED_CHARMED;
+
+                if(int32(m_targets.getUnitTarget()->getLevel()) > CalculateDamage(i,m_targets.getUnitTarget()))
+                    return SPELL_FAILED_HIGHLEVEL;
+
+                break;
+            }
             case SPELL_AURA_MOD_CHARM:
             {
+                if(m_targets.getUnitTarget() == m_caster)
+                    return SPELL_FAILED_BAD_TARGETS;
+
                 if(m_caster->GetPetGUID())
                     return SPELL_FAILED_ALREADY_HAVE_SUMMON;
 
@@ -4465,6 +4508,9 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
             case SPELL_AURA_MOD_POSSESS_PET:
             {
+                if(m_caster->GetTypeId() != TYPEID_PLAYER)
+                    return SPELL_FAILED_UNKNOWN;
+
                 if(m_caster->GetCharmGUID())
                     return SPELL_FAILED_ALREADY_HAVE_CHARM;
 

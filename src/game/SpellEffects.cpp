@@ -54,8 +54,6 @@
 #include "ScriptCalls.h"
 #include "SkillDiscovery.h"
 #include "Formulas.h"
-#include "GridNotifiersImpl.h"
-#include "CellImpl.h"
 
 pEffect SpellEffects[TOTAL_SPELL_EFFECTS]=
 {
@@ -406,6 +404,9 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     if(unitTarget->HasAuraState(AURA_STATE_IMMOLATE))
                         damage += int32(damage*0.25f);
                 }
+                // Haunt
+                else if(m_spellInfo->SpellFamilyFlags & UI64LIT(0x4000000000000))
+                    m_caster->CastCustomSpell(unitTarget, 50091, &damage, NULL, NULL, true);
                 break;
             }
             case SPELLFAMILY_PRIEST:
@@ -1070,6 +1071,12 @@ void Spell::EffectDummy(uint32 i)
                 {
                     // Emissary of Hate Credit
                     m_caster->CastSpell(m_caster, 45088, true);
+                    return;
+                }
+                case 50091:                                 // Haunt
+                {
+                    if (Aura *haunt = unitTarget->GetAura(SPELL_AURA_DUMMY, SPELLFAMILY_WARLOCK, UI64LIT(0x4000000000000), 0, m_caster->GetGUID()))
+                        haunt->GetModifier()->m_amount = damage;
                     return;
                 }
                 case 50243:                                 // Teach Language
@@ -2517,6 +2524,15 @@ void Spell::EffectHeal( uint32 /*i*/ )
             unitTarget->RemoveAurasDueToSpell(targetAura->GetId());
 
             addhealth += tickheal * tickcount;
+        }
+        // Chain Heal consumes Riptide
+        else if(m_spellInfo->SpellFamilyName == SPELLFAMILY_SHAMAN && m_spellInfo->SpellFamilyFlags == UI64LIT(0x100))
+        {
+            if (Aura *riptide = unitTarget->GetAura(SPELL_AURA_PERIODIC_HEAL, SPELLFAMILY_SHAMAN, 0, 0x10, m_caster->GetGUID()))
+            {
+                addhealth += addhealth * riptide->GetSpellProto()->EffectBasePoints[2] / 100;
+                unitTarget->RemoveAurasDueToSpell(riptide->GetId());
+            }
         }
         else
             addhealth = caster->SpellHealingBonus(unitTarget, m_spellInfo, addhealth, HEAL);
@@ -4995,46 +5011,6 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                     if(uint32 discoveredSpell = GetExplicitDiscoverySpell(m_spellInfo->Id, (Player*)m_caster))
                         ((Player*)m_caster)->learnSpell(discoveredSpell, false);
                     return;
-                }
-                // Gluth's Decimate
-                case 28374:
-                {
-                    const SpellEntry *spell = sSpellStore.LookupEntry(28374);
-                    std::list<Unit*> targets;
-                    {
-                        float radius = GetSpellMaxRange(sSpellRangeStore.LookupEntry(spell->rangeIndex));
-
-                        CellPair p(MaNGOS::ComputeCellPair(m_caster->GetPositionX(),m_caster->GetPositionY()));
-                        Cell cell(p);
-                        cell.data.Part.reserved = ALL_DISTRICT;
-
-                        MaNGOS::AnyUnitInObjectRangeCheck u_check(m_caster, radius);
-                        MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck> checker(m_caster, targets, u_check);
-
-                        TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck>, GridTypeMapContainer > grid_object_checker(checker);
-                        TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_object_checker(checker);
-
-                        CellLock<GridReadGuard> cell_lock(cell, p);
-
-                        cell_lock->Visit(cell_lock, grid_object_checker,  *m_caster->GetMap());
-                        cell_lock->Visit(cell_lock, world_object_checker, *m_caster->GetMap());
-                    }
-
-                    if (targets.empty())
-                        return;
-
-                    for(std::list<Unit*>::const_iterator itr = targets.begin(); itr != targets.end(); ++itr)
-                    {
-                        float pct = (*itr)->GetHealth() / (*itr)->GetMaxHealth();
-
-                        if (!(*itr) || pct < 0.05f)
-                            continue;
-
-                        (*itr)->SetHealth((*itr)->GetMaxHealth() * 0.05f);
-
-                        if ((*itr)->GetTypeId() == TYPEID_UNIT)
-                            (*itr)->SetFlag(UNIT_FIELD_FLAGS_2, UNIT_FLAG2_FORCE_MOVE);
-                    }
                 }
             }
             break;
