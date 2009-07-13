@@ -4528,6 +4528,10 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
             case SPELL_AURA_MOUNTED:
             {
+                Unit::AuraList mounts = m_caster->GetAurasByType(SPELL_AURA_MOUNTED);
+                if (!mounts.empty())
+                    return SPELL_FAILED_NOT_ON_MOUNTED;
+
                 if (m_caster->IsInWater())
                     return SPELL_FAILED_ONLY_ABOVEWATER;
 
