@@ -6706,3 +6706,76 @@ void Spell::EffectRenamePet(uint32 /*eff_idx*/)
 
     unitTarget->SetByteValue(UNIT_FIELD_BYTES_2, 2, UNIT_RENAME_ALLOWED);
 }
+
+void Spell::EffectSummonSnakes(uint32 i)
+{
+    uint32 pet_entry = m_spellInfo->EffectMiscValue[i];
+    if(!pet_entry)
+        return;
+
+    // set timer for unsummon
+    int32 duration = GetSpellDuration(m_spellInfo);
+
+    // in another case summon new
+    uint32 level = m_caster->getLevel();
+
+    // select center of summon position
+    float center_x = m_targets.m_destX;
+    float center_y = m_targets.m_destY;
+    float center_z = m_targets.m_destZ;
+
+    float radius = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
+
+    int32 amount = damage > 0 ? damage : 1;
+
+    for(int32 count = 0; count < amount; ++count)
+    {
+        Pet* spawnCreature = new Pet(GUARDIAN_PET);
+
+        Map *map = m_caster->GetMap();
+        uint32 pet_number = objmgr.GeneratePetNumber();
+        if(!spawnCreature->Create(objmgr.GenerateLowGuid(HIGHGUID_PET), map,m_caster->GetPhaseMask(),
+            m_spellInfo->EffectMiscValue[i], pet_number))
+        {
+            sLog.outError("no such creature entry %u", m_spellInfo->EffectMiscValue[i]);
+            delete spawnCreature;
+            return;
+        }
+
+        float px, py, pz;
+        // If dest location if present
+        if (m_targets.m_targetMask & TARGET_FLAG_DEST_LOCATION)
+        {
+            // Summon 1 unit in dest location
+            if (count == 0)
+            {
+                px = m_targets.m_destX;
+                py = m_targets.m_destY;
+                pz = m_targets.m_destZ;
+            }
+            // Summon in random point all other units if location present
+            else
+                m_caster->GetRandomPoint(center_x, center_y, center_z, radius, px, py, pz);
+        }
+        // Summon if dest location not present near caster
+        else
+            m_caster->GetClosePoint(px, py, pz,spawnCreature->GetObjectSize());
+
+        spawnCreature->Relocate(px, py, pz, m_caster->GetOrientation());
+
+        if(!spawnCreature->IsPositionValid())
+        {
+            sLog.outError("Pet (guidlow %d, entry %d) not created base at creature. Suggested coordinates isn't valid (X: %f Y: %f)",
+                spawnCreature->GetGUIDLow(), spawnCreature->GetEntry(), spawnCreature->GetPositionX(), spawnCreature->GetPositionY());
+            delete spawnCreature;
+            return;
+        }
+
+        if(duration > 0)
+            spawnCreature->SetDuration(duration);
+
+        spawnCreature->AIM_Initialize();
+
+        map->Add((Creature*)spawnCreature);
+    }
+}

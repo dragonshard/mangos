@@ -273,6 +273,7 @@ class Spell
         void EffectActivateObject(uint32 i);
         void EffectApplyGlyph(uint32 i);
         void EffectSummonTotem(uint32 i);
+        void EffectSummonSnakes(uint32 i);
         void EffectEnchantHeldItem(uint32 i);
         void EffectSummonObject(uint32 i);
         void EffectResurrect(uint32 i);
