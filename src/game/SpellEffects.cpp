@@ -938,7 +938,7 @@ void Spell::EffectDummy(uint32 i)
                     else                                    // backfire 20%
                         m_caster->CastSpell(unitTarget, 30504, true, m_CastItem);
                     return;
-                case 33060:                                         // Make a Wish
+                case 33060:                                 // Make a Wish
                 {
                     if(m_caster->GetTypeId()!=TYPEID_PLAYER)
                         return;
@@ -1073,12 +1073,13 @@ void Spell::EffectDummy(uint32 i)
                     m_caster->CastSpell(m_caster, 45088, true);
                     return;
                 }
-                case 50091:                                 // Haunt
-                {
-                    if (Aura *haunt = unitTarget->GetAura(SPELL_AURA_DUMMY, SPELLFAMILY_WARLOCK, UI64LIT(0x4000000000000), 0, m_caster->GetGUID()))
-                        haunt->GetModifier()->m_amount = damage;
-                    return;
-                }
+                case 55004:                                 // Nitro Boosts 
+                    if(!m_CastItem) return; 
+                    if(roll_chance_i(95))                   //success 
+                        m_caster->CastSpell(m_caster, 54861, true, m_CastItem); 
+                    else                                    //backfire 5% 
+                        m_caster->CastSpell(m_caster, 46014, true, m_CastItem); 
+                    return; 
                 case 50243:                                 // Teach Language
                 {
                     if(m_caster->GetTypeId() != TYPEID_PLAYER)
@@ -1098,6 +1099,12 @@ void Spell::EffectDummy(uint32 i)
                         m_caster->CastSpell(m_caster, 50246, true);
                     }
 
+                    return;
+                }
+                case 50091:                                 // Haunt
+                {
+                    if (Aura *haunt = unitTarget->GetAura(SPELL_AURA_DUMMY, SPELLFAMILY_WARLOCK, UI64LIT(0x4000000000000), 0, m_caster->GetGUID()))
+                        haunt->GetModifier()->m_amount = damage;
                     return;
                 }
                 case 51582:                                 //Rocket Boots Engaged (Rocket Boots Xtreme and Rocket Boots Xtreme Lite)
@@ -1154,11 +1161,6 @@ void Spell::EffectDummy(uint32 i)
                 case 58418:                                 // Portal to Orgrimmar
                 case 58420:                                 // Portal to Stormwind
                     return;                                 // implemented in EffectScript[0]
-                case 55004:                                 // Nitro Boosts
-                {
-                    m_caster->CastSpell(m_caster, 54861, true);
-                    return;
-                }
             }
 
             //All IconID Check in there

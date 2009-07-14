@@ -32,11 +32,9 @@
 // The pHatingUnit is not used yet
 float ThreatCalcHelper::calcThreat(Unit* pHatedUnit, Unit* pHatingUnit, float pThreat, SpellSchoolMask schoolMask, SpellEntry const *pThreatSpell)
 {
-    if(pThreatSpell)
-    {
-        if( Player* modOwner = pHatingUnit->GetSpellModOwner() )
+    if (pThreatSpell)
+        if (Player* modOwner = pHatedUnit->GetSpellModOwner())
             modOwner->ApplySpellMod(pThreatSpell->Id, SPELLMOD_THREAT, pThreat);
-    }
 
     float threat = pHatedUnit->ApplyTotalThreatModifier(pThreat, schoolMask);
     return threat;
@@ -344,7 +342,7 @@ HostilReference* ThreatContainer::selectNextVictim(Creature* pAttacker, HostilRe
 //=================== ThreatManager ==========================
 //============================================================
 
-ThreatManager::ThreatManager(Unit* owner) : iCurrentVictim(NULL), iOwner(owner)
+ThreatManager::ThreatManager(Unit* owner) : iCurrentVictim(NULL), iOwner(owner), iUpdateTimer(THREAT_UPDATE_INTERVAL)
 {
 }
 
@@ -355,6 +353,7 @@ void ThreatManager::clearReferences()
     iThreatContainer.clearReferences();
     iThreatOfflineContainer.clearReferences();
     iCurrentVictim = NULL;
+    iUpdateTimer = THREAT_UPDATE_INTERVAL;
 }
 
 //============================================================
@@ -454,6 +453,10 @@ void ThreatManager::tauntFadeOut(Unit *pTaunter)
 
 void ThreatManager::setCurrentVictim(HostilReference* pHostilReference)
 {
+    if (pHostilReference && pHostilReference != iCurrentVictim)
+    {
+        iOwner->SendChangeCurrentVictimOpcode(pHostilReference);
+    }
     iCurrentVictim = pHostilReference;
 }
 
@@ -499,10 +502,24 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
                 setCurrentVictim(NULL);
                 setDirty(true);
             }
+            iOwner->SendRemoveFromThreatListOpcode(hostilReference);
             if(hostilReference->isOnline())
                 iThreatContainer.remove(hostilReference);
             else
                 iThreatOfflineContainer.remove(hostilReference);
             break;
     }
+}
+
+bool ThreatManager::isNeedUpdateToClient(uint32 time)
+{
+    if (isThreatListEmpty())
+        return false;
+    if (time >= iUpdateTimer)
+    {
+        iUpdateTimer = THREAT_UPDATE_INTERVAL;
+        return true;
+    }
+    iUpdateTimer -= time;
+    return false;
 }
