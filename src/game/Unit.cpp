@@ -9438,7 +9438,7 @@ bool Unit::isVisibleForOrDetect(Unit const* u, bool detect, bool inVisibleList, 
         //Visibile distance is mod by level diff
         visibleDistance += (enemyLevel - stealthLevel);
 
-        if(!IsWithinDist(u,visibleDistance))
+        if(visibleDistance <= 0 || !IsWithinDist(u,visibleDistance))
             return false;
     }
 
