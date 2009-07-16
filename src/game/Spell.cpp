@@ -4386,32 +4386,17 @@ SpellCastResult Spell::CheckCast(bool strict)
             case SPELL_EFFECT_LEAP:
             case SPELL_EFFECT_TELEPORT_UNITS_FACE_CASTER:
             {
-                uint32 mapid = m_caster->GetMapId();
                 float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
+                float fx = m_caster->GetPositionX() + dis * cos(m_caster->GetOrientation());
+                float fy = m_caster->GetPositionY() + dis * sin(m_caster->GetOrientation());
+                // teleport a bit above terrain level to avoid falling below it
+                float fz = m_caster->GetBaseMap()->GetHeight(fx,fy,m_caster->GetPositionZ(),true);
+                if(fz <= INVALID_HEIGHT)                    // note: this also will prevent use effect in instances without vmaps height enabled
+                    return SPELL_FAILED_TRY_AGAIN;
 
-                float *fx = new float[2], *fy = new float[2], *fz = new float[2];
-                m_caster->GetPosition(fx[0], fy[0], fz[0]);
-
-                float orientation = m_caster->GetOrientation(), step = dis / 10.0, tempz = fz[0], itr_i, ground, floor;
-                bool found_valid_fz = false;
-
-                for (itr_i = step; itr_i <= dis && found_valid_fz == false; itr_i += step)
-                {
-                    fx[1] = fx[0] + itr_i * cos(orientation);
-                    fy[1] = fy[0] + itr_i * sin(orientation);
-                    ground = MapManager::Instance().GetMap(mapid, m_caster)->GetHeight(fx[1], fy[1], MAX_HEIGHT, true);
-                    floor = MapManager::Instance().GetMap(mapid, m_caster)->GetHeight(fx[1], fy[1], tempz, true);
-                    fz[1] = fabs(ground - fz[0]) <= fabs(floor - fz[0]) ? ground : floor;
-                    if (fabs(fz[1] - fz[0]) <= 6.0)
-                        found_valid_fz = true;
-                    else
-                        if (fz[1] > INVALID_HEIGHT)
-                            tempz = fz[1];
-                }
-
-                delete fx; delete fy; delete fz;
-
-                if (found_valid_fz == false)
+                float caster_pos_z = m_caster->GetPositionZ();
+                // Control the caster to not climb or drop when +-fz > 8
+                if(!(fz <= caster_pos_z + 8 && fz >= caster_pos_z - 8))
                     return SPELL_FAILED_TRY_AGAIN;
 
                 // not allow use this effect at battleground until battleground start
