@@ -549,7 +549,7 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     uint32 stacks = 0;
                     Unit::AuraList const& auras = unitTarget->GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
                     for(Unit::AuraList::const_iterator itr = auras.begin(); itr!=auras.end(); ++itr)
-                        if((*itr)->GetId() == 31803 && (*itr)->GetCasterGUID()==m_caster->GetGUID())
+                        if(((*itr)->GetId() == 31803 || (*itr)->GetId() == 53742)) && (*itr)->GetCasterGUID()==m_caster->GetGUID())
                         {
                             stacks = (*itr)->GetStackAmount();
                             break;
