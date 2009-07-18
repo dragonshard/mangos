@@ -1202,12 +1202,19 @@ void Spell::EffectDummy(uint32 i)
                     }
                     return;
                 }
-                case 32826:
+                case 32826:                                 // Polymorph Cast Visual
                 {
                     if ( unitTarget && unitTarget->GetTypeId() == TYPEID_UNIT )
                     {
                         //Polymorph Cast Visual Rank 1
-                        const uint32 spell_list[6] = {32813, 32816, 32817, 32818, 32819, 32820};
+                        const uint32 spell_list[6] = {
+                            32813,                          // Squirrel Form
+                            32816,                          // Giraffe Form
+                            32817,                          // Serpent Form
+                            32818,                          // Dragonhawk Form
+                            32819,                          // Worgen Form
+                            32820                           // Sheep Form
+                        };
                         unitTarget->CastSpell( unitTarget, spell_list[urand(0, 5)], true);
                     }
                     return;
@@ -1427,7 +1434,7 @@ void Spell::EffectDummy(uint32 i)
                     m_caster->CastSpell(unitTarget, 5940, true);
                     return;
                 }
-                case 14185:                                 // Preparation Rogue
+                case 14185:                                 // Preparation
                 {
                     if(m_caster->GetTypeId()!=TYPEID_PLAYER)
                         return;
@@ -1479,7 +1486,7 @@ void Spell::EffectDummy(uint32 i)
 
             switch(m_spellInfo->Id)
             {
-                case 23989:                                 //Readiness talent
+                case 23989:                                 // Readiness talent
                 {
                     if(m_caster->GetTypeId()!=TYPEID_PLAYER)
                         return;
@@ -1661,8 +1668,8 @@ void Spell::EffectDummy(uint32 i)
             }
             break;
         case SPELLFAMILY_SHAMAN:
-            //Shaman Rockbiter Weapon
-            if (m_spellInfo->SpellFamilyFlags == 0x400000)
+            // Rockbiter Weapon
+            if (m_spellInfo->SpellFamilyFlags & 0x400000)
             {
                 // TODO: use expect spell for enchant (if exist talent)
                 // In 3.0.3 no mods present for rockbiter
@@ -1735,8 +1742,7 @@ void Spell::EffectDummy(uint32 i)
                 if(!unitTarget || unitTarget->getPowerType() != POWER_MANA)
                     return;
                 // Glyph of Mana Tide
-                Unit *owner = m_caster->GetOwner();
-                if (owner)
+                if(Unit *owner = m_caster->GetOwner())
                     if (Aura *dummy = owner->GetDummyAura(55441))
                         damage+=dummy->GetModifier()->m_amount;
                 // Regenerate 6% of Total Mana Every 3 secs
