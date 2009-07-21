@@ -6118,13 +6118,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 return false;
                 break;
             }
-            // Frozen Power
-            if (dummySpell->SpellIconID == 3780)
-            {
-                const SpellEntry *freeze = sSpellStore.LookupEntry(63685);
-                if (GetDistance(pVictim) >= freeze->EffectBasePoints[0])
-                    triggered_spell_id = 63685;
-            }
             break;
         }
         case SPELLFAMILY_DEATHKNIGHT:

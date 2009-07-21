@@ -2369,7 +2369,7 @@ void Spell::cast(bool skipCheck)
     }
 
     // King of the jungle (Tiger's fury energize)
-    else if(m_spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && m_spellInfo->SpellIconID == 1181)
+    if(m_spellInfo->SpellFamilyName == SPELLFAMILY_DRUID && m_spellInfo->SpellIconID == 1181)
     {
         Unit::AuraList const &dummy = m_caster->GetAurasByType(SPELL_AURA_DUMMY);
         for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)

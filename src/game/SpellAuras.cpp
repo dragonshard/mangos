@@ -1961,63 +1961,6 @@ void Aura::TriggerSpell()
                 }
                 break;
             }
-            case SPELLFAMILY_HUNTER:
-            {
-                switch(auraId)
-                {
-                    // Sniper training
-                    case 53302:
-                    case 53303:
-                    case 53304:
-                        if (m_target->GetTypeId() != TYPEID_PLAYER)
-                            return;
-
-                        if (((Player*)m_target)->isMoving())
-                        {
-                            GetModifier()->m_amount = m_target->CalculateSpellDamage(m_spellProto,m_effIndex,m_currentBasePoints,m_target);
-                            return;
-                        }
-
-                        if (GetModifier()->m_amount > 0)
-                        {
-                            --GetModifier()->m_amount;
-                            return;
-                        }
-
-                        trigger_spell_id = 64418 + auraId - 53302;
-
-                        break;
-//                    //Frost Trap Aura
-//                    case 13810:
-//                        return;
-//                    //Rizzle's Frost Trap
-//                    case 39900:
-//                        return;
-//                    // Tame spells
-//                    case 19597:         // Tame Ice Claw Bear
-//                    case 19676:         // Tame Snow Leopard
-//                    case 19677:         // Tame Large Crag Boar
-//                    case 19678:         // Tame Adult Plainstrider
-//                    case 19679:         // Tame Prairie Stalker
-//                    case 19680:         // Tame Swoop
-//                    case 19681:         // Tame Dire Mottled Boar
-//                    case 19682:         // Tame Surf Crawler
-//                    case 19683:         // Tame Armored Scorpid
-//                    case 19684:         // Tame Webwood Lurker
-//                    case 19685:         // Tame Nightsaber Stalker
-//                    case 19686:         // Tame Strigid Screecher
-//                    case 30100:         // Tame Crazed Dragonhawk
-//                    case 30103:         // Tame Elder Springpaw
-//                    case 30104:         // Tame Mistbat
-//                    case 30647:         // Tame Barbed Crawler
-//                    case 30648:         // Tame Greater Timberstrider
-//                    case 30652:         // Tame Nightstalker
-//                        return;
-                    default:
-                        break;
-                }
-                break;
-            }
             case SPELLFAMILY_SHAMAN:
             {
                 switch(auraId)
@@ -6151,6 +6094,24 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                             sLog.outError("Changes in R-dummy spell???: effect 3");
                             break;
                     }
+                }
+            }
+        }
+        // Shattered Barrier
+        else if (m_spellProto->SpellFamilyName == SPELLFAMILY_MAGE &&
+            (m_spellProto->SpellFamilyFlags & UI64LIT(0x100000000)) &&
+            // completely absorbed or dispelled
+            ((m_removeMode == AURA_REMOVE_BY_DEFAULT && !m_modifier.m_amount) || m_removeMode == AURA_REMOVE_BY_DISPEL))
+        {
+            Unit::AuraList const& vDummyAuras = caster->GetAurasByType(SPELL_AURA_DUMMY);
+            for(Unit::AuraList::const_iterator itr = vDummyAuras.begin(); itr != vDummyAuras.end(); itr++)
+            {
+                if ((*itr)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_MAGE &&
+                    (*itr)->GetSpellProto()->SpellIconID == 2945)
+                {
+                    if (roll_chance_i((*itr)->GetSpellProto()->procChance))
+                        m_target->CastSpell(m_target, 55080, true, NULL, this);
+                    break;
                 }
             }
         }
