@@ -2672,15 +2672,14 @@ void Spell::EffectHealthLeech(uint32 i)
     if(Player *modOwner = m_caster->GetSpellModOwner())
         modOwner->ApplySpellMod(m_spellInfo->Id, SPELLMOD_MULTIPLE_VALUE, multiplier);
 
-    int32 new_damage = int32(damage*multiplier);
     uint32 curHealth = unitTarget->GetHealth();
-    new_damage = m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, new_damage );
+    int32 new_damage = m_caster->SpellNonMeleeDamageLog(unitTarget, m_spellInfo->Id, damage );
     if(curHealth < new_damage)
         new_damage = curHealth;
 
     if(m_caster->isAlive())
     {
-        new_damage = m_caster->SpellHealingBonus(m_caster, m_spellInfo, new_damage, HEAL);
+        new_damage *= multiplier;
         m_caster->DealHeal(m_caster, uint32(new_damage), m_spellInfo);
     }
 //    m_healthLeech+=tmpvalue;
