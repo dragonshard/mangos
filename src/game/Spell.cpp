@@ -2188,7 +2188,12 @@ void Spell::prepare(SpellCastTargets const* targets, Aura* triggeredByAura)
     // skip triggered spell (item equip spell casting and other not explicit character casts/item uses)
     if (!m_IsTriggeredSpell)
     {
-        m_caster->RemoveSpellsCausingAura(SPELL_AURA_MOD_INVISIBILITY);
+        Unit::AuraList invisibility = m_caster->GetAurasByType(SPELL_AURA_MOD_INVISIBILITY);
+        for(Unit::AuraList::const_iterator i = invisibility.begin(); i != invisibility.end(); ++i)
+        {
+            if ((*i)->GetAuraDuration() != -1)
+                m_caster->RemoveAurasDueToSpell((*i)->GetId());
+        }
 
         if (isSpellBreakStealth(m_spellInfo))
         {
