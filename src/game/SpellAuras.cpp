@@ -6005,6 +6005,15 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     break;
                 }
                 break;
+            case SPELLFAMILY_PALADIN:
+                if (m_spellProto->SpellFamilyFlags == UI64LIT(0x8000000000000))
+                {
+                    // Sacred Shield
+                    // +75% from +healing
+                    DoneActualBenefit = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * 0.75f;
+                    break;
+                }
+                break;
             default:
                 break;
         }
