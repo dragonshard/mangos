@@ -6112,7 +6112,7 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
             }
         }
         else if(GetSpellProto()->Id == 57350)
-            caster->CastSpell(caster, 60242, true, NULL, this);
+            m_target->CastSpell(caster, 60242, true, NULL, this);
     }
 }
 

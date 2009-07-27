@@ -2488,7 +2488,7 @@ void Spell::EffectSendEvent(uint32 EffectIndex)
     we do not handle a flag dropping or clicking on flag in battleground by sendevent system
     */
     sLog.outDebug("Spell ScriptStart %u for spellid %u in EffectSendEvent ", m_spellInfo->EffectMiscValue[EffectIndex], m_spellInfo->Id);
-    sWorld.ScriptsStart(sEventScripts, m_spellInfo->EffectMiscValue[EffectIndex], m_caster, focusObject);
+    m_caster->GetMap()->ScriptsStart(sEventScripts, m_spellInfo->EffectMiscValue[EffectIndex], m_caster, focusObject);
 }
 
 void Spell::EffectPowerBurn(uint32 i)
@@ -2579,8 +2579,9 @@ void Spell::EffectHeal( uint32 /*i*/ )
             Aura *targetAura = NULL;
             for(Unit::AuraList::const_iterator i = RejorRegr.begin(); i != RejorRegr.end(); ++i)
             {
-                if((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID
-                    && ((*i)->GetSpellProto()->SpellFamilyFlags == 0x40 || (*i)->GetSpellProto()->SpellFamilyFlags == 0x10) )
+                if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
+                    // Regrowth or Rejuvenation 0x40 | 0x10
+                    ((*i)->GetSpellProto()->SpellFamilyFlags & UI64LIT(0x0000000000000050)))
                 {
                     if(!targetAura || (*i)->GetAuraDuration() < targetAura->GetAuraDuration())
                         targetAura = *i;
@@ -2602,7 +2603,10 @@ void Spell::EffectHeal( uint32 /*i*/ )
 
             int32 tickheal = caster->SpellHealingBonus(unitTarget, targetAura->GetSpellProto(), targetAura->GetModifier()->m_amount, DOT);
             int32 tickcount = GetSpellDuration(targetAura->GetSpellProto()) / targetAura->GetSpellProto()->EffectAmplitude[idx];
-            unitTarget->RemoveAurasDueToSpell(targetAura->GetId());
+
+            // Glyph of Swiftmend
+            if(!caster->HasAura(54824))
+                unitTarget->RemoveAurasDueToSpell(targetAura->GetId());
 
             addhealth += tickheal * tickcount;
         }
@@ -3007,7 +3011,7 @@ void Spell::SendLoot(uint64 guid, LootType loottype)
             case GAMEOBJECT_TYPE_DOOR:
             case GAMEOBJECT_TYPE_BUTTON:
                 gameObjTarget->UseDoorOrButton();
-                sWorld.ScriptsStart(sGameObjectScripts, gameObjTarget->GetDBTableGUIDLow(), player, gameObjTarget);
+                player->GetMap()->ScriptsStart(sGameObjectScripts, gameObjTarget->GetDBTableGUIDLow(), player, gameObjTarget);
                 return;
 
             case GAMEOBJECT_TYPE_QUESTGIVER:
@@ -3027,7 +3031,7 @@ void Spell::SendLoot(uint64 guid, LootType loottype)
                 if (gameObjTarget->GetGOInfo()->goober.eventId)
                 {
                     sLog.outDebug("Goober ScriptStart id %u for GO %u", gameObjTarget->GetGOInfo()->goober.eventId,gameObjTarget->GetDBTableGUIDLow());
-                    sWorld.ScriptsStart(sEventScripts, gameObjTarget->GetGOInfo()->goober.eventId, player, gameObjTarget);
+                    player->GetMap()->ScriptsStart(sEventScripts, gameObjTarget->GetGOInfo()->goober.eventId, player, gameObjTarget);
                 }
 
                 // cast goober spell
@@ -3056,7 +3060,7 @@ void Spell::SendLoot(uint64 guid, LootType loottype)
                 if (gameObjTarget->GetGOInfo()->chest.eventId)
                 {
                     sLog.outDebug("Chest ScriptStart id %u for GO %u", gameObjTarget->GetGOInfo()->chest.eventId,gameObjTarget->GetDBTableGUIDLow());
-                    sWorld.ScriptsStart(sEventScripts, gameObjTarget->GetGOInfo()->chest.eventId, player, gameObjTarget);
+                    player->GetMap()->ScriptsStart(sEventScripts, gameObjTarget->GetGOInfo()->chest.eventId, player, gameObjTarget);
                 }
 
                 // triggering linked GO
@@ -5370,7 +5374,7 @@ void Spell::EffectScriptEffect(uint32 effIndex)
         return;
 
     sLog.outDebug("Spell ScriptStart spellid %u in EffectScriptEffect ", m_spellInfo->Id);
-    sWorld.ScriptsStart(sSpellScripts, m_spellInfo->Id, m_caster, unitTarget);
+    m_caster->GetMap()->ScriptsStart(sSpellScripts, m_spellInfo->Id, m_caster, unitTarget);
 }
 
 void Spell::EffectSanctuary(uint32 /*i*/)
@@ -5554,7 +5558,7 @@ void Spell::EffectActivateObject(uint32 effect_idx)
 
     int32 delay_secs = m_spellInfo->EffectMiscValue[effect_idx];
 
-    sWorld.ScriptCommandStart(activateCommand, delay_secs, m_caster, gameObjTarget);
+    gameObjTarget->GetMap()->ScriptCommandStart(activateCommand, delay_secs, m_caster, gameObjTarget);
 }
 
 void Spell::EffectApplyGlyph(uint32 i)
