@@ -1215,7 +1215,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         void RemoveAurasDueToSpellBySteal(uint32 spellId, uint64 casterGUID, Unit *stealer);
         void RemoveAurasDueToSpellByCancel(uint32 spellId);
         void RemoveAurasAtChanneledTarget(SpellEntry const* spellInfo);
-        void RemoveNotOwnSingleTargetAuras();
+        void RemoveNotOwnSingleTargetAuras(uint32 newPhase = 0x0);
 
         void RemoveSpellsCausingAura(AuraType auraType, uint32 mechanic = 0);
         void RemoveRankAurasDueToSpell(uint32 spellId);

@@ -1686,12 +1686,19 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,UnitList& TagUnitMap)
         case TARGET_ALL_ENEMY_IN_AREA_INSTANT:
         {
             // targets the ground, not the units in the area
-            if (m_spellInfo->Effect[i]!=SPELL_EFFECT_PERSISTENT_AREA_AURA)
+            switch(m_spellInfo->Effect[i])
             {
-                FillAreaTargets(TagUnitMap,m_targets.m_destX, m_targets.m_destY,radius,PUSH_DEST_CENTER,SPELL_TARGETS_AOE_DAMAGE);
+                case SPELL_EFFECT_PERSISTENT_AREA_AURA:
+                    break;
+                case SPELL_EFFECT_SUMMON:
+                    TagUnitMap.push_back(m_caster);
+                    break;
+                default:
+                    FillAreaTargets(TagUnitMap,m_targets.m_destX, m_targets.m_destY,radius,PUSH_DEST_CENTER,SPELL_TARGETS_AOE_DAMAGE);
 
-                // exclude caster (this can be important if this not original caster)
-                TagUnitMap.remove(m_caster);
+                    // exclude caster (this can be important if this not original caster)
+                    TagUnitMap.remove(m_caster);
+                    break;
             }
             break;
         }
@@ -1713,7 +1720,7 @@ void Spell::SetTargetMap(uint32 i,uint32 cur,UnitList& TagUnitMap)
         {
             if(m_spellInfo->Id == 57669)                    // Replenishment (special target selection)
                 FillRaidOrPartyManaPriorityTargets(TagUnitMap, m_caster, m_caster, radius, 10, true, false, true);
-            else if (m_spellInfo->Id==52759)                //Ancestral Awakening (special target selection)
+            else if (m_spellInfo->Id==52759)                // Ancestral Awakening (special target selection)
                 FillRaidOrPartyHealthPriorityTargets(TagUnitMap, m_caster, m_caster, radius, 1, true, false, true);
             else
                 FillRaidOrPartyTargets(TagUnitMap, m_caster, m_caster, radius, true, true, true);
@@ -4371,6 +4378,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                     case SUMMON_TYPE_DEMON:
                     case SUMMON_TYPE_SUMMON:
                     case SUMMON_TYPE_ELEMENTAL:
+                    case SUMMON_TYPE_INFERNO:
                     {
                         if(m_caster->GetPetGUID())
                             return SPELL_FAILED_ALREADY_HAVE_SUMMON;
@@ -4585,16 +4593,16 @@ SpellCastResult Spell::CheckCast(bool strict)
 
                 break;
             }
-            case SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED:
             case SPELL_AURA_FLY:
+            case SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED:
             {
-                // not allow cast fly spells at old maps by players (all spells is self target)
-                if(m_caster->GetTypeId() == TYPEID_PLAYER)
+                // not allow cast fly spells if not have req. skills  (all spells is self target)
+                // allow always ghost flight spells
+                if (m_caster->GetTypeId() == TYPEID_PLAYER && m_caster->isAlive())
                 {
-                    if( !((Player*)m_caster)->IsAllowUseFlyMountsHere() )
-                        return SPELL_FAILED_NOT_HERE;
+                    if (!((Player*)m_caster)->IsKnowHowFlyIn(m_caster->GetMapId(),zone))
+                        return m_IsTriggeredSpell ? SPELL_FAILED_DONT_REPORT : SPELL_FAILED_NOT_HERE;
                 }
-
                 break;
             }
             case SPELL_AURA_PERIODIC_MANA_LEECH:
@@ -5490,9 +5498,10 @@ bool Spell::CheckTargetCreatureType(Unit* target) const
 {
     uint32 spellCreatureTargetMask = m_spellInfo->TargetCreatureType;
 
-    // Curse of Doom & Exorcism : not find another way to fix spell target check :/
-    if ((m_spellInfo->SpellFamilyName==SPELLFAMILY_WARLOCK || m_spellInfo->SpellFamilyName==SPELLFAMILY_PALADIN) &&
-        m_spellInfo->SpellFamilyFlags == UI64LIT(0x0200000000))
+    // Curse of Doom & Exorcism: not find another way to fix spell target check :/
+    if (m_spellInfo->SpellFamilyName==SPELLFAMILY_WARLOCK && m_spellInfo->Category == 1179 ||
+        // TODO: will be removed in 3.2.x
+        m_spellInfo->SpellFamilyName==SPELLFAMILY_PALADIN && m_spellInfo->Category == 19)
     {
         // not allow cast at player
         if(target->GetTypeId()==TYPEID_PLAYER)
