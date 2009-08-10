@@ -8093,36 +8093,51 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
     }
 
     // Custom scripted damage
-    if (spellProto->SpellFamilyName == SPELLFAMILY_MAGE)
+    switch(spellProto->SpellFamilyName)
     {
-        // Ice Lance
-        if (spellProto->SpellIconID == 186 && pVictim->isFrozen())
-                DoneTotalMod *= 3.0f;
-
-        // Torment the Weak
-        if (spellProto->SpellFamilyFlags & 0x0000900020200021LL && pVictim->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED))
+        case SPELLFAMILY_MAGE:
+        {
+            // Ice Lance
+            if (spellProto->SpellIconID == 186)
+            {
+                if (pVictim->isFrozen())
+                    DoneTotalMod *= 3.0f;
+            }
+            // Torment the weak affected (Arcane Barrage, Arcane Blast, Frostfire Bolt, Arcane Missiles, Fireball)
+            if ((spellProto->SpellFamilyFlags & UI64LIT(0x0000900020200021)) && 
+                (pVictim->HasAuraType(SPELL_AURA_MOD_DECREASE_SPEED) || pVictim->HasAuraType(SPELL_AURA_MELEE_SLOW)))
+            {
+                //Search for Torment the weak dummy aura
+                Unit::AuraList const& ttw = GetAurasByType(SPELL_AURA_DUMMY);
+                for(Unit::AuraList::const_iterator i = ttw.begin(); i != ttw.end(); ++i)
+                {
+                    if ((*i)->GetSpellProto()->SpellIconID == 3263)
+                    {
+                        DoneTotalMod *= ((*i)->GetModifier()->m_amount+100.0f) / 100.0f;
+                        break;
+                    }
+                }
+            }
+            break;
+        }
+        case SPELLFAMILY_DRUID:
         {
             Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
             for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
-                if ((*i)->GetMiscValue() == 11)
-                    DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
-        }
-    }
-    else if (spellProto->SpellFamilyName == SPELLFAMILY_DRUID)
-    {
-        Unit::AuraList const &dummy = GetAurasByType(SPELL_AURA_DUMMY);
-        for(Unit::AuraList::const_iterator i = dummy.begin(); i != dummy.end(); i++)
-        {
-            // Rend and Tear
-            if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
-                (spellProto->SpellFamilyFlags & (uint64)(*i)->getAuraSpellClassMask()) &&
-                (*i)->GetMiscValue() == 7 &&
-                pVictim->isBleeding())
             {
-                DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
-                break;
+                // Rend and Tear
+                if ((*i)->GetSpellProto()->SpellFamilyName == SPELLFAMILY_DRUID &&
+                    (spellProto->SpellFamilyFlags & (uint64)(*i)->getAuraSpellClassMask()) &&
+                    (*i)->GetMiscValue() == 7 &&
+                    pVictim->isBleeding())
+                {
+                    DoneTotalMod += DoneTotalMod * (*i)->GetModifier()->m_amount / 100;
+                    break;
+                }
             }
         }
+        default:
+            break;
     }
 
     // ..taken
