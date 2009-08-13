@@ -3754,7 +3754,7 @@ void Aura::HandleModStealth(bool apply, bool Real)
 {
     if (apply)
     {
-        pTarget->RemoveAllAttackers();
+        m_target->RemoveAllAttackers();
 
         // drop flag at stealth in bg
          m_target->RemoveAurasWithInterruptFlags(AURA_INTERRUPT_FLAG_IMMUNE_OR_LOST_SELECTION);
@@ -4232,15 +4232,16 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
     m_target->ApplySpellImmune(GetId(),IMMUNITY_MECHANIC,misc,apply);
 
     // Demonic Circle
-    if (spellInfo->SpellFamilyName == SPELLFAMILY_WARLOCK && spellInfo->SpellIconID == 3221)
+	SpellEntry const *spell = GetSpellProto();
+    if (spell->SpellFamilyName == SPELLFAMILY_WARLOCK && spell->SpellIconID == 3221)
     {
-        if (target->GetTypeId() != TYPEID_PLAYER)
+        if (m_target->GetTypeId() != TYPEID_PLAYER)
             return;
         if (apply)
         {
-            GameObject* obj = target->GetGameObject(48018);
+            GameObject* obj = m_target->GetGameObject(48018);
             if (obj)
-                ((Player*)target)->TeleportTo(obj->GetMapId(),obj->GetPositionX(),obj->GetPositionY(),obj->GetPositionZ(),obj->GetOrientation());
+                ((Player*)m_target)->TeleportTo(obj->GetMapId(),obj->GetPositionX(),obj->GetPositionY(),obj->GetPositionZ(),obj->GetOrientation());
         }
     }
     // Bestial Wrath
