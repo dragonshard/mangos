@@ -4232,8 +4232,7 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
     m_target->ApplySpellImmune(GetId(),IMMUNITY_MECHANIC,misc,apply);
 
     // Demonic Circle
-	SpellEntry const *spell = GetSpellProto();
-    if (spell->SpellFamilyName == SPELLFAMILY_WARLOCK && spell->SpellIconID == 3221)
+    if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARLOCK && GetSpellProto()->SpellIconID == 3221)
     {
         if (m_target->GetTypeId() != TYPEID_PLAYER)
             return;
@@ -4245,7 +4244,7 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
         }
     }
     // Bestial Wrath
-    if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellIconID == 1680)
+    else if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_HUNTER && GetSpellProto()->SpellIconID == 1680)
     {
         // The Beast Within cast on owner if talent present
         if (Unit* owner = m_target->GetOwner())
