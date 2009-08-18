@@ -410,8 +410,8 @@ void WorldSession::HandleSetSelectionOpcode( WorldPacket & recv_data )
 
 void WorldSession::HandleStandStateChangeOpcode( WorldPacket & recv_data )
 {
-    sLog.outDebug( "WORLD: Received CMSG_STAND_STATE_CHANGE"  );
-    uint8 animstate;
+    // sLog.outDebug( "WORLD: Received CMSG_STANDSTATECHANGE"  ); -- too many spam in log at lags/debug stop
+    uint32 animstate;
     recv_data >> animstate;
 
     _player->SetStandState(animstate);
@@ -634,7 +634,7 @@ void WorldSession::HandleReclaimCorpseOpcode(WorldPacket &recv_data)
     if(corpse->GetGhostTime() + GetPlayer()->GetCorpseReclaimDelay(corpse->GetType()==CORPSE_RESURRECTABLE_PVP) > time(NULL))
         return;
 
-    if (!corpse->IsWithinDist(GetPlayer(),CORPSE_RECLAIM_RADIUS,false))
+    if (!corpse->IsWithinDist(GetPlayer(), CORPSE_RECLAIM_RADIUS, true))
         return;
 
     uint64 guid;
@@ -721,21 +721,31 @@ void WorldSession::HandleAreaTriggerOpcode(WorldPacket & recv_data)
     else
     {
         // we have only extent
-        float dx = pl->GetPositionX() - atEntry->x;
-        float dy = pl->GetPositionY() - atEntry->y;
-        float dz = pl->GetPositionZ() - atEntry->z;
-        double es = sin(atEntry->box_orientation);
-        double ec = cos(atEntry->box_orientation);
-        // calc rotated vector based on extent axis
-        double rotateDx = dx*ec - dy*es;
-        double rotateDy = dx*es + dy*ec;
 
-        if( (fabs(rotateDx) > atEntry->box_x/2 + delta) ||
-            (fabs(rotateDy) > atEntry->box_y/2 + delta) ||
+        // rotate the players position instead of rotating the whole cube, that way we can make a simplified
+        // is-in-cube check and we have to calculate only one point instead of 4
+
+        // 2PI = 360°, keep in mind that ingame orientation is counter-clockwise
+        double rotation = 2*M_PI-atEntry->box_orientation;
+        double sinVal = sin(rotation);
+        double cosVal = cos(rotation);
+
+        float playerBoxDistX = pl->GetPositionX() - atEntry->x;
+        float playerBoxDistY = pl->GetPositionY() - atEntry->y;
+
+        float rotPlayerX = atEntry->x + playerBoxDistX * cosVal - playerBoxDistY*sinVal;
+        float rotPlayerY = atEntry->y + playerBoxDistY * cosVal + playerBoxDistX*sinVal;
+
+        // box edges are parallel to coordiante axis, so we can treat every dimension independently :D
+        float dz = pl->GetPositionZ() - atEntry->z;
+        float dx = rotPlayerX - atEntry->x;
+        float dy = rotPlayerY - atEntry->y;
+        if( (fabs(dx) > atEntry->box_x/2 + delta) ||
+            (fabs(dy) > atEntry->box_y/2 + delta) ||
             (fabs(dz) > atEntry->box_z/2 + delta) )
         {
-            sLog.outDebug("Player '%s' (GUID: %u) too far (1/2 box X: %f 1/2 box Y: %f 1/2 box Z: %f rotate dX: %f rotate dY: %f dZ:%f), ignore Area Trigger ID: %u",
-                pl->GetName(), pl->GetGUIDLow(), atEntry->box_x/2, atEntry->box_y/2, atEntry->box_z/2, rotateDx, rotateDy, dz, Trigger_ID);
+            sLog.outDebug("Player '%s' (GUID: %u) too far (1/2 box X: %f 1/2 box Y: %f 1/2 box Z: %f rotatedPlayerX: %f rotatedPlayerY: %f dZ:%f), ignore Area Trigger ID: %u",
+                pl->GetName(), pl->GetGUIDLow(), atEntry->box_x/2, atEntry->box_y/2, atEntry->box_z/2, rotPlayerX, rotPlayerY, dz, Trigger_ID);
             return;
         }
     }
@@ -982,11 +992,12 @@ void WorldSession::HandleNextCinematicCamera( WorldPacket & /*recv_data*/ )
     DEBUG_LOG( "WORLD: Which movie to play" );
 }
 
-void WorldSession::HandleMoveTimeSkippedOpcode( WorldPacket & /*recv_data*/ )
+void WorldSession::HandleMoveTimeSkippedOpcode( WorldPacket & recv_data )
 {
     /*  WorldSession::Update( getMSTime() );*/
     DEBUG_LOG( "WORLD: Time Lag/Synchronization Resent/Update" );
 
+    recv_data.read_skip2<uint64,uint32>();
     /*
         uint64 guid;
         uint32 time_skipped;
@@ -1007,19 +1018,20 @@ void WorldSession::HandleFeatherFallAck(WorldPacket &/*recv_data*/)
     DEBUG_LOG("WORLD: CMSG_MOVE_FEATHER_FALL_ACK");
 }
 
-void WorldSession::HandleMoveUnRootAck(WorldPacket&/* recv_data*/)
+void WorldSession::HandleMoveUnRootAck(WorldPacket& recv_data)
 {
-    /*
+    sLog.outDebug( "WORLD: CMSG_FORCE_MOVE_UNROOT_ACK" );
 
-        sLog.outDebug( "WORLD: CMSG_FORCE_MOVE_UNROOT_ACK" );
+    recv_data.read_skip<uint64>();                          // guid
+    recv_data.read_skip<uint64>();                          // unknown1
+    recv_data.read_skip<uint32>();                          // unknown2
+    recv_data.read_skip<float>();                           // PositionX
+    recv_data.read_skip<float>();                           // PositionY
+    recv_data.read_skip<float>();                           // PositionZ
+    recv_data.read_skip<float>();                           // Orientation
+    
+    /*
         recv_data.hexlike();
-        uint64 guid;
-        uint64 unknown1;
-        uint32 unknown2;
-        float PositionX;
-        float PositionY;
-        float PositionZ;
-        float Orientation;
 
         recv_data >> guid;
         recv_data >> unknown1;
@@ -1040,8 +1052,16 @@ void WorldSession::HandleMoveUnRootAck(WorldPacket&/* recv_data*/)
     */
 }
 
-void WorldSession::HandleMoveRootAck(WorldPacket&/* recv_data*/)
+void WorldSession::HandleMoveRootAck(WorldPacket& recv_data)
 {
+    recv_data.read_skip<uint64>();                          // guid
+    recv_data.read_skip<uint64>();                          // unknown1
+    recv_data.read_skip<uint32>();                          // unknown2
+    recv_data.read_skip<float>();                           // PositionX
+    recv_data.read_skip<float>();                           // PositionY
+    recv_data.read_skip<float>();                           // PositionZ
+    recv_data.read_skip<float>();                           // Orientation
+
     /*
         sLog.outDebug( "WORLD: CMSG_FORCE_MOVE_ROOT_ACK" );
         recv_data.hexlike();
@@ -1088,8 +1108,9 @@ void WorldSession::HandleSetActionBarToggles(WorldPacket& recv_data)
     GetPlayer()->SetByteValue(PLAYER_FIELD_BYTES, 2, ActionBar);
 }
 
-void WorldSession::HandleWardenDataOpcode(WorldPacket& /*recv_data*/)
+void WorldSession::HandleWardenDataOpcode(WorldPacket& recv_data)
 {
+    recv_data.read_skip<uint8>();
     /*
         uint8 tmp;
         recv_data >> tmp;
