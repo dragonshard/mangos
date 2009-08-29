@@ -766,6 +766,7 @@ bool AuthSocket::_HandleReconnectChallenge()
 
     _login = (const char*)ch->I;
     _safelogin = _login;
+    loginDatabase.escape_string(_safelogin);
 
     QueryResult *result = loginDatabase.PQuery ("SELECT sessionkey FROM account WHERE username = '%s'", _safelogin.c_str ());
 
@@ -926,7 +927,7 @@ bool AuthSocket::_HandleXferResume()
     ibuf.Read((char*)&start,sizeof(start));
     fseek(pPatch, start, 0);
 
-    ACE_Based::Thread u(*new PatcherRunnable(this));
+    ACE_Based::Thread u(new PatcherRunnable(this));
     return true;
 }
 
@@ -959,7 +960,7 @@ bool AuthSocket::_HandleXferAccept()
     ibuf.Remove(1);                                         // clear input buffer
     fseek(pPatch, 0, 0);
 
-    ACE_Based::Thread u(*new PatcherRunnable(this));
+    ACE_Based::Thread u(new PatcherRunnable(this));
     return true;
 }
 
