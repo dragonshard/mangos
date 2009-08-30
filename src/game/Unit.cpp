@@ -11585,7 +11585,9 @@ void Unit::SetFeared(bool apply, uint64 casterGUID, uint32 spellID, uint32 time,
 
 void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID, bool death)
 {
-    if( apply )
+    Unit::AuraList const& confuseAuras = GetAurasByType(SPELL_AURA_MOD_CONFUSE);
+
+    if (apply && !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED))
     {
         SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
@@ -11593,7 +11595,7 @@ void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID, bool death
 
         GetMotionMaster()->MoveConfused();
     }
-    else
+    else if(!apply && confuseAuras.empty())
     {
         RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED);
 
@@ -11606,9 +11608,11 @@ void Unit::SetConfused(bool apply, uint64 casterGUID, uint32 spellID, bool death
                 GetMotionMaster()->MoveChase(getVictim());
         }
     }
+    else
+        return;
 
     if(GetTypeId() == TYPEID_PLAYER)
-        ((Player*)this)->SetClientControl(this, !apply);
+        ((Player*)this)->SetClientControl(this, !HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_CONFUSED));
 }
 
 bool Unit::IsSitState() const

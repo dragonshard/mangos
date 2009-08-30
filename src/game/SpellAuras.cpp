@@ -3588,12 +3588,6 @@ void Aura::HandleModConfuse(bool apply, bool Real)
     if(!Real)
         return;
 
-    // check if there are no other confuse auras
-    Unit::AuraList const& confuseAuras = m_target->GetAurasByType(SPELL_AURA_MOD_CONFUSE);
-    if(!apply && !confuseAuras.empty())
-        return;
-
-
     m_target->SetConfused(apply, GetCasterGUID(), GetId(), m_removeMode==AURA_REMOVE_BY_DEATH);
 }
 
