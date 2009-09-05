@@ -119,9 +119,6 @@ class CharacterHandler
 
 void WorldSession::HandleCharEnum(QueryResult * result)
 {
-    // keys can be non cleared if player open realm list and close it by 'cancel'
-    loginDatabase.PExecute("UPDATE account SET v = '0', s = '0' WHERE id = '%u'", GetAccountId());
-
     WorldPacket data(SMSG_CHAR_ENUM, 100);                  // we guess size
 
     uint8 num = 0;
@@ -1296,7 +1293,7 @@ void WorldSession::HandleEquipmentSetUse(WorldPacket &recv_data)
         uint8 srcbag, srcslot;
         recv_data >> srcbag >> srcslot;
 
-        sLog.outDebug("Item " I64FMT ": srcbag %u, srcslot %u", itemGuid, srcbag, srcslot);
+        sLog.outDebug("Item " UI64FMTD ": srcbag %u, srcslot %u", itemGuid, srcbag, srcslot);
 
         Item *item = _player->GetItemByGuid(itemGuid);
 
