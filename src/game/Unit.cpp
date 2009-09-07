@@ -7281,6 +7281,7 @@ bool Unit::HandleOverrideClassScriptAuraProc(Unit *pVictim, uint32 damage, Aura 
                 default:
                     break;
             }
+            return true;
         }
         case 8152:                                          // Serendipity
         {
