@@ -6278,27 +6278,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 return false;
                 break;
             }
-            // Sudden Doom
-            if (dummySpell->SpellIconID == 1939)
-            {
-                if (!target ||GetTypeId() != TYPEID_PLAYER)
-                    return false;
-
-                int32 maxrank = 0;
-                Player* tHis = ((Player*)this);
-                for(PlayerSpellMap::const_iterator itr = tHis->GetSpellMap().begin(); itr != tHis->GetSpellMap().end(); ++itr)
-                    if (47541 == spellmgr.GetFirstSpellInChain(itr->first) && (!maxrank || spellmgr.GetSpellRank(itr->first) > spellmgr.GetSpellRank(maxrank)))
-                        maxrank = itr->first;
-
-                if (!maxrank)
-                    return false;
-
-                const SpellEntry* deathcoil = sSpellStore.LookupEntry(maxrank);
-                tHis->ApplyModSignedFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + SPELL_SCHOOL_SHADOW, -1, true);
-                CastSpell(target, maxrank, true, castItem, triggeredByAura);
-                tHis->ApplyModSignedFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + SPELL_SCHOOL_SHADOW, -1, false);
-                return true;
-            }
             break;
         }
         case SPELLFAMILY_DEATHKNIGHT:
