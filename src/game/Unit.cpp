@@ -5930,15 +5930,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         return true;
                     break;
                 }
-                // Seal of Corruption (damage calc on apply aura)
-                case 53736:
-                {
-                    if(effIndex != 0)                       // effect 1,2 used by seal unleashing code
-                        return false;
-
-                    triggered_spell_id = 53742;
-                    break;
-                }
                 // Paladin Tier 6 Trinket (Ashtongue Talisman of Zeal)
                 case 40470:
                 {
@@ -5965,27 +5956,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     if (!roll_chance_f(chance))
                         return false;
 
-                    break;
-                }
-                // Light's Beacon
-                case 53651:
-                {
-                    if (!pVictim)
-                        return false;
-
-                    if (Unit* caster = triggeredByAura->GetCaster())
-                    {
-                        if (caster->GetGUID() == GetGUID())
-                            return false;
-
-                        Aura * dummy = caster->GetDummyAura(53563);
-                        if (dummy && dummy->GetCasterGUID() == pVictim->GetGUID())
-                        {
-                            triggered_spell_id = 53652;
-                            basepoints0 = triggeredByAura->GetModifier()->m_amount*damage/100;
-                            target = caster;
-                        }
-                    }
                     break;
                 }
                 // Glyph of Divinity
