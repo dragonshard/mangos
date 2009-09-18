@@ -24,7 +24,7 @@ CREATE TABLE `db_version` (
   `version` varchar(120) default NULL,
   `creature_ai_version` varchar(120) default NULL,
   `cache_id` int(10) default '0',
-  `required_8498_01_mangos_spell_proc_event` bit(1) default NULL
+  `required_8504_02_mangos_playercreateinfo_action` bit(1) default NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ROW_FORMAT=FIXED COMMENT='Used DB version notes';
 
 --
@@ -9746,7 +9746,7 @@ INSERT INTO `playercreateinfo_action` VALUES
 (1,1,96,6603,0),
 (1,1,108,6603,0),
 (1,2,0,6603,0),
-(1,2,1,20154,0),
+(1,2,1,21084,0),
 (1,2,2,635,0),
 (1,2,9,59752,0),
 (1,2,10,159,128),
@@ -9833,7 +9833,7 @@ INSERT INTO `playercreateinfo_action` VALUES
 (3,1,96,6603,0),
 (3,1,108,6603,0),
 (3,2,0,6603,0),
-(3,2,1,20154,0),
+(3,2,1,21084,0),
 (3,2,2,635,0),
 (3,2,3,20594,0),
 (3,2,4,2481,0),
@@ -10295,7 +10295,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (1,2,9078,'Cloth'),
 (1,2,9116,'Shield'),
 (1,2,9125,'Generic'),
-(1,2,20154,'Seal of Righteousness'),
+(1,2,21084,'Seal of Righteousness'),
 (1,2,20597,'Sword Specialization'),
 (1,2,20598,'The Human Spirit'),
 (1,2,20599,'Diplomacy'),
@@ -10882,7 +10882,7 @@ INSERT INTO `playercreateinfo_spell` VALUES
 (3,2,9078,'Cloth'),
 (3,2,9116,'Shield'),
 (3,2,9125,'Generic'),
-(3,2,20154,'Seal of Righteousness'),
+(3,2,21084,'Seal of Righteousness'),
 (3,2,20594,'Stoneform'),
 (3,2,20595,'Gun Specialization'),
 (3,2,20596,'Frost Resistance'),
@@ -17044,11 +17044,28 @@ INSERT INTO `spell_elixir` VALUES
 (45373,0x1),
 (46837,0xB),
 (46839,0xB),
+(53747,0x2),
+(53748,0x1),
+(53746,0x1),
+(53749,0x1),
+(53751,0x2),
 (53752,0x3),
 (53755,0x3),
 (53758,0x3),
 (53760,0x3),
+(53763,0x2),
+(53764,0x2),
 (54212,0x3),
+(54452,0x1),
+(54494,0x1),
+(54497,0x2),
+(60340,0x1),
+(60341,0x1),
+(60343,0x2),
+(60344,0x1),
+(60345,0x1),
+(60346,0x1),
+(60347,0x2),
 (62380,0x3);
 
 
