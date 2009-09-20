@@ -6366,12 +6366,6 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     if (m_spellProto->SpellIconID == 50)    // only spell with this aura fit
                         m_modifier.m_amount = int32(m_modifier.m_amount * m_target->GetTotalAttackPowerValue(BASE_ATTACK) / 100);
                     break;
-                case SPELLFAMILY_PALADIN:
-                    // Sacred Shield
-                    if (m_spellProto->SpellFamilyFlags == UI64LIT(0x8000000000000))
-                        // +75% from +healing
-                        DoneActualBenefit = caster->SpellBaseHealingBonus(GetSpellSchoolMask(m_spellProto)) * 0.75f;
-                    break;
                 default:
                     break;
             }
