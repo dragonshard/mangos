@@ -1666,6 +1666,25 @@ void Spell::EffectDummy(uint32 i)
                     ((Player*)m_caster)->GetSession()->SendPacket(&data);
                     return;
                 }
+                // Last Stand
+                case 53478:
+                {
+                    if (!unitTarget)
+                        return;
+                    int32 healthModSpellBasePoints0 = int32(unitTarget->GetMaxHealth() * 0.3);
+                    unitTarget->CastCustomSpell(unitTarget, 53479, &healthModSpellBasePoints0, NULL, NULL, true, NULL);
+                    return;
+                }
+                // Master's Call
+                case 53271:
+                {
+                    Pet* pet = m_caster->GetPet();
+                    if (!pet || !unitTarget)
+                        return;
+
+                    pet->CastSpell(unitTarget, m_spellInfo->CalculateSimpleValue(i), true);
+                    return;
+                }
             }
             break;
         case SPELLFAMILY_PALADIN:
@@ -3413,6 +3432,7 @@ void Spell::EffectSummonType(uint32 i)
                 EffectSummonGuardian(i);
             break;
         case SUMMON_TYPE_WILD:
+        case SUMMON_TYPE_QUEST_WILD:
         case SUMMON_TYPE_CREATURE:
             EffectSummonWild(i);
             break;
@@ -5502,6 +5522,16 @@ void Spell::EffectScriptEffect(uint32 effIndex)
                     }
                     return;
                 }
+                // Master's Call
+                case 53271:
+                {
+                    if (!unitTarget)
+                        return;
+
+                    // script effect have in value, but this outdated removed part
+                    unitTarget->CastSpell(unitTarget, 62305, true);
+                    return;
+                }
                 default:
                     break;
             }
@@ -6996,7 +7026,7 @@ void Spell::EffectActivateRune(uint32  eff_idx)
 
     for(uint32 j = 0; j < MAX_RUNES; ++j)
     {
-        if(plr->GetRuneCooldown(j) && plr->GetCurrentRune(j) == m_spellInfo->EffectMiscValue[eff_idx])
+        if(plr->GetRuneCooldown(j) && plr->GetCurrentRune(j) == RuneType(m_spellInfo->EffectMiscValue[eff_idx]))
         {
             plr->SetRuneCooldown(j, 0);
         }

@@ -448,6 +448,13 @@ m_isRemovedOnShapeLost(true), m_in_use(0), m_deleted(false)
                               m_spellProto->Stances &&
                             !(m_spellProto->AttributesEx2 & SPELL_ATTR_EX2_NOT_NEED_SHAPESHIFT) &&
                             !(m_spellProto->Attributes & SPELL_ATTR_NOT_SHAPESHIFT));
+
+    if (caster && m_spellProto->Id == 22959)                // Improved Scorch
+    {
+        // Glyph of Improved Scorch
+        if (Aura* glyph = caster->GetDummyAura(56371))
+            m_stackAmount = glyph->GetModifier()->m_amount;
+    }
 }
 
 Aura::~Aura()
@@ -742,8 +749,8 @@ void AreaAura::Update(uint32 diff)
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyFriendlyUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
                     CellLock<GridReadGuard> cell_lock(cell, p);
-                    cell_lock->Visit(cell_lock, world_unit_searcher, *caster->GetMap());
-                    cell_lock->Visit(cell_lock, grid_unit_searcher, *caster->GetMap());
+                    cell_lock->Visit(cell_lock, world_unit_searcher, *caster->GetMap(), *caster, m_radius);
+                    cell_lock->Visit(cell_lock, grid_unit_searcher, *caster->GetMap(), *caster, m_radius);
                     break;
                 }
                 case AREA_AURA_ENEMY:
@@ -758,8 +765,8 @@ void AreaAura::Update(uint32 diff)
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, WorldTypeMapContainer > world_unit_searcher(searcher);
                     TypeContainerVisitor<MaNGOS::UnitListSearcher<MaNGOS::AnyAoETargetUnitInObjectRangeCheck>, GridTypeMapContainer >  grid_unit_searcher(searcher);
                     CellLock<GridReadGuard> cell_lock(cell, p);
-                    cell_lock->Visit(cell_lock, world_unit_searcher, *caster->GetMap());
-                    cell_lock->Visit(cell_lock, grid_unit_searcher, *caster->GetMap());
+                    cell_lock->Visit(cell_lock, world_unit_searcher, *caster->GetMap(), *caster, m_radius);
+                    cell_lock->Visit(cell_lock, grid_unit_searcher, *caster->GetMap(), *caster, m_radius);
                     break;
                 }
                 case AREA_AURA_OWNER:
@@ -3807,23 +3814,6 @@ void Aura::HandleAuraModStun(bool apply, bool Real)
             else
                 delete pObj;
         }
-        // Glyph of Ice Block
-        else if (GetId() == 45438 && m_target->HasAura(56372, 0))
-        {
-            // immediately finishes the cooldown on Frost Nova spells
-            const PlayerSpellMap& sp_list = ((Player *)m_target)->GetSpellMap();
-            for (PlayerSpellMap::const_iterator itr = sp_list.begin(); itr != sp_list.end(); ++itr)
-            {
-                if (itr->second->state == PLAYERSPELL_REMOVED)
-                    continue;
-
-                uint32 ClassSpell = itr->first;
-                SpellEntry const *SpellInfo = sSpellStore.LookupEntry(ClassSpell);
-
-                if (SpellInfo->SpellIconID == 193)
-                    ((Player*)m_target)->RemoveSpellCooldown(ClassSpell, true);
-            }
-        }
     }
     else
     {
@@ -5209,7 +5199,8 @@ void Aura::HandleAuraModIncreaseHealth(bool apply, bool Real)
         case 12976:                                         // Warrior Last Stand triggered spell
         case 28726:                                         // Nightmare Seed ( Nightmare Seed )
         case 34511:                                         // Valor (Bulwark of Kings, Bulwark of the Ancient Kings)
-        case 44055:                                         // Tremendous Fortitude (Battlemaster's Alacrity)
+        // FIXME: add case 67596: in 3.2.x 
+        case 44055: case 55915: case 55917:                 // Tremendous Fortitude (Battlemaster's Alacrity)
         case 50322:                                         // Survival Instincts
         case 54443:                                         // Demonic Empowerment (Voidwalker)
         {
@@ -7303,8 +7294,8 @@ void Aura::PeriodicDummyTick()
 
                         CellLock<GridReadGuard> cell_lock(cell, p);
 
-                        cell_lock->Visit(cell_lock, grid_object_checker,  *caster->GetMap());
-                        cell_lock->Visit(cell_lock, world_object_checker, *caster->GetMap());
+                        cell_lock->Visit(cell_lock, grid_object_checker,  *caster->GetMap(), *caster, radius);
+                        cell_lock->Visit(cell_lock, world_object_checker, *caster->GetMap(), *caster, radius);
                     }
 
                     if(targets.empty())
@@ -7530,13 +7521,13 @@ void Aura::HandleAuraConvertRune(bool apply, bool Real)
         {
             if(!plr->GetRuneCooldown(i))
             {
-                plr->ConvertRune(i, GetSpellProto()->EffectMiscValueB[m_effIndex]);
+                plr->ConvertRune(i, RuneType(GetSpellProto()->EffectMiscValueB[m_effIndex]));
                 break;
             }
         }
         else
         {
-            if(plr->GetCurrentRune(i) == GetSpellProto()->EffectMiscValueB[m_effIndex])
+            if(plr->GetCurrentRune(i) == RuneType(GetSpellProto()->EffectMiscValueB[m_effIndex]))
             {
                 plr->ConvertRune(i, plr->GetBaseRune(i));
                 break;
