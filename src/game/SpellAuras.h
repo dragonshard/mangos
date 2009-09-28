@@ -214,6 +214,7 @@ class MANGOS_DLL_SPEC Aura
 
         void HandleAddCreatureImmunity(bool apply, bool Real);
         void HandleModTargetArmorPct(bool Apply, bool Real);
+        void HandleAuraModAllCritChance(bool Apply, bool Real);
 
         virtual ~Aura();
 
