@@ -1402,6 +1402,13 @@ void Aura::HandleAddModifier(bool apply, bool Real)
             case 36032:    // Arcane Blast
                 SetAuraCharges(0);
                 break;
+            case 33603:    // Wrath of Cenarius
+            case 33604:
+            case 33605:
+            case 33606:
+            case 33607:
+                m_modifier.m_auraname = AuraType(SPELLMOD_PCT);
+                break;
         }
 
         SpellModifier *mod = new SpellModifier;
