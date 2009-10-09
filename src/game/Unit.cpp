@@ -6350,6 +6350,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 return false;
                 break;
             }
+            // Earthen Power
+            if (dummySpell->SpellIconID == 2289)
+            {
+                if (!pVictim)
+                    return false;
+
+                CastSpell(pVictim, 59566, true, castItem, triggeredByAura);
+                CastSpell(pVictim, 63532, true, castItem, triggeredByAura);
+                return true;
+            }
             break;
         }
         case SPELLFAMILY_DEATHKNIGHT:
