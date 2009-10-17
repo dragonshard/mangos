@@ -5334,6 +5334,25 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     basepoints0 = int32(damage*triggerAmount/100);
                     target = this;
                     triggered_spell_id = 30294;
+
+                    const Unit::AuraList impSoulLeech = GetAurasByType(SPELL_AURA_DUMMY);
+                    for(Unit::AuraList::const_iterator itr = impSoulLeech.begin(); itr != impSoulLeech.end(); ++itr)
+                    {
+                        if (spellmgr.GetFirstSpellInChain((*itr)->GetId()) == 54117)
+                        {
+                            if ((*itr)->GetEffIndex() == 0)
+                            {
+                                // Energize self/pet
+                                CastCustomSpell(this, 54300, &(*itr)->GetModifier()->m_amount, NULL, NULL, true, castItem, (*itr));
+                                if (Unit *pet = GetPet())
+                                    CastCustomSpell(pet, 54607, &(*itr)->GetModifier()->m_amount, NULL, NULL, true, castItem, (*itr));
+                            }
+                            else
+                                // Replenishment
+                                if (roll_chance_i((*itr)->GetModifier()->m_amount))
+                                    CastSpell(this, 57669, true, castItem, (*itr));
+                        }
+                    }
                     break;
                 }
                 // Shadowflame (Voidheart Raiment set bonus)
