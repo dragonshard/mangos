@@ -5530,6 +5530,25 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     triggered_spell_id = 28848;
                     break;
                 }
+                // Improved Leader of the Pack
+                case 34297:
+                case 34300:
+                {
+                    target = this;
+
+                    if (effIndex == 0)
+                    {
+                        basepoints0 = target->GetMaxHealth() * triggerAmount / 100;
+                        triggered_spell_id = 34299;
+                    }
+                    else if(target == triggeredByAura->GetCaster())
+                    {
+                        basepoints0 = target->GetMaxPower(POWER_MANA) * triggerAmount / 100;
+                        triggered_spell_id = 60889;
+                    }
+
+                    break;
+                }
                 // Mana Restore (Malorne Raiment set / Malorne Regalia set)
                 case 37288:
                 case 37295:
@@ -6817,14 +6836,6 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 }
                 //else if (auraSpellInfo->Id==40363)// Entangling Roots ()
                 //    trigger_spell_id = ????;
-                // Leader of the Pack
-                else if (auraSpellInfo->Id == 24932)
-                {
-                    if (triggerAmount == 0)
-                        return false;
-                    basepoints[0] = triggerAmount * GetMaxHealth() / 100;
-                    trigger_spell_id = 34299;
-                }
                 break;
             }
             case SPELLFAMILY_HUNTER:
