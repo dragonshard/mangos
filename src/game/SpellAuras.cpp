@@ -4421,6 +4421,14 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
 
         ((Player*)m_target)->RemoveSpellCooldown(20252, true);
     }
+    // Berserk
+    else if(m_spellProto->SpellFamilyName == SPELLFAMILY_DRUID && m_spellProto->SpellFamilyFlags2 & 0x40)
+    {
+        if (apply)
+            m_target->CastSpell(m_target, 58923, true, 0, this);
+        else
+            m_target->RemoveAurasDueToSpell(58923);
+    }
 }
 
 //this method is called whenever we add / remove aura which gives m_target some imunity to some spell effect
