@@ -5752,7 +5752,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
 
                 if (Group* pGroup = ((Player*)this)->GetGroup())
                 {
-                    Unit* misdirect;
+                    target = this;
                     float threat = damage;
 
                     if (procSpell && IsDamageToThreatSpell(procSpell))
@@ -5762,14 +5762,14 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         if (itr->getSource() && itr->getSource()->GetGUID() != GetGUID() && 
                             itr->getSource()->GetAura(SPELL_AURA_DUMMY, SPELLFAMILY_HUNTER, 0,0, GetGUID()))
                         {
-                            misdirect = itr->getSource();
+                            target = itr->getSource();
                             break;
                         }
 
-                    if (misdirect && misdirect != this)
+                    if (target != this)
                     {
                         pVictim->AddThreat(this, -threat, procSpell ? SpellSchoolMask(procSpell->SchoolMask) : SPELL_SCHOOL_MASK_NORMAL, procSpell);
-                        pVictim->AddThreat(misdirect, threat, procSpell ? SpellSchoolMask(procSpell->SchoolMask) : SPELL_SCHOOL_MASK_NORMAL, procSpell);
+                        pVictim->AddThreat(target, threat, procSpell ? SpellSchoolMask(procSpell->SchoolMask) : SPELL_SCHOOL_MASK_NORMAL, procSpell);
                         return true;
                     }
                 }
