@@ -4414,7 +4414,7 @@ void Aura::HandleModMechanicImmunity(bool apply, bool /*Real*/)
         }
     }
     // Heroic Fury
-    else if(GetSpellProto()->SpellFamilyName == SPELLFAMILY_WARRIOR && GetSpellProto()->SpellIconID == 3149)
+    else if(GetSpellProto()->Id == 60970)
     {
         if (m_target->GetTypeId() != TYPEID_PLAYER)
             return;
