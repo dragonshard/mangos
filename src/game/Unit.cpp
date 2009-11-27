@@ -5436,6 +5436,19 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 RemoveSpellsCausingAura(SPELL_AURA_MOD_DECREASE_SPEED);
                 break;
             }
+            // Improved Devouring Plague
+            else if (dummySpell->SpellIconID == 3790)
+            {
+                if (effIndex != 1 || !target)
+                    return false;
+
+                if (Aura* devouring_plague = target->GetAura(SPELL_AURA_PERIODIC_LEECH, SPELLFAMILY_PRIEST, UI64LIT(0x100002000000), 0x400, GetGUID()))
+                {
+                    triggered_spell_id = 63675;
+                    basepoints0 = devouring_plague->GetModifier()->m_amount * devouring_plague->GetAuraDuration() / devouring_plague->GetModifier()->periodictime * triggerAmount / 100;
+                }
+                break;
+            }
 
             switch(dummySpell->Id)
             {
