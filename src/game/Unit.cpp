@@ -4884,6 +4884,30 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                         ((Player*)this)->Say("This is Madness!", LANG_UNIVERSAL);
                     break;
                 }
+                // Incanter's Absorption
+                case 44394:
+                case 44395:
+                case 44396:
+                {
+                    if (!target)
+                        return false;
+
+                    uint32 maxpower = target->GetMaxHealth() * 0.05f;
+                    uint32 dammod = damage * triggerAmount / 100;
+                    if (Aura* incanters_absorption = target->GetAura(SPELL_AURA_MOD_DAMAGE_DONE, SPELLFAMILY_MAGE, UI64LIT(0x1000000000000000), 0x8, target->GetGUID()))
+                    {
+                        dammod += incanters_absorption->GetModifier()->m_amount;
+                        incanters_absorption->GetModifier()->m_amount = dammod <= maxpower ? dammod : maxpower;
+                        incanters_absorption->RefreshAura();
+                        return true;
+                    }
+                    else
+                    {
+                        triggered_spell_id = 44413;
+                        basepoints0 = dammod <= maxpower ? dammod : maxpower;
+                    }
+                    break;
+                }
                 /*
                 // Sunwell Exalted Caster Neck (??? neck)
                 // cast ??? Light's Wrath if Exalted by Aldor
