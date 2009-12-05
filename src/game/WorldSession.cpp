@@ -785,7 +785,7 @@ void WorldSession::ReadAddonsInfo(WorldPacket &data)
         uint32 addonsCount;
         addonInfo >> addonsCount;                         // addons count
 
-        for(uint32 i = 0; i < addonsCount; ++i)
+        for(uint32 i = 0; i < addonsCount && i < 256; ++i)
         {
             std::string addonName;
             uint8 enabled;
