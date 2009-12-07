@@ -2380,20 +2380,6 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
             }
         }
 
-        // Vampiric touch
-        if (caster && m_spellProto->SpellFamilyName == SPELLFAMILY_PRIEST &&
-            m_spellProto->SpellFamilyFlags & UI64LIT(0x0000040000000000) &&
-            m_removeMode == AURA_REMOVE_BY_DISPEL)
-        {
-            if (Aura *dot = m_target->GetAura(SPELL_AURA_PERIODIC_DAMAGE, m_spellProto->SpellFamilyName, m_spellProto->SpellFamilyFlags, m_spellProto->SpellFamilyFlags2, GetCasterGUID()))
-            {
-                int32 bp0 = dot->GetModifier()->m_amount;
-                bp0 = 4 * caster->SpellDamageBonus(m_target, GetSpellProto(), bp0, DOT, GetStackAmount());
-                m_target->CastCustomSpell(m_target, 64085, &bp0, NULL, NULL, true, NULL, this, GetCasterGUID());
-            }
-            return;
-        }
-
         // Haunt
         if (caster && m_spellProto->SpellFamilyName == SPELLFAMILY_WARLOCK &&
             m_spellProto->SpellFamilyFlags & UI64LIT(0x4000000000000))
@@ -4871,6 +4857,21 @@ void Aura::HandlePeriodicDamage(bool apply, bool Real)
         // Parasitic Shadowfiend - handle summoning of two Shadowfiends on DoT expire
         if(m_spellProto->Id == 41917)
             m_target->CastSpell(m_target, 41915, true);
+
+        switch(m_spellProto->SpellFamilyName)
+        {
+            case SPELLFAMILY_PRIEST:
+            {
+                // Vampiric touch
+                if (GetCaster() && m_spellProto->SpellFamilyFlags & UI64LIT(0x0000040000000000) &&
+                    m_removeMode == AURA_REMOVE_BY_DISPEL)
+                {
+                    int32 bp0 = 4 * GetCaster()->SpellDamageBonus(m_target, m_spellProto, m_modifier.m_amount, DOT);
+                    m_target->CastCustomSpell(m_target, 64085, &bp0, NULL, NULL, true, NULL, this);
+                }
+                break;
+            }
+        }
     }
 }
 
