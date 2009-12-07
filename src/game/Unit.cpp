@@ -8325,7 +8325,7 @@ void Unit::EnergizeBySpell(Unit *pVictim, uint32 SpellID, uint32 Damage, Powers 
     pVictim->ModifyPower(powertype, Damage);
 }
 
-uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack, bool applyMods)
+uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint32 pdamage, DamageEffectType damagetype, uint32 stack)
 {
     if(!spellProto || !pVictim || damagetype==DIRECT_DAMAGE )
         return pdamage;
@@ -8538,6 +8538,13 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
                 }
             }
         }
+        case SPELLFAMILY_WARLOCK:
+        {
+            if (spellProto->TargetAuraState == AURA_STATE_CONFLAGRATE)
+                return pdamage;
+
+            break;
+        }
         default:
             break;
     }
@@ -8668,12 +8675,12 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
         TakenTotal+= int32(TakenAdvertisedBenefit * (CastingTime / 3500.0f) * DotFactor * LvlPenalty);
     }
 
-    float tmpDamage = (pdamage + DoneTotal) * (applyMods ? DoneTotalMod : 1);
+    float tmpDamage = (pdamage + DoneTotal) * DoneTotalMod;
     // apply spellmod to Done damage (flat and pct)
     if(Player* modOwner = GetSpellModOwner())
         modOwner->ApplySpellMod(spellProto->Id, damagetype == DOT ? SPELLMOD_DOT : SPELLMOD_DAMAGE, tmpDamage);
 
-    tmpDamage = (tmpDamage + TakenTotal) * (applyMods ? TakenTotalMod : 1);
+    tmpDamage = (tmpDamage + TakenTotal) * TakenTotalMod;
 
     return tmpDamage > 0 ? uint32(tmpDamage) : 0;
 }

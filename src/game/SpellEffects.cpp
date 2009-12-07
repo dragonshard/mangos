@@ -462,7 +462,7 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     // found Immolate or Shadowflame
                     if (aura)
                     {
-                        int32 damagetick = m_caster->SpellDamageBonus(unitTarget, aura->GetSpellProto(), aura->GetModifier()->m_amount, DOT, 1, false);
+                        int32 damagetick = m_caster->SpellDamageBonus(unitTarget, aura->GetSpellProto(), aura->GetModifier()->m_amount, DOT);
                         damage += damagetick * 4;
 
                         // Glyph of Conflagrate
