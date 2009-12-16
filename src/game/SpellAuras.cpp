@@ -312,7 +312,7 @@ pAuraHandler AuraHandler[TOTAL_AURAS]=
     &Aura::HandleNULL,                                      //259 corrupt healing over time spell
     &Aura::HandleNoImmediateEffect,                         //260 SPELL_AURA_SCREEN_EFFECT (miscvalue = id in ScreenEffect.dbc) not required any code
     &Aura::HandlePhase,                                     //261 SPELL_AURA_PHASE undetactable invisibility?     implemented in Unit::isVisibleForOrDetect
-    &Aura::HandleNULL,                                      //262
+    &Aura::HandleNoImmediateEffect,                         //262
     &Aura::HandleNULL,                                      //263 SPELL_AURA_ALLOW_ONLY_ABILITY player can use only abilities set in SpellClassMask
     &Aura::HandleUnused,                                    //264 unused (3.0.8a)
     &Aura::HandleUnused,                                    //265 unused (3.0.8a)

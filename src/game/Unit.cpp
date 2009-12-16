@@ -5221,6 +5221,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     ((Player*)this)->RemoveSpellCategoryCooldown(35, true);
                     return true;
                 }
+                // Fingers of Frost
+                case 44544:
+                {
+                    triggeredByAura->GetModifier()->m_amount -= 1;
+
+                    if (triggeredByAura->GetModifier()->m_amount == 0)
+                        RemoveAurasDueToSpell(44544);
+
+                    return true;
+                }
             }
             break;
         }
@@ -8027,9 +8037,6 @@ void Unit::RemoveAllAttackers()
 
 bool Unit::HasAuraStateForCaster(AuraState flag, uint64 caster) const
 {
-    if(!HasAuraState(flag))
-        return false;
-
     // single per-caster aura state
     if(flag == AURA_STATE_CONFLAGRATE)
     {
@@ -8048,6 +8055,14 @@ bool Unit::HasAuraStateForCaster(AuraState flag, uint64 caster) const
         }
 
         return false;
+    }
+    else if(flag == AURA_STATE_FROZEN)
+    {
+        if (Unit* u_caster = ObjectAccessor::GetUnit(*this, caster))
+            if (u_caster->HasAura(44544))
+                return true;
+
+        return HasAuraState(flag);
     }
 
     return true;
@@ -8492,7 +8507,7 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
             // Ice Lance
             if (spellProto->SpellIconID == 186)
             {
-                if (pVictim->isFrozen())
+                if (pVictim->isFrozen(GetGUID()))
                 {
                     float multiplier = 3.0f;
 
@@ -8798,9 +8813,9 @@ bool Unit::isSpellCrit(Unit *pVictim, SpellEntry const *spellProto, SpellSchoolM
                         continue;
                     switch((*i)->GetModifier()->m_miscvalue)
                     {
-                        case  849: if (pVictim->isFrozen()) crit_chance+= 17.0f; break; //Shatter Rank 1
-                        case  910: if (pVictim->isFrozen()) crit_chance+= 34.0f; break; //Shatter Rank 2
-                        case  911: if (pVictim->isFrozen()) crit_chance+= 50.0f; break; //Shatter Rank 3
+                        case  849: if (pVictim->isFrozen(GetGUID())) crit_chance+= 17.0f; break; //Shatter Rank 1
+                        case  910: if (pVictim->isFrozen(GetGUID())) crit_chance+= 34.0f; break; //Shatter Rank 2
+                        case  911: if (pVictim->isFrozen(GetGUID())) crit_chance+= 50.0f; break; //Shatter Rank 3
                         case 7917:                          // Glyph of Shadowburn
                             if (pVictim->HasAuraState(AURA_STATE_HEALTHLESS_35_PERCENT))
                                 crit_chance+=(*i)->GetModifier()->m_amount;
@@ -11419,9 +11434,9 @@ void CharmInfo::SetSpellAutocast( uint32 spell_id, bool state )
     }
 }
 
-bool Unit::isFrozen() const
+bool Unit::isFrozen(uint64 caster) const
 {
-    return HasAuraState(AURA_STATE_FROZEN);
+    return HasAuraStateForCaster(AURA_STATE_FROZEN, caster);
 }
 
 bool Unit::isBleeding() const
@@ -11490,6 +11505,7 @@ bool InitTriggerAuraData()
     isTriggerAura[SPELL_AURA_MOD_SPELL_CRIT_CHANCE] = true;
     isTriggerAura[SPELL_AURA_ADD_FLAT_MODIFIER] = true;
     isTriggerAura[SPELL_AURA_MOD_DAMAGE_PERCENT_DONE] = true;
+    isTriggerAura[SPELL_AURA_IGNORE_REQUIREMENTS] = true;
 
     isNonTriggerAura[SPELL_AURA_MOD_POWER_REGEN]=true;
     isNonTriggerAura[SPELL_AURA_REDUCE_PUSHBACK]=true;
@@ -11664,6 +11680,7 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                 DealSpellDamage(&damageInfo, true);
                 break;
             }
+            case SPELL_AURA_IGNORE_REQUIREMENTS:
             case SPELL_AURA_MOD_STUN:
             case SPELL_AURA_ADD_FLAT_MODIFIER:
             case SPELL_AURA_MOD_DAMAGE_PERCENT_DONE:
