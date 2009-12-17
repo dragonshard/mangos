@@ -5291,6 +5291,12 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 triggered_spell_id = 26654;
                 break;
             }
+            // Sudden Death
+            if (dummySpell->Id == 52437)
+            {
+                RemoveAurasDueToSpell(52437);
+                return true;
+            }
             break;
         }
         case SPELLFAMILY_WARLOCK:
@@ -8060,6 +8066,12 @@ bool Unit::HasAuraStateForCaster(AuraState flag, uint64 caster) const
     {
         if (Unit* u_caster = ObjectAccessor::GetUnit(*this, caster))
             if (u_caster->HasAura(44544))
+                return true;
+    }
+    else if(flag == AURA_STATE_HEALTHLESS_20_PERCENT)
+    {
+        if (Unit* u_caster = ObjectAccessor::GetUnit(*this, caster))
+            if (u_caster->HasAura(52437))
                 return true;
     }
 

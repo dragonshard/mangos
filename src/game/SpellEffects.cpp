@@ -1353,6 +1353,10 @@ void Spell::EffectDummy(uint32 i)
                     return;
 
                 uint32 rage = m_caster->GetPower(POWER_RAGE);
+
+                if (m_caster->HasAura(52437))
+                    rage = rage < 30 ? rage : 30;
+
                 // Glyph of Execution bonus
                 if (Aura *aura = m_caster->GetDummyAura(58367))
                     rage+=aura->GetModifier()->m_amount;
@@ -1360,7 +1364,7 @@ void Spell::EffectDummy(uint32 i)
                 int32 basePoints0 = damage+int32(rage * m_spellInfo->DmgMultiplier[i] +
                                                  m_caster->GetTotalAttackPowerValue(BASE_ATTACK)*0.2f);
                 m_caster->CastCustomSpell(unitTarget, 20647, &basePoints0, NULL, NULL, true, 0);
-                m_caster->SetPower(POWER_RAGE, 0);
+                m_caster->SetPower(POWER_RAGE, m_caster->GetPower(POWER_RAGE) > rage ? m_caster->GetPower(POWER_RAGE) - rage : 0);
                 return;
             }
             // Slam
