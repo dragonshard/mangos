@@ -5315,6 +5315,15 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 RemoveAurasDueToSpell(52437);
                 return true;
             }
+            // Glyph of Sunder Armor
+            if (dummySpell->Id == 58387 && procSpell->Id == 7386)
+            {
+                target = SelectNearbyTarget(target);
+                if (!target)
+                    return false;
+                CastSpell(target, 58567, true, NULL, triggeredByAura)
+                return true;
+            }
             break;
         }
         case SPELLFAMILY_WARLOCK:
