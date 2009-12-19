@@ -6418,13 +6418,6 @@ void Aura::HandleSchoolAbsorb(bool apply, bool Real)
                     break;
             }
         }
-
-        // Glyph of Power Word: Shield
-        if (GetSpellProto()->SpellFamilyName == SPELLFAMILY_PRIEST && GetSpellProto()->SpellFamilyFlags == 0x1LL && caster->HasAura(55672))
-        {
-            int32 healamount = m_modifier.m_amount * caster->GetAura(55672, 0)->GetModifier()->m_amount / 100;
-            caster->CastCustomSpell(GetTarget(), 56160, &healamount, NULL, NULL, true);
-        }
     }
     else
     {
