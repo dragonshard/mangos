@@ -2562,6 +2562,27 @@ void Aura::HandleAuraDummy(bool apply, bool Real)
                     m_target->RemoveAurasByCasterSpell(53651,m_target->GetGUID());
                 return;
             }
+            // Glyph of Blessing of Might
+            else if(GetId() == 57958)
+            {
+                if (m_target->GetTypeId() != TYPEID_PLAYER)
+                    return;
+
+                if (apply)
+                {
+                    SpellModifier *mod = new SpellModifier;
+                    mod->op = SPELLMOD_DURATION;
+                    mod->value = m_modifier.m_amount * MINUTE * IN_MILISECONDS;
+                    mod->type = SPELLMOD_FLAT;
+                    mod->spellId = GetId();
+                    mod->mask = UI64LIT(0x2);
+                    mod->mask2= UI64LIT(0x0);
+                    m_spellmod = mod;
+                }
+
+                ((Player*)m_target)->AddSpellMod(m_spellmod, apply);
+                return;
+            }
             break;
         }
         case SPELLFAMILY_DRUID:
