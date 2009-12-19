@@ -3340,14 +3340,22 @@ void Aura::HandleChannelDeathItem(bool apply, bool Real)
         if(spellInfo->EffectItemType[m_effIndex] == 0)
             return;
 
-        // Soul Shard only from non-grey units
-        if( spellInfo->EffectItemType[m_effIndex] == 6265 &&
-            (victim->getLevel() <= MaNGOS::XP::GetGrayLevel(caster->getLevel()) ||
-             victim->GetTypeId()==TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim)) )
-            return;
         //Adding items
         uint32 noSpaceForCount = 0;
         uint32 count = m_modifier.m_amount;
+
+        // Soul Shard
+        if (spellInfo->EffectItemType[m_effIndex] == 6265)
+        {
+            // Only from non-grey units
+            if((victim->getLevel() <= MaNGOS::XP::GetGrayLevel(caster->getLevel()) ||
+                 victim->GetTypeId()==TYPEID_UNIT && !((Player*)caster)->isAllowedToLoot((Creature*)victim)) )
+                return;
+
+            // Glyph of Drain Soul
+            if (roll_chance_i(5))
+                count += 1;
+        }
 
         ItemPosCountVec dest;
         uint8 msg = ((Player*)caster)->CanStoreNewItem( NULL_BAG, NULL_SLOT, dest, spellInfo->EffectItemType[m_effIndex], count, &noSpaceForCount);
