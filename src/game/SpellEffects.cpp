@@ -1657,26 +1657,6 @@ void Spell::EffectDummy(uint32 i)
                     ((Player*)m_caster)->SendAttackSwingCancelAttack();
                     return;
                 }
-                case 781:                                   // Disengage
-                {
-                    // Effect only works on players
-                    if(m_caster->GetTypeId()!=TYPEID_PLAYER)
-                       return;
-
-                    float vsin = sin(m_caster->GetOrientation());
-                    float vcos = cos(m_caster->GetOrientation());
-
-                    WorldPacket data(SMSG_MOVE_KNOCK_BACK, (8+4+4+4+4+4));
-                    data.append(m_caster->GetPackGUID());
-                    data << uint32(0);                                      // Sequence
-                    data << float(vcos);                                    // x direction
-                    data << float(vsin);                                    // y direction
-                    data << float(-13);                                     // Horizontal speed
-                    data << float(-7);                                      // Z Movement speed (vertical)
-
-                    ((Player*)m_caster)->GetSession()->SendPacket(&data);
-                    return;
-                }
                 // Last Stand
                 case 53478:
                 {

@@ -9351,11 +9351,11 @@ bool Unit::IsImmunedToSpellEffect(SpellEntry const* spellInfo, uint32 index) con
                 return true;
         AuraList const& immuneMechanicAuraApply = GetAurasByType(SPELL_AURA_ADD_CREATURE_IMMUNITY);
         for(AuraList::const_iterator i = immuneMechanicAuraApply.begin(); i != immuneMechanicAuraApply.end(); ++i)
-            if ((spellInfo->EffectMechanic[index] & (*i)->GetMiscValue() ||
-                spellInfo->Mechanic & (*i)->GetMiscValue()) ||
+            if (((1 << (spellInfo->EffectMechanic[index] - 1)) & (*i)->GetMiscValue() ||
+                (1 << (spellInfo->Mechanic - 1)) & (*i)->GetMiscValue()) ||
                 (((*i)->GetId() == 46924 || (*i)->GetId() == 61851) &&                    // Bladestorm Immunity & Killing spree
-                spellInfo->EffectMechanic[index] & IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK ||
-                spellInfo->Mechanic & IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK))
+                (1 << (spellInfo->EffectMechanic[index] - 1)) & IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK ||
+                (1 << (spellInfo->Mechanic - 1)) & IMMUNE_TO_MOVEMENT_IMPAIRMENT_AND_LOSS_CONTROL_MASK))
                 return true;
     }
 
