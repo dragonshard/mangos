@@ -6914,6 +6914,7 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                 // Blessed Recovery
                 else if (auraSpellInfo->SpellIconID == 1875)
                 {
+                    target = this;
                     switch (auraSpellInfo->Id)
                     {
                         case 27811: trigger_spell_id = 27813; break;
@@ -6923,8 +6924,14 @@ bool Unit::HandleProcTriggerSpell(Unit *pVictim, uint32 damage, Aura* triggeredB
                             sLog.outError("Unit::HandleProcTriggerSpell: Spell %u not handled in BR", auraSpellInfo->Id);
                         return false;
                     }
-                    basepoints[0] = damage * triggerAmount / 100 / 3;
-                    target = this;
+                    if (Aura* blessed_recovery = target->GetAura(trigger_spell_id, 0))
+                    {
+                        blessed_recovery->GetModifier()->m_amount += damage * triggerAmount / 100 / 3;
+                        blessed_recovery->RefreshAura();
+                        return true;
+                    }
+                    else
+                        basepoints[0] = damage * triggerAmount / 100 / 3;
                 }
                 break;
             }
