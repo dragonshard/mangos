@@ -8597,6 +8597,18 @@ uint32 Unit::SpellDamageBonus(Unit *pVictim, SpellEntry const *spellProto, uint3
                 }
             }
         }
+        case SPELLFAMILY_WARLOCK:
+        {
+            if (spellProto->TargetAuraState == AURA_STATE_CONFLAGRATE)
+                return pdamage;
+            break;
+        }
+        case SPELLFAMILY_PRIEST:
+        {
+            if (spellProto->Id == 64085)
+                return pdamage;
+            break;
+        }
         default:
             break;
     }
