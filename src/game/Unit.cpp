@@ -6644,6 +6644,12 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 tHis->ApplyModSignedFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + SPELL_SCHOOL_SHADOW, -1, false);
                 return true;
             }
+            // Rune Strike
+            if (dummySpell->Id == 56817)
+            {
+                RemoveAurasDueToSpell(56817);
+                return true;
+            }
             break;
         }
         default:
@@ -11681,6 +11687,9 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                     ((Player*)this)->AddComboPoints(pTarget, 1);
                     StartReactiveTimer( REACTIVE_OVERPOWER );
                 }
+                // Rune Strike
+                if (procExtra & (PROC_EX_DODGE | PROC_EX_PARRY) && getClass() == CLASS_DEATH_KNIGHT)
+                    CastSpell(this, 56817, true);
             }
         }
     }
