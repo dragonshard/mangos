@@ -6644,12 +6644,6 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 tHis->ApplyModSignedFloatValue(UNIT_FIELD_POWER_COST_MULTIPLIER + SPELL_SCHOOL_SHADOW, -1, false);
                 return true;
             }
-            // Rune Strike
-            if (dummySpell->Id == 56817)
-            {
-                RemoveAurasDueToSpell(56817);
-                return true;
-            }
             break;
         }
         default:
