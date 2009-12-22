@@ -5325,7 +5325,7 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 return true;
             }
             // Unrelenting Assault
-            if (dummySpell->SpellIconID == 2775)
+            if (dummySpell->SpellIconID == 2775 && triggeredByAura->GetEffIndex() == 0)
             {
                 for(uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
                 {
