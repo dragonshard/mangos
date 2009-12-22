@@ -11672,6 +11672,9 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                     ModifyAuraState(AURA_STATE_DEFENSE,true);
                     StartReactiveTimer( REACTIVE_DEFENSE );
                 }
+                // Rune Strike
+                if (procExtra & (PROC_EX_DODGE | PROC_EX_PARRY) && getClass() == CLASS_DEATH_KNIGHT)
+                    CastSpell(this, 56817, true);
             }
             else //For attacker
             {
@@ -11681,9 +11684,6 @@ void Unit::ProcDamageAndSpellFor( bool isVictim, Unit * pTarget, uint32 procFlag
                     ((Player*)this)->AddComboPoints(pTarget, 1);
                     StartReactiveTimer( REACTIVE_OVERPOWER );
                 }
-                // Rune Strike
-                if (procExtra & (PROC_EX_DODGE | PROC_EX_PARRY) && getClass() == CLASS_DEATH_KNIGHT)
-                    CastSpell(this, 56817, true);
             }
         }
     }
