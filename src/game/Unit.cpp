@@ -5321,8 +5321,32 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                 target = SelectNearbyTarget(target);
                 if (!target)
                     return false;
-                CastSpell(target, 58567, true, NULL, triggeredByAura)
+                CastSpell(target, 58567, true, NULL, triggeredByAura);
                 return true;
+            }
+            // Unrelenting Assault
+            if (dummySpell->SpellIconID == 2775)
+            {
+                for(uint32 i = CURRENT_FIRST_NON_MELEE_SPELL; i < CURRENT_MAX_SPELL; ++i)
+                {
+                    if (Spell* spell = target->GetCurrentSpell(CurrentSpellTypes(i)))
+                        break;
+
+                    if (i = CURRENT_MAX_SPELL - 1)
+                        return false;
+                }
+                switch(dummySpell->Id)
+                {
+                    case 46859:
+                        triggered_spell_id = 64849;
+                        break;
+                    case 46860:
+                        triggered_spell_id = 64850;
+                        break;
+                    default:
+                        return false;
+                }
+                break;
             }
             break;
         }
