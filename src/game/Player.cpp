@@ -18277,6 +18277,11 @@ void Player::SendInitialPacketsAfterAddToMap()
     SendAurasForTarget(this);
     SendEnchantmentDurations();                             // must be after add to map
     SendItemDurations();                                    // must be after add to map
+
+    // Auras that need to be updated
+    Unit::AuraList const& uAuraList = GetAurasByType(SPELL_AURA_IGNORE_REQUIREMENTS);
+    for(Unit::AuraList::const_iterator itr = uAuraList.begin(); itr != uAuraList.end(); ++itr)
+        (*itr)->SendAuraUpdate(false);
 }
 
 void Player::SendUpdateToOutOfRangeGroupMembers()
