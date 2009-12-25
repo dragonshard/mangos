@@ -5075,6 +5075,16 @@ bool Unit::HandleDummyAuraProc(Unit *pVictim, uint32 damage, Aura* triggeredByAu
                     }
                     return true;
                 }
+                // Festive Holiday Mount
+                case 62061:
+                {
+                    if (procSpell->Mechanic == MECHANIC_MOUNT)
+                    {
+                        triggered_spell_id = 25860;
+                        break;
+                    }
+                    return false;
+                }
             }
             break;
         }
