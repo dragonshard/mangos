@@ -198,12 +198,22 @@ void Object::BuildCreateUpdateBlockForPlayer(UpdateData *data, Player *target) c
     data->AddUpdateBlock(buf);
 }
 
-void Object::SendCreateUpdateToPlayer(Player* player)
+void Object::BuildUpdate(UpdateDataMapType &update_players)
 {
+    ObjectAccessor::_buildUpdateObject(this,update_players);
+    ClearUpdateMask(true);
+}
+
+void Object::SendUpdateToPlayer(Player* player)
+{
+    // send update to another players
+    SendUpdateObjectToAllExcept(player);
+
     // send create update to player
     UpdateData upd;
     WorldPacket packet;
 
+    upd.Clear();
     BuildCreateUpdateBlockForPlayer(&upd, player);
     upd.BuildPacket(&packet);
     player->GetSession()->SendPacket(&packet);
@@ -779,6 +789,20 @@ void Object::ClearUpdateMask(bool remove)
             ObjectAccessor::Instance().RemoveUpdateObject(this);
         m_objectUpdated = false;
     }
+}
+
+// Send current value fields changes to all viewers
+void Object::SendUpdateObjectToAllExcept(Player* exceptPlayer)
+{
+    // changes will be send in create packet
+    if(!IsInWorld())
+        return;
+
+    // nothing do
+    if(!m_objectUpdated)
+        return;
+
+    ObjectAccessor::UpdateObject(this,exceptPlayer);
 }
 
 bool Object::LoadValues(const char* data)
@@ -1401,16 +1425,6 @@ bool WorldObject::isInFrontInMap(WorldObject const* target, float distance,  flo
 bool WorldObject::isInBackInMap(WorldObject const* target, float distance, float arc) const
 {
     return IsWithinDistInMap(target, distance) && !HasInArc( 2 * M_PI - arc, target );
-}
-
-bool WorldObject::isInFront(WorldObject const* target, float distance,  float arc) const
-{
-    return IsWithinDist(target, distance) && HasInArc( arc, target );
-}
-
-bool WorldObject::isInBack(WorldObject const* target, float distance, float arc) const
-{
-    return IsWithinDist(target, distance) && !HasInArc( 2 * M_PI - arc, target );
 }
 
 void WorldObject::GetRandomPoint( float x, float y, float z, float distance, float &rand_x, float &rand_y, float &rand_z) const

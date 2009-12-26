@@ -424,7 +424,7 @@ void WorldSession::HandleItemQuerySingleOpcode( WorldPacket & recv_data )
         data << pProto->GemProperties;
         data << pProto->RequiredDisenchantSkill;
         data << pProto->ArmorDamageModifier;
-        data << abs(pProto->Duration);                      // added in 2.4.2.8209, duration (seconds)
+        data << pProto->Duration;                           // added in 2.4.2.8209, duration (seconds)
         data << pProto->ItemLimitCategory;                  // WotLK, ItemLimitCategory
         data << pProto->HolidayId;                          // Holiday.dbc?
         SendPacket( &data );
@@ -564,12 +564,12 @@ void WorldSession::HandleSellItemOpcode( WorldPacket & recv_data )
                     pItem->SetCount( pItem->GetCount() - count );
                     _player->ItemRemovedQuestCheck( pItem->GetEntry(), count );
                     if( _player->IsInWorld() )
-                        pItem->SendCreateUpdateToPlayer( _player );
+                        pItem->SendUpdateToPlayer( _player );
                     pItem->SetState(ITEM_CHANGED, _player);
 
                     _player->AddItemToBuyBackSlot( pNewItem );
                     if( _player->IsInWorld() )
-                        pNewItem->SendCreateUpdateToPlayer( _player );
+                        pNewItem->SendUpdateToPlayer( _player );
                 }
                 else
                 {

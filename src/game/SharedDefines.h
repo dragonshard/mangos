@@ -1003,15 +1003,6 @@ enum SpellImmunity
 
 #define MAX_SPELL_IMMUNITY           6
 
-enum WeaponAttackType
-{
-    BASE_ATTACK   = 0,
-    OFF_ATTACK    = 1,
-    RANGED_ATTACK = 2
-};
-
-#define MAX_ATTACK  3
-
 enum Targets
 {
     TARGET_SELF                        = 1,
@@ -2449,7 +2440,6 @@ enum SummonType
     SUMMON_TYPE_INFERNO     = 711,
     SUMMON_TYPE_GUARDIAN2   = 713,
     SUMMON_TYPE_SNAKES      = 881,
-    SUMMON_TYPE_LIGHTWELL   = 1141,
     SUMMON_TYPE_GUARDIAN3   = 1161,
     SUMMON_TYPE_CREATURE    = 1302,
     SUMMON_TYPE_ELEMENTAL   = 1561,

@@ -485,10 +485,8 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
                     setCurrentVictim(NULL);
                     setDirty(true);
                 }
-                iOwner->SendThreatRemove(hostileReference);
-                iThreatContainer.remove(hostileReference);
-                iUpdateNeed = true;
-                iThreatOfflineContainer.addReference(hostileReference);
+                iThreatContainer.remove(hostilReference);
+                iThreatOfflineContainer.addReference(hostilReference);
             }
             else
             {
@@ -504,12 +502,9 @@ void ThreatManager::processThreatEvent(ThreatRefStatusChangeEvent* threatRefStat
                 setCurrentVictim(NULL);
                 setDirty(true);
             }
-            if(hostileReference->isOnline())
-            {
-                iOwner->SendThreatRemove(hostileReference);
-                iThreatContainer.remove(hostileReference);
-                iUpdateNeed = true;
-            }
+            iOwner->SendRemoveFromThreatListOpcode(hostilReference);
+            if(hostilReference->isOnline())
+                iThreatContainer.remove(hostilReference);
             else
                 iThreatOfflineContainer.remove(hostilReference);
             break;

@@ -353,32 +353,38 @@ void Pet::SavePetToDB(PetSaveMode mode)
     if (!pOwner)
         return;
 
-    // current/stable/not_in_slot
-    if (mode >= PET_SAVE_AS_CURRENT)
+    // not save pet as current if another pet temporary unsummoned
+    if (mode == PET_SAVE_AS_CURRENT && pOwner->GetTemporaryUnsummonedPetNumber() &&
+        pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
     {
-        // not save pet as current if another pet temporary unsummoned
-        if (mode == PET_SAVE_AS_CURRENT && pOwner->GetTemporaryUnsummonedPetNumber() &&
-            pOwner->GetTemporaryUnsummonedPetNumber() != m_charmInfo->GetPetNumber())
-        {
-            // pet will lost anyway at restore temporary unsummoned
-            if(getPetType()==HUNTER_PET)
-                return;
+        // pet will lost anyway at restore temporary unsummoned
+        if(getPetType()==HUNTER_PET)
+            return;
 
-            // for warlock case
-            mode = PET_SAVE_NOT_IN_SLOT;
-        }
+        // for warlock case
+        mode = PET_SAVE_NOT_IN_SLOT;
+    }
 
-        uint32 curhealth = GetHealth();
-        uint32 curmana = GetPower(POWER_MANA);
+    uint32 curhealth = GetHealth();
+    uint32 curmana = GetPower(POWER_MANA);
 
-        // stable and not in slot saves
-        if (mode != PET_SAVE_AS_CURRENT)
-            RemoveAllAuras();
+    // stable and not in slot saves
+    if(mode > PET_SAVE_AS_CURRENT)
+    {
+        RemoveAllAuras();
 
-        _SaveSpells();
-        _SaveSpellCooldowns();
-        _SaveAuras();
+        //only alive hunter pets get auras saved, the others don't
+        if(!(getPetType() == HUNTER_PET && isAlive()))
+            m_Auras.clear();
+    }
 
+    _SaveSpells();
+    _SaveSpellCooldowns();
+    _SaveAuras();
+
+    // current/stable/not_in_slot
+    if(mode >= PET_SAVE_AS_CURRENT)
+    {
         uint32 owner = GUID_LOPART(GetOwnerGUID());
         std::string name = m_name;
         CharacterDatabase.escape_string(name);
@@ -433,7 +439,7 @@ void Pet::SavePetToDB(PetSaveMode mode)
     // delete
     else
     {
-        RemoveAllAuras(AURA_REMOVE_BY_DELETE);
+        RemoveAllAuras();
         DeleteFromDB(m_charmInfo->GetPetNumber());
     }
 }
@@ -498,7 +504,7 @@ void Pet::Update(uint32 diff)
         {
             // unsummon pet that lost owner
             Unit* owner = GetOwner();
-            if(!owner || (!IsWithinDistInMap(owner, GetMap()->GetVisibilityDistance()) && (owner->GetCharmGUID() && (owner->GetCharmGUID() != GetGUID()))) || (isControlled() && !owner->GetPetGUID()))
+            if(!owner || (!IsWithinDistInMap(owner, OWNER_MAX_DISTANCE) && (owner->GetCharmGUID() && (owner->GetCharmGUID() != GetGUID()))) || (isControlled() && !owner->GetPetGUID()))
             {
                 Remove(PET_SAVE_NOT_IN_SLOT, true);
                 return;
@@ -1136,7 +1142,9 @@ void Pet::_SaveSpells()
 
 void Pet::_LoadAuras(uint32 timediff)
 {
-    RemoveAllAuras();
+    m_Auras.clear();
+    for (int i = 0; i < TOTAL_AURAS; ++i)
+        m_modAuras[i].clear();
 
     QueryResult *result = CharacterDatabase.PQuery("SELECT caster_guid,spell,effect_index,stackcount,amount,maxduration,remaintime,remaincharges FROM pet_aura WHERE guid = '%u'",m_charmInfo->GetPetNumber());
 

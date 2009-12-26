@@ -341,7 +341,25 @@ Spell::Spell( Unit* Caster, SpellEntry const *info, bool triggered, uint64 origi
     m_applyMultiplierMask = 0;
 
     // Get data for type of attack
-    m_attackType = GetWeaponAttackType(m_spellInfo);
+    switch (m_spellInfo->DmgClass)
+    {
+        case SPELL_DAMAGE_CLASS_MELEE:
+            if (m_spellInfo->AttributesEx3 & SPELL_ATTR_EX3_REQ_OFFHAND)
+                m_attackType = OFF_ATTACK;
+            else
+                m_attackType = BASE_ATTACK;
+            break;
+        case SPELL_DAMAGE_CLASS_RANGED:
+            m_attackType = RANGED_ATTACK;
+            break;
+        default:
+                                                            // Wands
+            if (m_spellInfo->AttributesEx2 & SPELL_ATTR_EX2_AUTOREPEAT_FLAG)
+                m_attackType = RANGED_ATTACK;
+            else
+                m_attackType = BASE_ATTACK;
+            break;
+    }
 
     m_spellSchoolMask = GetSpellSchoolMask(info);           // Can be override for some spell (wand shoot for example)
 
@@ -571,13 +589,11 @@ void Spell::FillTargetMap()
                             SetTargetMap(i, m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
                         }
                         break;
-                    case 0:
-                        SetTargetMap(i, m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
-                        tmpUnitMap.push_back(m_caster);
-                        break;
                     default:
-                        SetTargetMap(i, m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
-                        SetTargetMap(i, m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
+                        {
+                            SetTargetMap(i, m_spellInfo->EffectImplicitTargetA[i], tmpUnitMap);
+                            SetTargetMap(i, m_spellInfo->EffectImplicitTargetB[i], tmpUnitMap);
+                        }
                         break;
                 }
                 break;
@@ -974,7 +990,7 @@ void Spell::DoAllEffectOnTarget(TargetInfo *target)
         SpellNonMeleeDamage damageInfo(caster, unitTarget, m_spellInfo->Id, m_spellSchoolMask);
 
         // Add bonuses and fill damageInfo struct
-        caster->CalculateSpellDamage(&damageInfo, m_damage, m_spellInfo, m_attackType);
+        caster->CalculateSpellDamage(&damageInfo, m_damage, m_spellInfo);
         caster->DealDamageMods(damageInfo.target, damageInfo.damage, &damageInfo.absorb);
 
         // Send log damage message to client
@@ -1288,7 +1304,7 @@ void Spell::SetTargetMap(uint32 effIndex,uint32 targetMode,UnitList& TagUnitMap)
     {
         case SPELLFAMILY_DRUID:
             // Starfall
-            if (m_spellInfo->SpellFamilyFlags2 & 0x00000100)
+            if (m_spellInfo->SpellFamilyFlags2 & UI64LIT(0x00000100))
                 unMaxTargets = 2;
             break;
         default:
@@ -2803,8 +2819,8 @@ void Spell::SendSpellCooldown()
         return;
     }
 
-    // (1) have infinity cooldown but set at aura apply, (2) passive cooldown at triggering
-    if(m_spellInfo->Attributes & (SPELL_ATTR_DISABLED_WHILE_ACTIVE | SPELL_ATTR_PASSIVE))
+    // have infinity cooldown but set at aura apply
+    if(m_spellInfo->Attributes & SPELL_ATTR_DISABLED_WHILE_ACTIVE || m_IsTriggeredSpell)
         return;
 
     _player->AddSpellAndCategoryCooldowns(m_spellInfo,m_CastItem ? m_CastItem->GetEntry() : 0, this);
@@ -3469,11 +3485,14 @@ void Spell::SendChannelUpdate(uint32 time)
         m_caster->SetUInt32Value(UNIT_CHANNEL_SPELL, 0);
     }
 
+    if (m_caster->GetTypeId() != TYPEID_PLAYER)
+        return;
+
     WorldPacket data( MSG_CHANNEL_UPDATE, 8+4 );
     data.append(m_caster->GetPackGUID());
     data << uint32(time);
 
-    m_caster->SendMessageToSet(&data, true);
+    ((Player*)m_caster)->GetSession()->SendPacket( &data );
 }
 
 void Spell::SendChannelStart(uint32 duration)
@@ -3504,12 +3523,15 @@ void Spell::SendChannelStart(uint32 duration)
         }
     }
 
-    WorldPacket data( MSG_CHANNEL_START, (8+4+4) );
-    data.append(m_caster->GetPackGUID());
-    data << uint32(m_spellInfo->Id);
-    data << uint32(duration);
+    if (m_caster->GetTypeId() == TYPEID_PLAYER)
+    {
+        WorldPacket data( MSG_CHANNEL_START, (8+4+4) );
+        data.append(m_caster->GetPackGUID());
+        data << uint32(m_spellInfo->Id);
+        data << uint32(duration);
 
-    m_caster->SendMessageToSet(&data, true);
+        ((Player*)m_caster)->GetSession()->SendPacket( &data );
+    }
 
     m_timer = duration;
     if(target)
@@ -3890,9 +3912,8 @@ void Spell::CastPreCastSpells(Unit* target)
 
 SpellCastResult Spell::CheckCast(bool strict)
 {
-    // check cooldowns to prevent cheating (ignore passive spells, that client side visual only)
-    if (m_caster->GetTypeId()==TYPEID_PLAYER && !(m_spellInfo->Attributes & SPELL_ATTR_PASSIVE) &&
-        ((Player*)m_caster)->HasSpellCooldown(m_spellInfo->Id))
+    // check cooldowns to prevent cheating
+    if(m_caster->GetTypeId()==TYPEID_PLAYER && ((Player*)m_caster)->HasSpellCooldown(m_spellInfo->Id))
     {
         if(m_triggeredByAuraSpell)
             return SPELL_FAILED_DONT_REPORT;
@@ -4085,34 +4106,20 @@ SpellCastResult Spell::CheckCast(bool strict)
             }
         }
 
-        if(non_caster_target)
+        // TODO: this check can be applied and for player to prevent cheating when IsPositiveSpell will return always correct result.
+        // check target for pet/charmed casts (not self targeted), self targeted cast used for area effects and etc
+        if(non_caster_target && m_caster->GetTypeId() == TYPEID_UNIT && m_caster->GetCharmerOrOwnerGUID())
         {
-            // simple cases
-            if (IsExplicitPositiveTarget(m_spellInfo->EffectImplicitTargetA[0]))
+            // check correctness positive/negative cast target (pet cast real check and cheating check)
+            if(IsPositiveSpell(m_spellInfo->Id))
             {
                 if(m_caster->IsHostileTo(target))
                     return SPELL_FAILED_BAD_TARGETS;
             }
-            else if (IsExplicitNegativeTarget(m_spellInfo->EffectImplicitTargetA[0]))
+            else
             {
                 if(m_caster->IsFriendlyTo(target))
                     return SPELL_FAILED_BAD_TARGETS;
-            }
-            // TODO: this check can be applied and for player to prevent cheating when IsPositiveSpell will return always correct result.
-            // check target for pet/charmed casts (not self targeted), self targeted cast used for area effects and etc
-            else if (m_caster->GetTypeId() == TYPEID_UNIT && m_caster->GetCharmerOrOwnerGUID())
-            {
-                // check correctness positive/negative cast target (pet cast real check and cheating check)
-                if(IsPositiveSpell(m_spellInfo->Id))
-                {
-                    if(m_caster->IsHostileTo(target))
-                        return SPELL_FAILED_BAD_TARGETS;
-                }
-                else
-                {
-                    if(m_caster->IsFriendlyTo(target))
-                        return SPELL_FAILED_BAD_TARGETS;
-                }
             }
         }
 

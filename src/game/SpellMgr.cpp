@@ -90,60 +90,6 @@ uint32 GetSpellCastTime(SpellEntry const* spellInfo, Spell const* spell)
     return (castTime > 0) ? uint32(castTime) : 0;
 }
 
-uint16 GetSpellAuraMaxTicks(SpellEntry const* spellInfo)
-{
-    int32 DotDuration = GetSpellDuration(spellInfo);
-    if(DotDuration == 0)
-        return 1;
-
-    // 200% limit
-    if(DotDuration > 30000)
-        DotDuration = 30000;
-
-    int j = 0;
-    for( ; j < 3; j++)
-    {
-        if( spellInfo->Effect[j] == SPELL_EFFECT_APPLY_AURA && (
-            spellInfo->EffectApplyAuraName[j] == SPELL_AURA_PERIODIC_DAMAGE ||
-            spellInfo->EffectApplyAuraName[j] == SPELL_AURA_PERIODIC_HEAL ||
-            spellInfo->EffectApplyAuraName[j] == SPELL_AURA_PERIODIC_LEECH) )
-        {
-            break;
-        }
-    }
-
-    if(spellInfo->EffectAmplitude[j] != 0)
-        return DotDuration / spellInfo->EffectAmplitude[j];
-
-    return 6;
-}
-
-WeaponAttackType GetWeaponAttackType(SpellEntry const *spellInfo)
-{
-    if(!spellInfo)
-        return BASE_ATTACK;
-
-    switch (spellInfo->DmgClass)
-    {
-        case SPELL_DAMAGE_CLASS_MELEE:
-            if (spellInfo->AttributesEx3 & SPELL_ATTR_EX3_REQ_OFFHAND)
-                return OFF_ATTACK;
-            else
-                return BASE_ATTACK;
-            break;
-        case SPELL_DAMAGE_CLASS_RANGED:
-            return RANGED_ATTACK;
-            break;
-        default:
-                                                            // Wands
-            if (spellInfo->AttributesEx2 & SPELL_ATTR_EX2_AUTOREPEAT_FLAG)
-                return RANGED_ATTACK;
-            else
-                return BASE_ATTACK;
-            break;
-    }
-}
-
 bool IsPassiveSpell(uint32 spellId)
 {
     SpellEntry const *spellInfo = sSpellStore.LookupEntry(spellId);
@@ -339,7 +285,6 @@ bool IsSingleFromSpellSpecificPerTargetPerCaster(SpellSpecific spellSpec1,SpellS
         case SPELL_AURA:
         case SPELL_STING:
         case SPELL_CURSE:
-        case SPELL_ASPECT:
         case SPELL_POSITIVE_SHOUT:
         case SPELL_JUDGEMENT:
         case SPELL_HAND:
@@ -357,7 +302,6 @@ bool IsSingleFromSpellSpecificSpellRanksPerTarget(SpellSpecific spellSpec1,Spell
         case SPELL_BLESSING:
         case SPELL_AURA:
         case SPELL_CURSE:
-        case SPELL_ASPECT:
         case SPELL_HAND:
             return spellSpec1==spellSpec2;
         default:
@@ -371,6 +315,7 @@ bool IsSingleFromSpellSpecificPerTarget(SpellSpecific spellSpec1,SpellSpecific s
     switch(spellSpec1)
     {
         case SPELL_SEAL:
+        case SPELL_ASPECT:
         case SPELL_TRACKER:
         case SPELL_WARLOCK_ARMOR:
         case SPELL_MAGE_ARMOR:
@@ -428,40 +373,6 @@ bool IsPositiveTarget(uint32 targetA, uint32 targetB)
     return true;
 }
 
-bool IsExplicitPositiveTarget(uint32 targetA)
-{
-    // positive targets
-    switch(targetA)
-    {
-        case TARGET_SELF:
-        case TARGET_SINGLE_FRIEND:
-        case TARGET_SINGLE_PARTY:
-        case TARGET_CHAIN_HEAL:
-        case TARGET_SINGLE_FRIEND_2:
-        case TARGET_AREAEFFECT_PARTY_AND_CLASS:
-        case TARGET_SELF2:
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
-bool IsExplicitNegativeTarget(uint32 targetA)
-{
-    // non-positive targets
-    switch(targetA)
-    {
-        case TARGET_CHAIN_DAMAGE:
-        case TARGET_CURRENT_ENEMY_COORDINATES:
-        case TARGET_SINGLE_ENEMY:
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
 bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
 {
     SpellEntry const *spellproto = sSpellStore.LookupEntry(spellId);
@@ -517,7 +428,7 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
                             break;
                     }
                 }   break;
-                case SPELL_AURA_MOD_DAMAGE_DONE:            // dependent from base point sign (negative -> negative)
+                case SPELL_AURA_MOD_DAMAGE_DONE:            // dependent from bas point sign (negative -> negative)
                 case SPELL_AURA_MOD_STAT:
                 case SPELL_AURA_MOD_SKILL:
                 case SPELL_AURA_MOD_HEALING_PCT:
@@ -530,10 +441,8 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
                         return false;
                     break;
                 case SPELL_AURA_MOD_SPELL_CRIT_CHANCE:
-                case SPELL_AURA_MOD_INCREASE_HEALTH_PERCENT:
-                case SPELL_AURA_MOD_DAMAGE_PERCENT_DONE:
                     if(spellproto->CalculateSimpleValue(effIndex) > 0)
-                        return true;                        // some expected positive spells have SPELL_ATTR_EX_NEGATIVE or unclear target modes
+                        return true;                        // some expected positive spells have SPELL_ATTR_EX_NEGATIVE
                     break;
                 case SPELL_AURA_ADD_TARGET_TRIGGER:
                     return true;
@@ -609,8 +518,6 @@ bool IsPositiveEffect(uint32 spellId, uint32 effIndex)
                     // some spells negative
                     switch(spellproto->Id)
                     {
-                        case 802:                           // Mutate Bug, wrongly negative by target modes
-                            return true;
                         case 36900:                         // Soul Split: Evil!
                         case 36901:                         // Soul Split: Good
                         case 36893:                         // Transporter Malfunction (decrease size case)
@@ -1452,10 +1359,6 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                     if( spellId_1 == 35081 && spellInfo_2->SpellIconID==561 && spellInfo_2->SpellVisual[0]==7992)
                         return false;
 
-                    // Blessing of Sanctuary (multi-family check, some from 16 spell icon spells)
-                    if (spellInfo_1->Id == 67480 && spellInfo_2->Id == 20911)
-                        return false;
-
                     break;
                 }
             }
@@ -1694,12 +1597,7 @@ bool SpellMgr::IsNoStackSpellDueToSpell(uint32 spellId_1, uint32 spellId_2) cons
                 // Concentration Aura and Improved Concentration Aura and Aura Mastery
                 if ((spellInfo_1->SpellIconID == 1487) && (spellInfo_2->SpellIconID == 1487))
                     return false;
-
             }
-
-            // Blessing of Sanctuary (multi-family check, some from 16 spell icon spells)
-            if (spellInfo_2->Id == 67480 && spellInfo_1->Id == 20911)
-                return false;
 
             // Combustion and Fire Protection Aura (multi-family check)
             if( spellInfo_2->Id == 11129 && spellInfo_1->SpellIconID == 33 && spellInfo_1->SpellVisual[0] == 321 )

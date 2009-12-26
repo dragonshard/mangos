@@ -592,8 +592,7 @@ void AchievementMgr::SendAchievementEarned(AchievementEntry const* achievement)
         data << uint32(0);                                  // 1=link supplied string as player name, 0=display plain string
         sWorld.SendGlobalMessage(&data);
     }
-    // if player is in world he can tell his friends about new achievement
-    else if (GetPlayer()->IsInWorld())
+    else
     {
         CellPair p = MaNGOS::ComputeCellPair(GetPlayer()->GetPositionX(), GetPlayer()->GetPositionY());
 

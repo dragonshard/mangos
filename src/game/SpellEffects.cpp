@@ -642,6 +642,22 @@ void Spell::EffectSchoolDMG(uint32 effect_idx)
                     if(stacks)
                         damage += damage * stacks * 10 /100;
                 }
+                // Avenger's Shield ($m1+0.07*$SPH+0.07*$AP) - ranged sdb for future
+                else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000000000004000))
+                {
+                    float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
+                    int32 holy = m_caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) +
+                                 m_caster->SpellBaseDamageBonusForVictim(GetSpellSchoolMask(m_spellInfo), unitTarget);
+                    damage += int32(ap * 0.07f) + int32(holy * 7 / 100);
+                }
+                // Hammer of Wrath ($m1+0.15*$SPH+0.15*$AP) - ranged type sdb future fix
+                else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0000008000000000))
+                {
+                    float ap = m_caster->GetTotalAttackPowerValue(BASE_ATTACK);
+                    int32 holy = m_caster->SpellBaseDamageBonus(GetSpellSchoolMask(m_spellInfo)) +
+                                 m_caster->SpellBaseDamageBonusForVictim(GetSpellSchoolMask(m_spellInfo), unitTarget);
+                    damage += int32(ap * 0.15f) + int32(holy * 15 / 100);
+                }
                 // Hammer of the Righteous
                 else if (m_spellInfo->SpellFamilyFlags & UI64LIT(0x0004000000000000))
                 {
@@ -3443,9 +3459,6 @@ void Spell::EffectSummonType(uint32 i)
         case SUMMON_TYPE_TOTEM:
             EffectSummonTotem(i);
             break;
-        case SUMMON_TYPE_LIGHTWELL:
-            EffectTransmitted(i);
-            break;
         case SUMMON_TYPE_UNKNOWN1:
         case SUMMON_TYPE_UNKNOWN2:
         case SUMMON_TYPE_UNKNOWN3:
@@ -4558,8 +4571,14 @@ void Spell::EffectWeaponDmg(uint32 i)
     {
         case SPELLFAMILY_WARRIOR:
         {
+            // Whirlwind, single only spell with 2 weapon white damage apply if have
+            if(m_caster->GetTypeId()==TYPEID_PLAYER && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x00000400000000)))
+            {
+                if(((Player*)m_caster)->GetWeaponForAttack(OFF_ATTACK,true))
+                    spell_bonus += m_caster->CalculateDamage (OFF_ATTACK, normalized);
+            }
             // Devastate bonus and sunder armor refresh
-            if(m_spellInfo->SpellVisual[0] == 12295 && m_spellInfo->SpellIconID == 1508)
+            else if(m_spellInfo->SpellVisual[0] == 12295 && m_spellInfo->SpellIconID == 1508)
             {
                 uint32 stack = 0;
                 // Need refresh all Sunder Armor auras from this caster
@@ -4738,7 +4757,11 @@ void Spell::EffectWeaponDmg(uint32 i)
     bonus = int32(bonus*totalDamagePercentMod);
 
     // prevent negative damage
-    m_damage+= uint32(bonus > 0 ? bonus : 0);
+    uint32 eff_damage = uint32(bonus > 0 ? bonus : 0);
+
+    // Add melee damage bonuses (also check for negative)
+    m_caster->MeleeDamageBonus(unitTarget, &eff_damage, m_attackType, m_spellInfo);
+    m_damage+= eff_damage;
 
     // Hemorrhage
     if (m_spellInfo->SpellFamilyName==SPELLFAMILY_ROGUE && (m_spellInfo->SpellFamilyFlags & UI64LIT(0x2000000)))
