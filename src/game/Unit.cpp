@@ -4014,7 +4014,7 @@ void Unit::RemoveNotOwnSingleTargetAuras(uint32 newPhase)
 
 }
 
-void Unit::RemoveAura(Aura* aura)
+void Unit::RemoveAura(Aura* aura, AuraRemoveMode mode /*= AURA_REMOVE_BY_DEFAULT*/)
 {
     AuraMap::iterator i = m_Auras.lower_bound(spellEffectPair(aura->GetId(), aura->GetEffIndex()));
     AuraMap::iterator upperBound = m_Auras.upper_bound(spellEffectPair(aura->GetId(), aura->GetEffIndex()));
@@ -4022,7 +4022,7 @@ void Unit::RemoveAura(Aura* aura)
     {
         if (i->second == aura)
         {
-            RemoveAura(i);
+            RemoveAura(i,mode);
             return;
         }
     }
@@ -4072,12 +4072,13 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
     }
 
     sLog.outDebug("Aura %u now is remove mode %d",Aur->GetModifier()->m_auraname, mode);
-    Aur->ApplyModifier(false,true);
+    if (mode != AURA_REMOVE_BY_DELETE)                      // not unapply if target will deleted
+        Aur->ApplyModifier(false,true);
 
-    if(Aur->_RemoveAura())
+    if (Aur->_RemoveAura())
     {
         // last aura in stack removed
-        if(IsSpellLastAuraEffect(Aur->GetSpellProto(),Aur->GetEffIndex()))
+        if (mode != AURA_REMOVE_BY_DELETE && IsSpellLastAuraEffect(Aur->GetSpellProto(),Aur->GetEffIndex()))
             Aur->HandleSpellSpecificBoosts(false);
     }
 
@@ -4101,12 +4102,12 @@ void Unit::RemoveAura(AuraMap::iterator &i, AuraRemoveMode mode)
         i = m_Auras.begin();
 }
 
-void Unit::RemoveAllAuras()
+void Unit::RemoveAllAuras(AuraRemoveMode mode /*= AURA_REMOVE_BY_DEFAULT*/)
 {
     while (!m_Auras.empty())
     {
         AuraMap::iterator iter = m_Auras.begin();
-        RemoveAura(iter);
+        RemoveAura(iter,mode);
     }
 }
 
@@ -11298,8 +11299,8 @@ void Unit::CleanupsBeforeDelete()
         CombatStop();
         ClearComboPointHolders();
         DeleteThreatList();
-        getHostilRefManager().setOnlineOfflineState(false);
-        RemoveAllAuras();
+        getHostileRefManager().setOnlineOfflineState(false);
+        RemoveAllAuras(AURA_REMOVE_BY_DELETE);
         RemoveAllGameObjects();
         RemoveAllDynObjects();
         GetMotionMaster()->Clear(false);                    // remove different non-standard movement generators.
