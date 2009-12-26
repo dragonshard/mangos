@@ -7746,5 +7746,9 @@ void Aura::HandleIgnoreRequirements(bool apply, bool real)
     if (!real)
         return;
 
-    SendAuraUpdate(false);
+    if (apply)
+    {
+        SetAuraFlags(AFLAG_EFF_INDEX_0 | AFLAG_EFF_INDEX_1 | AFLAG_POSITIVE | ((GetAuraMaxDuration() > 0) ? AFLAG_DURATION : AFLAG_NONE));
+        SendAuraUpdate(false);
+    }
 }
