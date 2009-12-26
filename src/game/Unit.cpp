@@ -7557,6 +7557,13 @@ bool Unit::HandleOverrideClassScriptAuraProc(Unit *pVictim, uint32 damage, Aura 
         case 5497:                                          // Improved Mana Gems (Serpent-Coil Braid)
             triggered_spell_id = 37445;                     // Mana Surge
             break;
+        case 6953:                                          // Warbringer
+        {
+            RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
+            RemoveSpellsCausingAura(SPELL_AURA_MOD_DECREASE_SPEED);
+            RemoveSpellsCausingAura(SPELL_AURA_MOD_STALKED);
+            return true;
+        }
         case 7010:                                          // Revitalize
         case 7011:
         case 7012:
