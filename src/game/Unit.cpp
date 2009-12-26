@@ -7558,12 +7558,8 @@ bool Unit::HandleOverrideClassScriptAuraProc(Unit *pVictim, uint32 damage, Aura 
             triggered_spell_id = 37445;                     // Mana Surge
             break;
         case 6953:                                          // Warbringer
-        {
-            RemoveSpellsCausingAura(SPELL_AURA_MOD_ROOT);
-            RemoveSpellsCausingAura(SPELL_AURA_MOD_DECREASE_SPEED);
-            RemoveSpellsCausingAura(SPELL_AURA_MOD_STALKED);
+            RemoveAurasAtMechanicImmunity(IMMUNE_TO_ROOT_AND_SNARE_MASK,0,true);
             return true;
-        }
         case 7010:                                          // Revitalize
         case 7011:
         case 7012:
