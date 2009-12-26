@@ -1440,6 +1440,12 @@ void Aura::HandleAddModifier(bool apply, bool Real)
         if(m_target->m_TotemSlot[i])
             if(Creature* totem = m_target->GetMap()->GetCreature(m_target->m_TotemSlot[i]))
                 ReapplyAffectedPassiveAuras(totem);
+    // re-apply talents/passives/area auras applied to group members (it affected by player spellmods)
+    if (Group* group = ((Player*)m_target)->GetGroup())
+        for(GroupReference *itr = group->GetFirstMember(); itr != NULL; itr = itr->next())
+            if (Player* member = itr->getSource())
+                if (member != m_target && member->IsInMap(m_target))
+                    ReapplyAffectedPassiveAuras(member);
 }
 void Aura::HandleAddTargetTrigger(bool apply, bool /*Real*/)
 {
