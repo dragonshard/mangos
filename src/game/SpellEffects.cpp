@@ -6195,50 +6195,55 @@ void Spell::EffectLeapForward(uint32 i)
     if (unitTarget->isInFlight())
         return;
 
-    if (m_spellInfo->rangeIndex == 1)                       //self range
+    if (m_spellInfo->rangeIndex == 1)
     {
-        uint32 mapid = m_caster->GetMapId();
-        float dis = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
+        Map* m = unitTarget->GetMap();
+        float r = GetSpellRadius(sSpellRadiusStore.LookupEntry(m_spellInfo->EffectRadiusIndex[i]));
 
-        float *fx = new float[11], *fy = new float[11], *fz = new float[11];
-        unitTarget->GetPosition(fx[0], fy[0], fz[0]);
+        float x, y, z, o, px, py, pz, g, f;
+        unitTarget->GetPosition(x, y, z);
+        o = unitTarget->GetOrientation();
 
-        float orientation = unitTarget->GetOrientation(), itr_i, step = dis / 10.0, fx2, fy2, fz2, ground, floor;
-
-        int itr_j = 1, last_valid = 0;
-        bool hit = false;
-
-        for (itr_i = step; itr_i <= dis; itr_i += step)
+        for(int32 itr = 1; itr <= r; ++itr)
         {
-            fx[itr_j] = fx[0] + itr_i * cos(orientation);
-            fy[itr_j] = fy[0] + itr_i * sin(orientation);
+            px = x + cos(o);
+            py = y + sin(o);
 
-            ground = unitTarget->GetMap()->GetHeight(fx[itr_j], fy[itr_j], MAX_HEIGHT, true);
-            floor = unitTarget->GetMap()->GetHeight(fx[itr_j], fy[itr_j], fz[last_valid], true);
-            fz[itr_j] = fabs(ground - fz[last_valid]) <= fabs(floor - fz[last_valid]) ? ground : floor;
-            if (fabs(fz[itr_j] - fz[0]) <= 6.0)
+            MaNGOS::NormalizeMapCoord(px);
+            MaNGOS::NormalizeMapCoord(py);
+
+            g = m->GetHeight(px, py, MAX_HEIGHT);
+            f = m->GetHeight(px, py, z);
+            pz = fabs(g - z) <= fabs(f - z) ? g : f;
+
+            if (fabs(pz - m->GetHeight(x, y, z)) <= 1.2f && unitTarget->IsWithinLOS(px, py, pz))
             {
-                if (VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(mapid, fx[last_valid], fy[last_valid], fz[last_valid] + 0.5, fx[itr_j], fy[itr_j], fz[itr_j] + 0.5, fx2, fy2, fz2, -0.5))
+                if (VMAP::VMapFactory::createOrGetVMapManager()->getObjectHitPos(m->GetId(), x, y, z + 0.5, px, py, pz + 0.5, px, py, pz, -0.5))
                 {
-                    hit = true;
-                    fx[itr_j] = fx2 - 0.6 * cos(orientation);
-                    fy[itr_j] = fy2 - 0.6 * sin(orientation);
-                    ground = unitTarget->GetMap()->GetHeight(fx[itr_j], fy[itr_j], MAX_HEIGHT, true);
-                    floor = unitTarget->GetMap()->GetHeight(fx[itr_j], fy[itr_j], fz[last_valid], true);
-                    float tempz = fabs(ground - fz[last_valid]) <= fabs(floor - fz[last_valid]) ? ground : floor;
-                    fz[itr_j] = fabs(tempz - fz[last_valid]) <= fabs(fz2 - fz[last_valid]) ? tempz : fz2;
-                    break;
-                }
-                else
-                    last_valid = itr_j;
-            }
-            itr_j++;
-        }
-        if (!hit)
-            itr_j = last_valid;
+                    x = px - 0.6 * cos(o);
+                    y = py - 0.6 * sin(o);
 
-        unitTarget->NearTeleportTo(fx[itr_j], fy[itr_j], fz[itr_j] + 0.07531, unitTarget->GetOrientation(),unitTarget==m_caster);
-        delete [] fx; delete [] fy; delete [] fz;
+                    MaNGOS::NormalizeMapCoord(x);
+                    MaNGOS::NormalizeMapCoord(y);
+
+                    g = m->GetHeight(x, y, MAX_HEIGHT, true);
+                    f = m->GetHeight(x, y, z, true);
+
+                    float tz = fabs(g - z) <= fabs(f - z) ? g : f;
+                    z = fabs(pz - z) <= fabs(pz - z) ? tz : pz;
+                    break;                    
+                }
+            }
+            else
+                break;
+
+            x = px;
+            y = py;
+            z = pz;
+        }
+
+        unitTarget->UpdateGroundPositionZ(x, y, z);
+        unitTarget->NearTeleportTo(x, y, z, o,unitTarget==m_caster);
     }
 }
 
