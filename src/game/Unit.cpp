@@ -11522,15 +11522,6 @@ bool Unit::isFrozen(uint64 caster) const
     return HasAuraStateForCaster(AURA_STATE_FROZEN, caster);
 }
 
-bool Unit::isBleeding() const
-{
-    Unit::AuraList const &periodic_damage = GetAurasByType(SPELL_AURA_PERIODIC_DAMAGE);
-    for(Unit::AuraList::const_iterator i = periodic_damage.begin(); i != periodic_damage.end(); i++)
-        if ((*i)->GetSpellProto()->EffectMechanic[(*i)->GetEffIndex()] == MECHANIC_BLEED)
-            return true;
-    return false;
-}
-
 struct ProcTriggeredData
 {
     ProcTriggeredData(SpellProcEventEntry const * _spellProcEvent, Aura* _triggeredByAura)

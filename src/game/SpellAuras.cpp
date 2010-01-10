@@ -1067,6 +1067,10 @@ void Aura::_AddAura()
             // Enrage aura state
             if(m_spellProto->Dispel == DISPEL_ENRAGE)
                 m_target->ModifyAuraState(AURA_STATE_ENRAGE, true);
+
+            // Bleed aura state
+            if (GetSpellMechanicMask(m_spellProto, m_effIndex) & MECHANIC_BLEED)
+                m_target->ModifyAuraState(AURA_STATE_BLEED, true);
         }
     }
 }
@@ -1144,6 +1148,7 @@ bool Aura::_RemoveAura()
     uint32 removeState = 0;
     uint64 removeFamilyFlag = m_spellProto->SpellFamilyFlags;
     uint32 removeFamilyFlag2 = m_spellProto->SpellFamilyFlags2;
+    uint32 removeMechanic = 0;
     switch(m_spellProto->SpellFamilyName)
     {
     case SPELLFAMILY_PALADIN:
@@ -1182,6 +1187,13 @@ bool Aura::_RemoveAura()
             removeState = AURA_STATE_FAERIE_FIRE;   // Sting (hunter versions)
 
     }
+
+    if (GetSpellMechanicMask(m_spellProto, m_effIndex) & MECHANIC_BLEED)
+    {
+        removeMechanic = MECHANIC_BLEED;
+        removeState = AURA_STATE_BLEED;
+    }
+
     // Remove state (but need check other auras for it)
     if (removeState)
     {
@@ -1190,8 +1202,9 @@ bool Aura::_RemoveAura()
         for(Unit::AuraMap::iterator i = Auras.begin(); i != Auras.end(); ++i)
         {
             SpellEntry const *auraSpellInfo = (*i).second->GetSpellProto();
-            if(auraSpellInfo->SpellFamilyName  == m_spellProto->SpellFamilyName &&
-                (auraSpellInfo->SpellFamilyFlags & removeFamilyFlag || auraSpellInfo->SpellFamilyFlags2 & removeFamilyFlag2))
+            if ((auraSpellInfo->SpellFamilyName  == m_spellProto->SpellFamilyName &&
+                (auraSpellInfo->SpellFamilyFlags & removeFamilyFlag || auraSpellInfo->SpellFamilyFlags2 & removeFamilyFlag2)) ||
+                (removeMechanic && (removeMechanic & GetSpellMechanicMask(auraSpellInfo, (*i).second->GetEffIndex()))))
             {
                 found = true;
                 break;

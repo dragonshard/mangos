@@ -1107,7 +1107,7 @@ class MANGOS_DLL_SPEC Unit : public WorldObject
         bool IsPolymorphed() const;
 
         bool isFrozen(uint64 caster = 0) const;
-        bool isBleeding() const;
+        bool isBleeding() const { return HasAuraState(AURA_STATE_BLEED); }
 
         void RemoveSpellbyDamageTaken(AuraType auraType, uint32 damage, Unit *pCaster, uint32 mechanic = 0);
 
